@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'my_page.dart';
+import 'usd_room_page.dart';
+
 class UsdKrwPage extends StatefulWidget {
   const UsdKrwPage({super.key});
 
@@ -9,6 +12,47 @@ class UsdKrwPage extends StatefulWidget {
 }
 
 class _UsdKrwPageState extends State<UsdKrwPage> {
+  final _pageController = PageController(initialPage: 1);
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PageView(
+      controller: _pageController,
+      children: [
+        MyPage(
+          onBack: () => _pageController.animateToPage(
+            1,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          ),
+        ),
+        const _UsdKrwDetailPage(),
+        UsdRoomPage(
+          onRateBarTap: () => _pageController.animateToPage(
+            1,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UsdKrwDetailPage extends StatefulWidget {
+  const _UsdKrwDetailPage();
+
+  @override
+  State<_UsdKrwDetailPage> createState() => _UsdKrwDetailPageState();
+}
+
+class _UsdKrwDetailPageState extends State<_UsdKrwDetailPage> {
   static const _ink = Color(0xFF151916);
   static const _muted = Color(0xFF667069);
   static const _periods = ['1일', '5일', '1개월', '1년', '5년', '최대'];

@@ -47,5 +47,28 @@ void main() {
 
     expect(find.text('1,346.09원'), findsOneWidget);
     expect(find.text('최근 1개월'), findsOneWidget);
+
+    await tester.fling(find.text('1,346.09원'), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.text('USD방'), findsOneWidget);
+    expect(find.text('● 실시간 채팅'), findsOneWidget);
+
+    await tester.fling(find.text('USD방'), const Offset(400, 0), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.text('USD/KRW'), findsOneWidget);
+
+    await tester.fling(find.text('1,346.09원'), const Offset(400, 0), 1000);
+    await tester.pumpAndSettle();
+
+    expect(find.text('마이페이지'), findsOneWidget);
+    expect(find.text('내 달러 포지션 · 선택'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).at(0), '파란달러');
+    await tester.enterText(find.byType(TextField).at(1), '3,000');
+    await tester.pump();
+
+    expect(find.text(r'파란달러  $3,000 · +5.2%'), findsOneWidget);
   });
 }
