@@ -299,13 +299,17 @@ class _InfoField extends StatelessWidget {
             controller: controller,
             onChanged: onChanged,
             keyboardType: keyboardType,
+            textAlignVertical: TextAlignVertical.center,
+            cursorHeight: 24,
             style: const TextStyle(
               color: Color(0xFF151916),
               fontSize: 15,
-              height: 1.6,
+              height: 24 / 15,
             ),
             decoration: InputDecoration(
-              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
+              constraints: const BoxConstraints.tightFor(height: 52),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               enabledBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Color(0xFFE1E6E2)),
