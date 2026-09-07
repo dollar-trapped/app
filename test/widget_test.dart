@@ -18,5 +18,11 @@ void main() {
     expect(find.text('로그인'), findsOneWidget);
     expect(find.text('회원가입'), findsOneWidget);
     expect(find.text('비회원으로 둘러보기'), findsOneWidget);
+
+    await tester.tap(find.text('회원가입'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('달러방에서 만나요.'), findsOneWidget);
+    expect(find.text('가입하고 이메일 인증'), findsOneWidget);
   });
 }

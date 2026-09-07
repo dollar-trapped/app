@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'sign_up_page.dart';
 import '../widgets/auth_button.dart';
 
 class AuthPage extends StatelessWidget {
@@ -50,17 +51,25 @@ class AuthPage extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  const AuthButton(
+                  AuthButton(
                     label: '로그인',
                     color: _action,
                     foreground: Colors.white,
+                    onPressed: () {},
                   ),
                   const SizedBox(height: 12),
-                  const AuthButton(
+                  AuthButton(
                     label: '회원가입',
                     color: Colors.white,
                     foreground: _ink,
                     borderColor: _line,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const SignUpPage(),
+                        ),
+                      );
+                    },
                   ),
                   TextButton(
                     onPressed: () {},

@@ -6,12 +6,14 @@ class AuthButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.foreground,
+    required this.onPressed,
     this.borderColor,
   });
 
   final String label;
   final Color color;
   final Color foreground;
+  final VoidCallback onPressed;
   final Color? borderColor;
 
   @override
@@ -20,7 +22,7 @@ class AuthButton extends StatelessWidget {
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: color,
