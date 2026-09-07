@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'email_verification_page.dart';
+
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -152,7 +154,18 @@ class _SignUpPageState extends State<SignUpPage> {
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton(
-                                onPressed: _canSubmit ? () {} : null,
+                                onPressed: _canSubmit
+                                    ? () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                EmailVerificationPage(
+                                                  email: _emailController.text,
+                                                ),
+                                          ),
+                                        );
+                                      }
+                                    : null,
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
                                   backgroundColor: _action,

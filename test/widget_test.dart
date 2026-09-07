@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dollar_trapped/app.dart';
@@ -24,5 +25,21 @@ void main() {
 
     expect(find.text('달러방에서 만나요.'), findsOneWidget);
     expect(find.text('가입하고 이메일 인증'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).at(0), 'dollar@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.enterText(find.byType(TextField).at(2), '달러물림');
+    await tester.ensureVisible(find.byType(Checkbox).at(0));
+    await tester.tap(find.byType(Checkbox).at(0));
+    await tester.pump();
+    await tester.ensureVisible(find.byType(Checkbox).at(1));
+    await tester.tap(find.byType(Checkbox).at(1));
+    await tester.pump();
+    await tester.ensureVisible(find.text('가입하고 이메일 인증'));
+    await tester.tap(find.text('가입하고 이메일 인증'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('메일함을 확인해주세요.'), findsOneWidget);
+    expect(find.text('dollar@example.com'), findsOneWidget);
   });
 }
