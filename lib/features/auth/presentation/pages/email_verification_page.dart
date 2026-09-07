@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../home/presentation/pages/usd_krw_page.dart';
+
 class EmailVerificationPage extends StatelessWidget {
   const EmailVerificationPage({super.key, required this.email});
 
@@ -151,11 +153,11 @@ class EmailVerificationPage extends StatelessWidget {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('이메일 인증을 확인하고 있어요.')),
-                          );
-                        },
+                        onPressed: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const UsdKrwPage(),
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: _action,

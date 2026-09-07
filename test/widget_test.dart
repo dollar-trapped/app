@@ -41,5 +41,11 @@ void main() {
 
     expect(find.text('메일함을 확인해주세요.'), findsOneWidget);
     expect(find.text('dollar@example.com'), findsOneWidget);
+
+    await tester.tap(find.text('인증 완료했어요'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1,346.09원'), findsOneWidget);
+    expect(find.text('최근 1개월'), findsOneWidget);
   });
 }
