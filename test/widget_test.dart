@@ -7,13 +7,13 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:dollar_trapped/main.dart';
+import 'package:dollar_trapped/app.dart';
 
 void main() {
   testWidgets('shows the authentication entry actions', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const DollarTrappedApp());
 
     expect(find.text('로그인'), findsOneWidget);
     expect(find.text('회원가입'), findsOneWidget);
