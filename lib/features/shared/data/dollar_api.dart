@@ -1,11 +1,12 @@
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
 import 'api_models.dart';
+import 'dollar_repository.dart';
 
 const _unset = Object();
 
 /// Typed REST facade for every v0.1 HTTP endpoint.
-class DollarApi {
+class DollarApi implements DollarRepository {
   factory DollarApi({TokenStore? tokenStore}) {
     final tokens = tokenStore ?? SecureTokenStore();
     return DollarApi.withDependencies(ApiClient(tokens), tokens);
@@ -16,6 +17,7 @@ class DollarApi {
   final ApiClient _client;
   final TokenStore _tokens;
 
+  @override
   Future<AuthSession> signUp({
     required String email,
     required String password,
@@ -25,6 +27,7 @@ class DollarApi {
     'password': password,
     'nickname': nickname,
   });
+  @override
   Future<AuthSession> logIn({
     required String email,
     required String password,
@@ -48,6 +51,7 @@ class DollarApi {
     return session;
   }
 
+  @override
   Future<void> logOut() async {
     final tokens = await _tokens.read();
     try {
@@ -63,9 +67,11 @@ class DollarApi {
     }
   }
 
+  @override
   Future<User> getMe() async => User.fromJson(
     Json.from((await _client.get<Map<String, dynamic>>('/users/me')).data!),
   );
+  @override
   Future<User> updateMe({
     String? nickname,
     Object? usdAmount = _unset,
@@ -91,9 +97,11 @@ class DollarApi {
     );
   }
 
+  @override
   Future<void> deleteAccount(String password) =>
       _client.post<void>('/users/me/deletion', data: {'password': password});
 
+  @override
   Future<MessagePage> getMessages({
     int limit = 50,
     String? before,
@@ -110,6 +118,7 @@ class DollarApi {
     );
   }
 
+  @override
   Future<ReportReceipt> reportMessage(
     String messageId, {
     required String reason,
@@ -122,6 +131,7 @@ class DollarApi {
       )).data!,
     ),
   );
+  @override
   Future<List<BlockedUser>> getBlockedUsers() async {
     final data = Json.from(
       (await _client.get<Map<String, dynamic>>('/users/me/blocks')).data!,
@@ -131,10 +141,13 @@ class DollarApi {
         .toList();
   }
 
+  @override
   Future<void> blockUser(String userId) =>
       _client.put<void>('/users/me/blocks/$userId');
+  @override
   Future<void> unblockUser(String userId) =>
       _client.delete<void>('/users/me/blocks/$userId');
+  @override
   Future<ExchangeRate> getUsdKrwRate() async => ExchangeRate.fromJson(
     Json.from(
       (await _client.get<Map<String, dynamic>>(
@@ -142,6 +155,7 @@ class DollarApi {
       )).data!,
     ),
   );
+  @override
   Future<ExchangeRateHistory> getUsdKrwHistory(String range) async =>
       ExchangeRateHistory.fromJson(
         Json.from(
