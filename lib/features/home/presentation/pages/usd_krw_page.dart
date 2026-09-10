@@ -36,6 +36,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
       controller: _pageController,
       children: [
         MyPage(
+          repository: repository,
           onBack: () => _pageController.animateToPage(
             1,
             duration: const Duration(milliseconds: 250),
@@ -44,6 +45,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         ),
         _UsdKrwDetailPage(repository: repository),
         UsdRoomPage(
+          repository: repository,
           onRateBarTap: () => _pageController.animateToPage(
             1,
             duration: const Duration(milliseconds: 250),

@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../shared/data/api_models.dart';
+import '../../../shared/data/dollar_repository.dart';
+
 class UsdRoomPage extends StatefulWidget {
-  const UsdRoomPage({super.key, required this.onRateBarTap});
+  const UsdRoomPage({
+    super.key,
+    required this.onRateBarTap,
+    required this.repository,
+  });
 
   final VoidCallback onRateBarTap;
+  final DollarRepository repository;
 
   @override
   State<UsdRoomPage> createState() => _UsdRoomPageState();
@@ -16,9 +24,19 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   static const _surface = Color(0xFFF5F7F5);
   static const _line = Color(0xFFE1E6E2);
   static const _action = Color(0xFF008A29);
-  static const _negative = Color(0xFF2463B5);
 
   final _messageController = TextEditingController();
+  late Future<MessagePage> _messagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _messagesFuture = widget.repository.getMessages();
+  }
+
+  void _reloadMessages() {
+    setState(() => _messagesFuture = widget.repository.getMessages());
+  }
 
   @override
   void dispose() {
@@ -72,40 +90,9 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                children: const [
-                  Text(
-                    '9월 6일 일요일',
-                    style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
-                  ),
-                  SizedBox(height: 24),
-                  _ChatMessage(
-                    nickname: '김달러',
-                    holding: r'$2,300',
-                    profit: '+3.2%',
-                    message: '오늘도 달러방 출석합니다.\n다들 환율 보고 계신가요?',
-                    time: '오전 9:18',
-                  ),
-                  SizedBox(height: 24),
-                  _ChatMessage(
-                    nickname: '이달러',
-                    holding: r'$5,200',
-                    profit: '−32.0%',
-                    profitColor: _negative,
-                    message: '이 시발 새끼들아 내 돈 돌려내 개 좇 같 네',
-                    time: '오전 9:19',
-                  ),
-                  SizedBox(height: 24),
-                  _ChatMessage(
-                    nickname: '초록달러 (나)',
-                    holding: r'$2,000',
-                    profit: '+5.2%',
-                    message: '개병신 새끼들 ㅋㅋㅋ',
-                    time: '오전 9:20',
-                    isMine: true,
-                  ),
-                ],
+              child: _MessageList(
+                future: _messagesFuture,
+                onRetry: _reloadMessages,
               ),
             ),
             InkWell(onTap: widget.onRateBarTap, child: const _RateBar()),
@@ -158,7 +145,13 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                     child: ElevatedButton(
                       onPressed: _messageController.text.isEmpty
                           ? null
-                          : () => _messageController.clear(),
+                          : () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('메시지 전송 API 연결이 필요합니다.'),
+                                ),
+                              );
+                            },
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
                         padding: EdgeInsets.zero,
@@ -191,6 +184,72 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   }
 }
 
+class _MessageList extends StatelessWidget {
+  const _MessageList({required this.future, required this.onRetry});
+
+  final Future<MessagePage> future;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<MessagePage>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: TextButton(
+              onPressed: onRetry,
+              child: const Text('메시지를 다시 불러오기'),
+            ),
+          );
+        }
+        final messages = snapshot.data?.items ?? const <ChatMessage>[];
+        if (messages.isEmpty) {
+          return const Center(
+            child: Text(
+              '아직 메시지가 없어요.',
+              style: TextStyle(color: Color(0xFF667069)),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          itemCount: messages.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 24),
+          itemBuilder: (_, index) {
+            final message = messages[index];
+            final profit = message.author.profitRate;
+            return _ChatMessage(
+              nickname: message.author.nickname,
+              holding: message.author.usdAmount == null
+                  ? ''
+                  : r'$' + message.author.usdAmount!,
+              profit: profit == null
+                  ? ''
+                  : '${double.tryParse(profit) != null && !profit.startsWith('-') ? '+' : ''}$profit%',
+              profitColor: profit?.startsWith('-') ?? false
+                  ? const Color(0xFF2463B5)
+                  : const Color(0xFF008A29),
+              message: message.content,
+              time: _formatTime(message.createdAt),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  static String _formatTime(DateTime time) {
+    final local = time.toLocal();
+    final period = local.hour < 12 ? '오전' : '오후';
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    return '$period $hour:${local.minute.toString().padLeft(2, '0')}';
+  }
+}
+
 class _ChatMessage extends StatelessWidget {
   const _ChatMessage({
     required this.nickname,
@@ -199,7 +258,6 @@ class _ChatMessage extends StatelessWidget {
     required this.message,
     required this.time,
     this.profitColor = const Color(0xFF008A29),
-    this.isMine = false,
   });
 
   final String nickname;
@@ -208,13 +266,10 @@ class _ChatMessage extends StatelessWidget {
   final String message;
   final String time;
   final Color profitColor;
-  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
-    final alignment = isMine
-        ? CrossAxisAlignment.end
-        : CrossAxisAlignment.start;
+    const alignment = CrossAxisAlignment.start;
     return Column(
       crossAxisAlignment: alignment,
       children: [
@@ -251,7 +306,7 @@ class _ChatMessage extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 304),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isMine ? const Color(0xFFEAF7EE) : const Color(0xFFF5F7F5),
+            color: const Color(0xFFF5F7F5),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
