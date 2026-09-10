@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../../home/presentation/pages/usd_krw_page.dart';
 import 'sign_up_page.dart';
 import '../widgets/auth_button.dart';
 
@@ -55,7 +56,11 @@ class AuthPage extends StatelessWidget {
                     label: '로그인',
                     color: _action,
                     foreground: Colors.white,
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('로그인 화면은 준비 중입니다.')),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   AuthButton(
@@ -72,7 +77,13 @@ class AuthPage extends StatelessWidget {
                     },
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const UsdKrwPage(),
+                        ),
+                      );
+                    },
                     style: TextButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
                       foregroundColor: _muted,

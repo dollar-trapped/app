@@ -1,10 +1,24 @@
-/// Runtime API settings. Configure a deployed backend without committing hosts:
-/// `flutter run --dart-define=API_BASE_URL=https://api.example.com/api/v1`.
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+/// Runtime API settings.
+///
+/// Prefer `API_BASE_URL` in `.env`; `API_BASE_KEY` remains supported for the
+/// existing local setup. Both a bare host and an `/api/v1` URL are accepted.
 abstract final class ApiConfig {
-  static const baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'https://api.dollar-trapped.example/api/v1',
-  );
+  static String get baseUrl {
+    const definedUrl = String.fromEnvironment('API_BASE_URL');
+    final configuredUrl = definedUrl.isNotEmpty
+        ? definedUrl
+        : (dotenv.env['API_BASE_URL'] ?? dotenv.env['API_BASE_KEY'] ?? '');
+    if (configuredUrl.isEmpty) {
+      throw StateError('API_BASE_URL을 .env 또는 --dart-define으로 설정해 주세요.');
+    }
+
+    final withoutTrailingSlash = configuredUrl.replaceFirst(RegExp(r'/+$'), '');
+    return withoutTrailingSlash.endsWith('/api/v1')
+        ? withoutTrailingSlash
+        : '$withoutTrailingSlash/api/v1';
+  }
 
   static const connectTimeout = Duration(seconds: 10);
   static const receiveTimeout = Duration(seconds: 15);

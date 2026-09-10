@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
+import '../../../shared/data/api_models.dart';
+import '../../../shared/data/dollar_repository.dart';
+import '../../../shared/data/mock_dollar_repository.dart';
 import 'my_page.dart';
 import 'usd_room_page.dart';
 
 class UsdKrwPage extends StatefulWidget {
-  const UsdKrwPage({super.key});
+  const UsdKrwPage({super.key, this.repository});
+
+  final DollarRepository? repository;
 
   @override
   State<UsdKrwPage> createState() => _UsdKrwPageState();
@@ -22,6 +28,10 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
 
   @override
   Widget build(BuildContext context) {
+    final repository =
+        widget.repository ??
+        context.read<DollarRepository?>() ??
+        MockDollarRepository();
     return PageView(
       controller: _pageController,
       children: [
@@ -32,7 +42,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
             curve: Curves.easeOut,
           ),
         ),
-        const _UsdKrwDetailPage(),
+        _UsdKrwDetailPage(repository: repository),
         UsdRoomPage(
           onRateBarTap: () => _pageController.animateToPage(
             1,
@@ -46,7 +56,9 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
 }
 
 class _UsdKrwDetailPage extends StatefulWidget {
-  const _UsdKrwDetailPage();
+  const _UsdKrwDetailPage({required this.repository});
+
+  final DollarRepository repository;
 
   @override
   State<_UsdKrwDetailPage> createState() => _UsdKrwDetailPageState();
@@ -57,6 +69,19 @@ class _UsdKrwDetailPageState extends State<_UsdKrwDetailPage> {
   static const _muted = Color(0xFF667069);
   static const _periods = ['1일', '5일', '1개월', '1년', '5년', '최대'];
   var _selectedPeriod = '1개월';
+  late Future<ExchangeRate> _rateFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _rateFuture = widget.repository.getUsdKrwRate();
+  }
+
+  void _reloadRate() {
+    setState(() {
+      _rateFuture = widget.repository.getUsdKrwRate();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +129,12 @@ class _UsdKrwDetailPageState extends State<_UsdKrwDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(24),
-                      child: _ExchangeQuote(),
+                      child: _ExchangeQuote(
+                        rateFuture: _rateFuture,
+                        onRetry: _reloadRate,
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -167,49 +195,91 @@ class _UsdKrwDetailPageState extends State<_UsdKrwDetailPage> {
 }
 
 class _ExchangeQuote extends StatelessWidget {
-  const _ExchangeQuote();
+  const _ExchangeQuote({required this.rateFuture, required this.onRetry});
+
+  final Future<ExchangeRate> rateFuture;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '미국 달러 / 대한민국 원',
-          style: TextStyle(
-            color: Color(0xFF667069),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            height: 20 / 13,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          '1,346.09원',
-          style: TextStyle(
-            color: Color(0xFF151916),
-            fontSize: 36,
-            fontWeight: FontWeight.w700,
-            height: 46 / 36,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          '▼ 8.31 (−0.61%)  전일 대비',
-          style: TextStyle(
-            color: Color(0xFF2463B5),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            height: 20 / 13,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          '9월 6일 09:18 UTC 기준',
-          style: TextStyle(color: Color(0xFF667069), fontSize: 12, height: 1.5),
-        ),
-      ],
+    return FutureBuilder<ExchangeRate>(
+      future: rateFuture,
+      builder: (context, snapshot) {
+        final rate = snapshot.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '미국 달러 / 대한민국 원',
+              style: TextStyle(
+                color: Color(0xFF667069),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 20 / 13,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const SizedBox(
+                height: 46,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (rate != null) ...[
+              Text(
+                '${_formatRate(rate.rate)}원',
+                style: const TextStyle(
+                  color: Color(0xFF151916),
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  height: 46 / 36,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                rate.isStale ? '마지막으로 확인된 환율' : '실시간 환율',
+                style: const TextStyle(
+                  color: Color(0xFF008A29),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 20 / 13,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${_formatDate(rate.asOf)} UTC 기준 · ${rate.source}',
+                style: const TextStyle(
+                  color: Color(0xFF667069),
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ] else ...[
+              const Text(
+                '환율을 불러오지 못했어요.',
+                style: TextStyle(color: Color(0xFF151916), fontSize: 18),
+              ),
+              TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+            ],
+          ],
+        );
+      },
     );
+  }
+
+  static String _formatRate(String value) {
+    final rate = double.tryParse(value);
+    if (rate == null) return value;
+    return rate
+        .toStringAsFixed(2)
+        .replaceFirstMapped(RegExp(r'(?<!^)(?=(\d{3})+\.)'), (_) => ',');
+  }
+
+  static String _formatDate(DateTime date) {
+    final utc = date.toUtc();
+    return '${utc.month}월 ${utc.day}일 ${utc.hour.toString().padLeft(2, '0')}:${utc.minute.toString().padLeft(2, '0')}';
   }
 }
 
