@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../../../home/presentation/pages/usd_krw_page.dart';
+import '../../../shared/data/dollar_repository.dart';
+import '../../../shared/data/mock_dollar_repository.dart';
+import 'login_page.dart';
 import 'sign_up_page.dart';
 import '../widgets/auth_button.dart';
 
@@ -16,6 +20,8 @@ class AuthPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final repository =
+        context.read<DollarRepository?>() ?? MockDollarRepository();
     return Scaffold(
       body: SizedBox.expand(
         child: Column(
@@ -57,8 +63,10 @@ class AuthPage extends StatelessWidget {
                     color: _action,
                     foreground: Colors.white,
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('로그인 화면은 준비 중입니다.')),
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => LoginPage(repository: repository),
+                        ),
                       );
                     },
                   ),
@@ -71,7 +79,7 @@ class AuthPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const SignUpPage(),
+                          builder: (_) => SignUpPage(repository: repository),
                         ),
                       );
                     },
@@ -80,7 +88,7 @@ class AuthPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const UsdKrwPage(),
+                          builder: (_) => UsdKrwPage(repository: repository),
                         ),
                       );
                     },

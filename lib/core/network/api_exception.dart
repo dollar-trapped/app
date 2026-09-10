@@ -18,7 +18,10 @@ class ApiException implements Exception {
     required Object? data,
     String fallbackMessage = '요청을 처리하지 못했습니다.',
   }) {
-    final json = data is Map ? Map<String, dynamic>.from(data) : null;
+    final response = data is Map ? Map<String, dynamic>.from(data) : null;
+    final json = response?['error'] is Map
+        ? Map<String, dynamic>.from(response!['error'] as Map)
+        : response;
     final retrySeconds = json?['retryAfterSeconds'];
     return ApiException(
       statusCode: statusCode,

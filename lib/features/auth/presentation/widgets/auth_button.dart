@@ -13,7 +13,7 @@ class AuthButton extends StatelessWidget {
   final String label;
   final Color color;
   final Color foreground;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? borderColor;
 
   @override

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'email_verification_page.dart';
+import '../../../home/presentation/pages/usd_krw_page.dart';
+import '../../../shared/data/dollar_repository.dart';
+import '../../../../core/network/api_exception.dart';
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key});
+  const SignUpPage({super.key, required this.repository});
+
+  final DollarRepository repository;
 
   @override
   State<SignUpPage> createState() => _SignUpPageState();
@@ -20,6 +24,8 @@ class _SignUpPageState extends State<SignUpPage> {
   final _nicknameController = TextEditingController();
   bool _agreedToTerms = false;
   bool _agreedToPrivacy = false;
+  bool _isSubmitting = false;
+  String? _errorMessage;
 
   bool get _canSubmit =>
       _emailController.text.isNotEmpty &&
@@ -34,6 +40,36 @@ class _SignUpPageState extends State<SignUpPage> {
     _passwordController.dispose();
     _nicknameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    if (!_canSubmit || _isSubmitting) return;
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+    try {
+      await widget.repository.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        nickname: _nicknameController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(
+          builder: (_) => UsdKrwPage(repository: widget.repository),
+        ),
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = '가입 요청을 처리하지 못했어요. 다시 시도해 주세요.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -109,6 +145,17 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             ),
                             const SizedBox(height: 20),
+                            if (_errorMessage != null) ...[
+                              Text(
+                                _errorMessage!,
+                                style: const TextStyle(
+                                  color: Color(0xFFB3261E),
+                                  fontSize: 13,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             _SignUpField(
                               controller: _emailController,
                               label: '이메일',
@@ -154,17 +201,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton(
-                                onPressed: _canSubmit
-                                    ? () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute<void>(
-                                            builder: (_) =>
-                                                EmailVerificationPage(
-                                                  email: _emailController.text,
-                                                ),
-                                          ),
-                                        );
-                                      }
+                                onPressed: _canSubmit && !_isSubmitting
+                                    ? _signUp
                                     : null,
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
@@ -181,12 +219,12 @@ class _SignUpPageState extends State<SignUpPage> {
                                     height: 1.5,
                                   ),
                                 ),
-                                child: const Text('가입하고 이메일 인증'),
+                                child: Text(_isSubmitting ? '가입 중...' : '가입하기'),
                               ),
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              '이메일 인증 후 채팅에 참여할 수 있어요.',
+                              '가입이 완료되면 바로 USD방을 이용할 수 있어요.',
                               style: TextStyle(
                                 color: _muted,
                                 fontSize: 12,
