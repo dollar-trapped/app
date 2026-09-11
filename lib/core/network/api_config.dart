@@ -27,11 +27,13 @@ abstract final class ApiConfig {
     final configuredUrl = definedUrl.isNotEmpty
         ? definedUrl
         : dotenv.env['WS_URL'];
-    if (configuredUrl != null && configuredUrl.isNotEmpty) {
-      return configuredUrl.replaceFirst(RegExp(r'/+$'), '');
-    }
-    final socketBase = baseUrl.replaceFirst(RegExp(r'^https'), 'wss');
-    return '$socketBase/ws';
+    final rawUrl = configuredUrl != null && configuredUrl.isNotEmpty
+        ? configuredUrl.replaceFirst(RegExp(r'/+$'), '')
+        : '${baseUrl.replaceFirst(RegExp(r'^https'), 'wss')}/ws';
+    final uri = Uri.parse(rawUrl);
+    return uri
+        .replace(queryParameters: {...uri.queryParameters, 'roomId': 'usd'})
+        .toString();
   }
 
   static const connectTimeout = Duration(seconds: 10);

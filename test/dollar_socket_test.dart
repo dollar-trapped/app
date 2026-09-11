@@ -2,10 +2,60 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dollar_trapped/core/auth/token_store.dart';
+import 'package:dollar_trapped/core/network/api_config.dart';
 import 'package:dollar_trapped/core/realtime/dollar_socket.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('builds the USD room WebSocket URL', () {
+    dotenv.loadFromString(envString: 'API_BASE_URL=https://api.example.test');
+
+    expect(
+      ApiConfig.webSocketUrl,
+      'wss://api.example.test/api/v1/ws?roomId=usd',
+    );
+  });
+
+  test(
+    'logs CONNECTED, AUTH transmission, and AUTH_OK without tokens',
+    () async {
+      final connection = _FakeConnection();
+      final logs = <String>[];
+      final previousDebugPrint = debugPrint;
+      debugPrint = (message, {wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+      final socket = DollarSocket(
+        url: 'wss://example.test/api/v1/ws?roomId=usd',
+        tokenStore: _MemoryTokenStore(_tokens()),
+        connector: (_) async => connection,
+      );
+
+      try {
+        await socket.connect();
+        connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+        await _flush();
+        connection.add({'type': 'AUTH_OK'});
+        await _flush();
+
+        expect(
+          logs,
+          containsAllInOrder([
+            '[DollarSocket] CONNECTED',
+            '[DollarSocket] AUTH sent',
+            '[DollarSocket] AUTH_OK',
+          ]),
+        );
+        expect(logs.join(' '), isNot(contains('access-token')));
+      } finally {
+        debugPrint = previousDebugPrint;
+        await socket.dispose();
+      }
+    },
+  );
+
   test(
     'follows CONNECTED, AUTH_OK, MESSAGE_ACK, retry, and message deduplication',
     () async {

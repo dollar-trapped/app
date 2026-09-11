@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth/token_store.dart';
@@ -143,12 +144,14 @@ class DollarSocket {
       final event = Map<String, dynamic>.from(decoded);
       switch (event['type'] as String?) {
         case 'CONNECTED':
+          debugPrint('[DollarSocket] CONNECTED');
           _reconnectAttempts = 0;
           _setState(DollarSocketState.connected);
           _startHeartbeat(event['heartbeatIntervalSeconds']);
           await _authenticate();
           break;
         case 'AUTH_OK':
+          debugPrint('[DollarSocket] AUTH_OK');
           _setState(DollarSocketState.authenticated);
           _resumePendingMessages();
           break;
@@ -184,6 +187,8 @@ class DollarSocket {
       'requestId': _uuidV4(),
       'accessToken': tokens.accessToken,
     });
+    // Log only the protocol transition; never print the access token.
+    debugPrint('[DollarSocket] AUTH sent');
   }
 
   Future<bool> _refreshAndAuthenticate() {
