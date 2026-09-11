@@ -93,6 +93,7 @@ class DollarSocket {
   Future<bool>? _refreshingAuthentication;
   DollarSocketState _state = DollarSocketState.disconnected;
   int _reconnectAttempts = 0;
+  bool _awaitingPong = false;
   bool _disposed = false;
 
   Stream<DollarSocketState> get states => _states.stream;
@@ -165,6 +166,7 @@ class DollarSocket {
           _send({'type': 'PONG'});
           break;
         case 'PONG':
+          _awaitingPong = false;
           break;
         case 'ERROR':
           await _handleError(event);
@@ -202,6 +204,7 @@ class DollarSocket {
   Future<bool> _refreshAndAuthenticateInternal() async {
     final refreshed = await _tokenRefresher();
     if (refreshed == null) {
+      await tokenStore.clear();
       _setState(DollarSocketState.connected);
       return false;
     }
@@ -214,10 +217,16 @@ class DollarSocket {
     final seconds = rawInterval is num ? rawInterval.toInt() : 0;
     if (seconds <= 0) return;
     // CONNECTED is the sole source of heartbeat cadence in the server spec.
-    _heartbeatTimer = Timer.periodic(
-      Duration(seconds: seconds),
-      (_) => _send({'type': 'PING'}),
-    );
+    _heartbeatTimer = Timer.periodic(Duration(seconds: seconds), (_) {
+      if (_awaitingPong) {
+        _onTransportClosed(
+          TimeoutException('WebSocket heartbeat PONG timeout'),
+        );
+        return;
+      }
+      _awaitingPong = true;
+      _send({'type': 'PING'});
+    });
   }
 
   void _emitMessage(Map<String, dynamic> event) {
@@ -304,14 +313,27 @@ class DollarSocket {
   void _onTransportClosed([Object? _]) {
     if (_disposed) return;
     final previousSubscription = _subscription;
+    final previousConnection = _connection;
     _subscription = null;
+    _connection = null;
     if (previousSubscription != null) {
       unawaited(previousSubscription.cancel());
     }
-    _connection = null;
+    if (previousConnection != null) {
+      unawaited(_closeSilently(previousConnection));
+    }
     _heartbeatTimer?.cancel();
+    _awaitingPong = false;
     _setState(DollarSocketState.reconnecting);
     _scheduleReconnect();
+  }
+
+  Future<void> _closeSilently(SocketConnection connection) async {
+    try {
+      await connection.close();
+    } catch (_) {
+      // The transport may already be closed when onDone reaches this method.
+    }
   }
 
   void _scheduleReconnect() {
@@ -360,8 +382,16 @@ class DollarSocket {
     await _failedMessageIds.close();
   }
 
-  static Future<SocketConnection> _connectChannel(Uri url) async =>
-      _WebSocketChannelConnection(WebSocketChannel.connect(url));
+  static Future<SocketConnection> _connectChannel(Uri url) async {
+    final channel = WebSocketChannel.connect(url);
+    try {
+      await channel.ready;
+      return _WebSocketChannelConnection(channel);
+    } catch (_) {
+      unawaited(channel.sink.close());
+      rethrow;
+    }
+  }
 }
 
 class _PendingMessage {

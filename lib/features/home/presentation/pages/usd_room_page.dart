@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../../core/auth/token_store.dart';
 import '../../../../core/network/api_config.dart';
 import '../../../../core/realtime/dollar_socket.dart';
+import '../../../auth/presentation/pages/auth_page.dart';
 import '../../../shared/data/api_models.dart';
 import '../../../shared/data/dollar_repository.dart';
 
@@ -41,46 +42,58 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   StreamSubscription<SocketError>? _errorSubscription;
   StreamSubscription<String>? _sendFailureSubscription;
   var _socketState = DollarSocketState.disconnected;
+  var _ownsSocket = false;
 
   @override
   void initState() {
     super.initState();
     _messagesFuture = widget.repository.getMessages();
-    final tokenStore = context.read<TokenStore?>();
-    if (tokenStore != null) {
+    _socket = context.read<DollarSocket?>();
+    if (_socket == null) {
+      final tokenStore = context.read<TokenStore?>();
+      if (tokenStore == null) return;
       _socket = DollarSocket(
         url: ApiConfig.webSocketUrl,
         tokenStore: tokenStore,
       );
-      _messageSubscription = _socket!.messages.listen((message) {
-        if (mounted) setState(() => _realtimeMessages.insert(0, message));
-      });
-      _stateSubscription = _socket!.states.listen((state) {
-        if (mounted) setState(() => _socketState = state);
-      });
-      _deletionSubscription = _socket!.deletedMessageIds.listen((messageId) {
-        if (mounted) {
-          setState(
-            () => _realtimeMessages.removeWhere(
-              (message) => message.id == messageId,
-            ),
-          );
-        }
-      });
-      _errorSubscription = _socket!.errors.listen((error) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
-      });
-      _sendFailureSubscription = _socket!.failedMessageIds.listen((_) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('메시지 전송에 실패했어요. 다시 시도해 주세요.')),
-        );
-      });
-      _socket!.connect();
+      _ownsSocket = true;
     }
+    final socket = _socket!;
+    _messageSubscription = socket.messages.listen((message) {
+      if (mounted) setState(() => _realtimeMessages.insert(0, message));
+    });
+    _stateSubscription = socket.states.listen((state) {
+      if (mounted) setState(() => _socketState = state);
+    });
+    _deletionSubscription = socket.deletedMessageIds.listen((messageId) {
+      if (mounted) {
+        setState(
+          () => _realtimeMessages.removeWhere(
+            (message) => message.id == messageId,
+          ),
+        );
+      }
+    });
+    _errorSubscription = socket.errors.listen((error) {
+      if (!mounted) return;
+      if (error.code == 'TOKEN_EXPIRED') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const AuthPage()),
+          (route) => false,
+        );
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    });
+    _sendFailureSubscription = socket.failedMessageIds.listen((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('메시지 전송에 실패했어요. 다시 시도해 주세요.')),
+      );
+    });
+    socket.connect();
   }
 
   void _reloadMessages() {
@@ -94,7 +107,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
     _deletionSubscription?.cancel();
     _errorSubscription?.cancel();
     _sendFailureSubscription?.cancel();
-    _socket?.dispose();
+    if (_ownsSocket) _socket?.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -307,6 +320,7 @@ class _MessageList extends StatelessWidget {
           ...messages.map(_messageWidget),
         ];
         return ListView.separated(
+          reverse: true,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           itemCount: items.length,
           separatorBuilder: (_, _) => const SizedBox(height: 24),

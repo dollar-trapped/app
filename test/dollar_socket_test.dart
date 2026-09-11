@@ -4,9 +4,14 @@ import 'dart:convert';
 import 'package:dollar_trapped/core/auth/token_store.dart';
 import 'package:dollar_trapped/core/network/api_config.dart';
 import 'package:dollar_trapped/core/realtime/dollar_socket.dart';
-import 'package:flutter/foundation.dart';
+import 'package:dollar_trapped/features/auth/presentation/pages/auth_page.dart';
+import 'package:dollar_trapped/features/home/presentation/pages/usd_room_page.dart';
+import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
+import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   test('builds the USD room WebSocket URL', () {
@@ -108,6 +113,11 @@ void main() {
         _types(connection.sent).where((type) => type == 'SEND_MESSAGE'),
         hasLength(2),
       );
+      final retriedClientMessageIds = connection.sent
+          .map(_frame)
+          .where((frame) => frame['type'] == 'SEND_MESSAGE')
+          .map((frame) => frame['clientMessageId']);
+      expect(retriedClientMessageIds, everyElement(clientId));
 
       connection.add({'type': 'MESSAGE_ACK', 'clientMessageId': clientId});
       await _flush();
@@ -194,6 +204,22 @@ void main() {
   });
 
   test(
+    'handles WebSocket handshake failures without uncaught errors',
+    () async {
+      final socket = DollarSocket(
+        url: 'ws://127.0.0.1:1',
+        tokenStore: _MemoryTokenStore(_tokens()),
+      );
+
+      await socket.connect();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(socket.state, DollarSocketState.disconnected);
+      await socket.dispose();
+    },
+  );
+
+  test(
     'removes pending message and emits failure after max attempts',
     () async {
       final connection = _FakeConnection();
@@ -243,8 +269,200 @@ void main() {
 
     expect(first.cancelCount, 1);
     expect(connectCount, 2);
+    second.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+    await _flush();
+    expect(_frame(second.sent.single)['type'], 'AUTH');
+    expect(_frame(second.sent.single)['accessToken'], 'access-token');
     await socket.dispose();
   });
+
+  testWidgets('reconnects when a heartbeat PONG is missing', (tester) async {
+    final first = _FakeConnection();
+    final second = _FakeConnection();
+    final connections = [first, second];
+    var connectCount = 0;
+    final socket = DollarSocket(
+      url: 'wss://example.test/api/v1/ws',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async => connections[connectCount++],
+      maxReconnectDelay: Duration.zero,
+    );
+
+    await socket.connect();
+    first.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 1});
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(_types(first.sent), contains('PING'));
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(connectCount, 2);
+    expect(first.closeCount, 1);
+
+    await tester.runAsync(socket.dispose);
+  });
+
+  testWidgets('keeps the connection when heartbeat PONG arrives', (
+    tester,
+  ) async {
+    final connection = _FakeConnection();
+    var connectCount = 0;
+    final socket = DollarSocket(
+      url: 'wss://example.test/api/v1/ws',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async {
+        connectCount += 1;
+        return connection;
+      },
+      maxReconnectDelay: Duration.zero,
+    );
+
+    await socket.connect();
+    connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 1});
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    connection.add({'type': 'PONG'});
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(connectCount, 1);
+    expect(
+      _types(connection.sent).where((type) => type == 'PING'),
+      hasLength(2),
+    );
+    await tester.runAsync(socket.dispose);
+  });
+
+  testWidgets(
+    'sends through the socket and shows one copy of the echoed MESSAGE',
+    (tester) async {
+      final connection = _FakeConnection();
+      final socket = DollarSocket(
+        url: 'wss://example.test/api/v1/ws?roomId=usd',
+        tokenStore: _MemoryTokenStore(_tokens()),
+        connector: (_) async => connection,
+      );
+      await tester.pumpWidget(
+        Provider<DollarSocket>.value(
+          value: socket,
+          child: MaterialApp(
+            home: UsdRoomPage(
+              repository: MockDollarRepository(),
+              onRateBarTap: () {},
+            ),
+          ),
+        ),
+      );
+      await socket.connect();
+      connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+      await tester.pump();
+      connection.add({'type': 'AUTH_OK'});
+      await tester.pump();
+
+      await tester.enterText(find.byType(TextField), '실제 전송 메시지');
+      await tester.pump();
+      await tester.tap(find.text('↑'));
+      await tester.pump();
+
+      final sends = connection.sent
+          .map(_frame)
+          .where((frame) => frame['type'] == 'SEND_MESSAGE')
+          .toList();
+      expect(sends, hasLength(1));
+      final clientMessageId = sends.single['clientMessageId'] as String;
+      connection.add({
+        'type': 'MESSAGE_ACK',
+        'clientMessageId': clientMessageId,
+      });
+      connection.add({
+        'type': 'MESSAGE',
+        'message': {
+          'id': 'message-live-1',
+          'content': '실제 전송 메시지',
+          'author': {'nickname': '나', 'usdAmount': '100', 'profitRate': '1.0'},
+        },
+      });
+      connection.add({
+        'type': 'MESSAGE',
+        'message': {
+          'id': 'message-live-1',
+          'content': '실제 전송 메시지',
+          'author': {'nickname': '나', 'usdAmount': '100', 'profitRate': '1.0'},
+        },
+      });
+      await tester.pump();
+
+      expect(find.text('실제 전송 메시지'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      await tester.runAsync(socket.dispose);
+    },
+  );
+
+  testWidgets('shows the newest chat message below older messages', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final newestY = tester.getCenter(find.text('오늘도 달러방 출석합니다.')).dy;
+    final oldestY = tester.getCenter(find.text('다들 성투하세요.')).dy;
+    expect(newestY, greaterThan(oldestY));
+  });
+
+  testWidgets(
+    'clears the session and shows auth entry when token refresh fails',
+    (tester) async {
+      final connection = _FakeConnection();
+      final tokenStore = _MemoryTokenStore(_tokens());
+      final socket = DollarSocket(
+        url: 'wss://example.test/api/v1/ws?roomId=usd',
+        tokenStore: tokenStore,
+        connector: (_) async => connection,
+        tokenRefresher: () async => null,
+      );
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            Provider<DollarSocket>.value(value: socket),
+            Provider<TokenStore>.value(value: tokenStore),
+            Provider<DollarRepository>.value(value: MockDollarRepository()),
+          ],
+          child: MaterialApp(
+            home: UsdRoomPage(
+              repository: MockDollarRepository(),
+              onRateBarTap: () {},
+            ),
+          ),
+        ),
+      );
+      await socket.connect();
+      connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+      await tester.pump();
+      connection.add({'type': 'AUTH_OK'});
+      await tester.pump();
+
+      connection.add({
+        'type': 'ERROR',
+        'error': {'code': 'TOKEN_EXPIRED', 'message': '토큰 만료'},
+      });
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(await tokenStore.read(), isNull);
+      expect(find.byType(AuthPage), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      await tester.runAsync(socket.dispose);
+    },
+  );
 }
 
 Future<void> _flush() => Future<void>.delayed(Duration.zero);
@@ -289,12 +507,17 @@ class _FakeConnection implements SocketConnection {
   final sent = <String>[];
   late final StreamController<dynamic> _frames;
   int cancelCount = 0;
+  int closeCount = 0;
   @override
   Stream<dynamic> get stream => _frames.stream;
   void add(Map<String, dynamic> frame) => _frames.add(jsonEncode(frame));
   void fail(Object error) => _frames.addError(error);
   @override
-  Future<void> close() => _frames.close();
+  Future<void> close() {
+    closeCount += 1;
+    return _frames.close();
+  }
+
   @override
   void send(String value) => sent.add(value);
 }
