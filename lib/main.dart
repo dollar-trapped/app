@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/auth/session_restorer.dart';
 import 'core/auth/token_store.dart';
 import 'core/network/api_client.dart';
 import 'features/shared/data/dollar_api.dart';
@@ -27,24 +28,21 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
+  final tokenStore = SecureTokenStore();
+  final repository = const bool.fromEnvironment('USE_MOCK_REPOSITORY')
+      ? MockDollarRepository()
+      : DollarApi.withDependencies(ApiClient(tokenStore), tokenStore);
+  final initiallyAuthenticated = await SessionRestorer(
+    tokenStore,
+    repository,
+  ).restore();
   runApp(
     MultiProvider(
       providers: [
-        Provider<TokenStore>(create: (_) => SecureTokenStore()),
-        Provider<DollarRepository>(
-          create: (context) {
-            if (const bool.fromEnvironment('USE_MOCK_REPOSITORY')) {
-              return MockDollarRepository();
-            }
-            final tokenStore = context.read<TokenStore>();
-            return DollarApi.withDependencies(
-              ApiClient(tokenStore),
-              tokenStore,
-            );
-          },
-        ),
+        Provider<TokenStore>.value(value: tokenStore),
+        Provider<DollarRepository>.value(value: repository),
       ],
-      child: const DollarTrappedApp(),
+      child: DollarTrappedApp(initiallyAuthenticated: initiallyAuthenticated),
     ),
   );
 }

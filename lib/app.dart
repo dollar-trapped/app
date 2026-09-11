@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'features/auth/presentation/pages/auth_page.dart';
+import 'features/home/presentation/pages/usd_krw_page.dart';
 
 class DollarTrappedApp extends StatelessWidget {
-  const DollarTrappedApp({super.key});
+  const DollarTrappedApp({super.key, this.initiallyAuthenticated = false});
+
+  final bool initiallyAuthenticated;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +18,7 @@ class DollarTrappedApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
-      home: const AuthPage(), //
+      home: initiallyAuthenticated ? const UsdKrwPage() : const AuthPage(),
     );
   }
 }
