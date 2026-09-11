@@ -49,6 +49,35 @@ class ApiClient {
   Future<Response<T>> delete<T>(String path) =>
       _request<T>(() => _dio.delete<T>(path));
 
+  /// Refreshes persisted tokens for WebSocket TOKEN_EXPIRED handling.
+  Future<TokenPair?> refreshAccessToken() async {
+    final current = await _tokenStore.read();
+    if (current == null) return null;
+    try {
+      final response = await post<Map<String, dynamic>>(
+        '/auth/refresh',
+        data: {'refreshToken': current.refreshToken},
+        skipAuth: true,
+      );
+      final json = response.data!;
+      final tokens = TokenPair(
+        accessToken: json['accessToken'] as String,
+        refreshToken: json['refreshToken'] as String,
+        accessExpiresAt: DateTime.parse(
+          json['accessExpiresAt'] as String,
+        ).toUtc(),
+        refreshExpiresAt: DateTime.parse(
+          json['refreshExpiresAt'] as String,
+        ).toUtc(),
+      );
+      await _tokenStore.write(tokens);
+      return tokens;
+    } catch (_) {
+      await _tokenStore.clear();
+      return null;
+    }
+  }
+
   Future<Response<T>> _request<T>(
     Future<Response<T>> Function() request,
   ) async {

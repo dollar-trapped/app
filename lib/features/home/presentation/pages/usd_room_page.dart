@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
+import '../../../../core/auth/token_store.dart';
+import '../../../../core/network/api_config.dart';
+import '../../../../core/realtime/dollar_socket.dart';
 import '../../../shared/data/api_models.dart';
 import '../../../shared/data/dollar_repository.dart';
 
@@ -27,11 +33,54 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
 
   final _messageController = TextEditingController();
   late Future<MessagePage> _messagesFuture;
+  final _realtimeMessages = <RealtimeMessage>[];
+  DollarSocket? _socket;
+  StreamSubscription<RealtimeMessage>? _messageSubscription;
+  StreamSubscription<DollarSocketState>? _stateSubscription;
+  StreamSubscription<String>? _deletionSubscription;
+  StreamSubscription<SocketError>? _errorSubscription;
+  StreamSubscription<String>? _sendFailureSubscription;
+  var _socketState = DollarSocketState.disconnected;
 
   @override
   void initState() {
     super.initState();
     _messagesFuture = widget.repository.getMessages();
+    final tokenStore = context.read<TokenStore?>();
+    if (tokenStore != null) {
+      _socket = DollarSocket(
+        url: ApiConfig.webSocketUrl,
+        tokenStore: tokenStore,
+      );
+      _messageSubscription = _socket!.messages.listen((message) {
+        if (mounted) setState(() => _realtimeMessages.insert(0, message));
+      });
+      _stateSubscription = _socket!.states.listen((state) {
+        if (mounted) setState(() => _socketState = state);
+      });
+      _deletionSubscription = _socket!.deletedMessageIds.listen((messageId) {
+        if (mounted) {
+          setState(
+            () => _realtimeMessages.removeWhere(
+              (message) => message.id == messageId,
+            ),
+          );
+        }
+      });
+      _errorSubscription = _socket!.errors.listen((error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      });
+      _sendFailureSubscription = _socket!.failedMessageIds.listen((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('메시지 전송에 실패했어요. 다시 시도해 주세요.')),
+        );
+      });
+      _socket!.connect();
+    }
   }
 
   void _reloadMessages() {
@@ -40,8 +89,42 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
+    _stateSubscription?.cancel();
+    _deletionSubscription?.cancel();
+    _errorSubscription?.cancel();
+    _sendFailureSubscription?.cancel();
+    _socket?.dispose();
     _messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final content = _messageController.text.trim();
+    if (content.isEmpty) return;
+    final socket = _socket;
+    if (socket == null || socket.state != DollarSocketState.authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('채팅 서버에 연결하거나 로그인한 뒤 전송할 수 있어요.')),
+      );
+      return;
+    }
+    await socket.sendMessage(content);
+    if (mounted) _messageController.clear();
+  }
+
+  String get _socketStatusLabel {
+    switch (_socketState) {
+      case DollarSocketState.authenticated:
+        return '● 실시간 채팅';
+      case DollarSocketState.connecting:
+      case DollarSocketState.connected:
+      case DollarSocketState.authenticating:
+      case DollarSocketState.reconnecting:
+        return '● 채팅 연결 중';
+      case DollarSocketState.disconnected:
+        return '● 채팅 오프라인';
+    }
   }
 
   @override
@@ -64,7 +147,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     children: [
                       Text(
                         'USD방',
@@ -77,9 +160,11 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        '● 실시간 채팅',
+                        _socketStatusLabel,
                         style: TextStyle(
-                          color: _action,
+                          color: _socketState == DollarSocketState.authenticated
+                              ? _action
+                              : _muted,
                           fontSize: 12,
                           height: 1.5,
                         ),
@@ -92,6 +177,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
             Expanded(
               child: _MessageList(
                 future: _messagesFuture,
+                realtimeMessages: _realtimeMessages,
                 onRetry: _reloadMessages,
               ),
             ),
@@ -145,13 +231,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                     child: ElevatedButton(
                       onPressed: _messageController.text.isEmpty
                           ? null
-                          : () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('메시지 전송 API 연결이 필요합니다.'),
-                                ),
-                              );
-                            },
+                          : _sendMessage,
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
                         padding: EdgeInsets.zero,
@@ -185,9 +265,14 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
 }
 
 class _MessageList extends StatelessWidget {
-  const _MessageList({required this.future, required this.onRetry});
+  const _MessageList({
+    required this.future,
+    required this.realtimeMessages,
+    required this.onRetry,
+  });
 
   final Future<MessagePage> future;
+  final List<RealtimeMessage> realtimeMessages;
   final VoidCallback onRetry;
 
   @override
@@ -207,7 +292,7 @@ class _MessageList extends StatelessWidget {
           );
         }
         final messages = snapshot.data?.items ?? const <ChatMessage>[];
-        if (messages.isEmpty) {
+        if (messages.isEmpty && realtimeMessages.isEmpty) {
           return const Center(
             child: Text(
               '아직 메시지가 없어요.',
@@ -215,28 +300,17 @@ class _MessageList extends StatelessWidget {
             ),
           );
         }
+        final items = <Widget>[
+          ...realtimeMessages.map(
+            (message) => _RealtimeChatMessage(message: message),
+          ),
+          ...messages.map(_messageWidget),
+        ];
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          itemCount: messages.length,
+          itemCount: items.length,
           separatorBuilder: (_, _) => const SizedBox(height: 24),
-          itemBuilder: (_, index) {
-            final message = messages[index];
-            final profit = message.author.profitRate;
-            return _ChatMessage(
-              nickname: message.author.nickname,
-              holding: message.author.usdAmount == null
-                  ? ''
-                  : r'$' + message.author.usdAmount!,
-              profit: profit == null
-                  ? ''
-                  : '${double.tryParse(profit) != null && !profit.startsWith('-') ? '+' : ''}$profit%',
-              profitColor: profit?.startsWith('-') ?? false
-                  ? const Color(0xFF2463B5)
-                  : const Color(0xFF008A29),
-              message: message.content,
-              time: _formatTime(message.createdAt),
-            );
-          },
+          itemBuilder: (_, index) => items[index],
         );
       },
     );
@@ -247,6 +321,50 @@ class _MessageList extends StatelessWidget {
     final period = local.hour < 12 ? '오전' : '오후';
     final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
     return '$period $hour:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  static Widget _messageWidget(ChatMessage message) {
+    final profit = message.author.profitRate;
+    return _ChatMessage(
+      nickname: message.author.nickname,
+      holding: message.author.usdAmount == null
+          ? ''
+          : r'$' + message.author.usdAmount!,
+      profit: _profitText(profit),
+      profitColor: profit?.startsWith('-') ?? false
+          ? const Color(0xFF2463B5)
+          : const Color(0xFF008A29),
+      message: message.content,
+      time: _formatTime(message.createdAt),
+    );
+  }
+
+  static String _profitText(String? profit) {
+    if (profit == null) return '';
+    final prefix = double.tryParse(profit) != null && !profit.startsWith('-')
+        ? '+'
+        : '';
+    return '$prefix$profit%';
+  }
+}
+
+class _RealtimeChatMessage extends StatelessWidget {
+  const _RealtimeChatMessage({required this.message});
+
+  final RealtimeMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final author = message.data['author'] is Map
+        ? Map<String, dynamic>.from(message.data['author'] as Map)
+        : const <String, dynamic>{};
+    return _ChatMessage(
+      nickname: author['nickname'] as String? ?? '익명',
+      holding: author['usdAmount'] == null ? '' : "\$${author['usdAmount']}",
+      profit: _MessageList._profitText(author['profitRate'] as String?),
+      message: message.content,
+      time: _MessageList._formatTime(DateTime.now()),
+    );
   }
 }
 

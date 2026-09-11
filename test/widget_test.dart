@@ -46,7 +46,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('USD방'), findsOneWidget);
-    expect(find.text('● 실시간 채팅'), findsOneWidget);
+    expect(find.text('● 채팅 오프라인'), findsOneWidget);
 
     await tester.fling(find.text('USD방'), const Offset(400, 0), 1000);
     await tester.pumpAndSettle();

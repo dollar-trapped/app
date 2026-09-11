@@ -20,6 +20,20 @@ abstract final class ApiConfig {
         : '$withoutTrailingSlash/api/v1';
   }
 
+  /// WebSocket endpoint. Set `WS_URL` explicitly when the backend exposes a
+  /// different gateway; otherwise it is derived from the REST v1 base URL.
+  static String get webSocketUrl {
+    const definedUrl = String.fromEnvironment('WS_URL');
+    final configuredUrl = definedUrl.isNotEmpty
+        ? definedUrl
+        : dotenv.env['WS_URL'];
+    if (configuredUrl != null && configuredUrl.isNotEmpty) {
+      return configuredUrl.replaceFirst(RegExp(r'/+$'), '');
+    }
+    final socketBase = baseUrl.replaceFirst(RegExp(r'^https'), 'wss');
+    return '$socketBase/ws';
+  }
+
   static const connectTimeout = Duration(seconds: 10);
   static const receiveTimeout = Duration(seconds: 15);
 }
