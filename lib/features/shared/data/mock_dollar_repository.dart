@@ -173,6 +173,7 @@ class MockDollarRepository implements DollarRepository {
       ),
     );
     return ExchangeRateHistory(
+      pair: 'USD-KRW',
       range: range,
       interval: '1d',
       from: points.first.time,
