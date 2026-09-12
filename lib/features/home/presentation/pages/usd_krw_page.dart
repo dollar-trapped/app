@@ -9,16 +9,23 @@ import 'my_page.dart';
 import 'usd_room_page.dart';
 
 class UsdKrwPage extends StatefulWidget {
-  const UsdKrwPage({super.key, this.repository});
+  const UsdKrwPage({super.key, this.repository, this.initialPage = 1});
 
   final DollarRepository? repository;
+  final int initialPage;
 
   @override
   State<UsdKrwPage> createState() => _UsdKrwPageState();
 }
 
 class _UsdKrwPageState extends State<UsdKrwPage> {
-  final _pageController = PageController(initialPage: 1);
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.initialPage);
+  }
 
   @override
   void dispose() {

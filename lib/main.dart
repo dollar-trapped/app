@@ -29,12 +29,13 @@ Future<void> main() async {
     ),
   );
   final tokenStore = SecureTokenStore();
+  final apiClient = ApiClient(tokenStore);
   final repository = const bool.fromEnvironment('USE_MOCK_REPOSITORY')
       ? MockDollarRepository()
-      : DollarApi.withDependencies(ApiClient(tokenStore), tokenStore);
+      : DollarApi.withDependencies(apiClient, tokenStore);
   final initiallyAuthenticated = await SessionRestorer(
     tokenStore,
-    repository,
+    apiClient,
   ).restore();
   runApp(
     MultiProvider(

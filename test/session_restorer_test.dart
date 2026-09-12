@@ -1,40 +1,64 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:dollar_trapped/core/auth/session_restorer.dart';
 import 'package:dollar_trapped/core/auth/token_store.dart';
-import 'package:dollar_trapped/core/network/api_exception.dart';
-import 'package:dollar_trapped/features/shared/data/api_models.dart';
-import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
+import 'package:dollar_trapped/core/network/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('restores a persisted session when the user request succeeds', () async {
-    final tokens = _MemoryTokenStore(_tokens());
+  test('does not refresh when no persisted tokens exist', () async {
+    final tokens = _MemoryTokenStore(null);
+    final adapter = _RefreshAdapter(statusCode: 200);
     final restored = await SessionRestorer(
       tokens,
-      MockDollarRepository(),
+      _client(tokens, adapter),
+    ).restore();
+
+    expect(restored, isFalse);
+    expect(adapter.requestCount, 0);
+  });
+
+  test('restores the session with refreshed tokens', () async {
+    final tokens = _MemoryTokenStore(_tokens());
+    final adapter = _RefreshAdapter(statusCode: 200);
+    final restored = await SessionRestorer(
+      tokens,
+      _client(tokens, adapter),
     ).restore();
 
     expect(restored, isTrue);
-    expect(await tokens.read(), isNotNull);
+    expect(adapter.requestCount, 1);
+    expect(adapter.lastPath, '/auth/refresh');
+    expect(adapter.lastBody, {'refreshToken': 'old-refresh'});
+    expect((await tokens.read())?.accessToken, 'new-access');
+    expect((await tokens.read())?.refreshToken, 'new-refresh');
   });
 
-  test(
-    'clears tokens when refresh and session validation are unauthorized',
-    () async {
-      final tokens = _MemoryTokenStore(_tokens());
-      final restored = await SessionRestorer(
-        tokens,
-        _UnauthorizedRepository(),
-      ).restore();
+  test('clears persisted tokens when refresh fails', () async {
+    final tokens = _MemoryTokenStore(_tokens());
+    final adapter = _RefreshAdapter(statusCode: 401);
+    final restored = await SessionRestorer(
+      tokens,
+      _client(tokens, adapter),
+    ).restore();
 
-      expect(restored, isFalse);
-      expect(await tokens.read(), isNull);
-    },
-  );
+    expect(restored, isFalse);
+    expect(adapter.requestCount, 1);
+    expect(await tokens.read(), isNull);
+  });
+}
+
+ApiClient _client(TokenStore tokens, HttpClientAdapter adapter) {
+  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
+  dio.httpClientAdapter = adapter;
+  return ApiClient(tokens, dio: dio);
 }
 
 TokenPair _tokens() => TokenPair(
-  accessToken: 'access',
-  refreshToken: 'refresh',
+  accessToken: 'old-access',
+  refreshToken: 'old-refresh',
   accessExpiresAt: DateTime.utc(2026, 1, 1),
   refreshExpiresAt: DateTime.utc(2026, 2, 1),
 );
@@ -54,13 +78,48 @@ class _MemoryTokenStore implements TokenStore {
   Future<void> write(TokenPair tokens) async => _value = tokens;
 }
 
-class _UnauthorizedRepository extends MockDollarRepository {
+class _RefreshAdapter implements HttpClientAdapter {
+  _RefreshAdapter({required this.statusCode});
+
+  final int statusCode;
+  int requestCount = 0;
+  String? lastPath;
+  Object? lastBody;
+
   @override
-  Future<User> getMe() => Future.error(
-    const ApiException(
-      statusCode: 401,
-      code: 'AUTH_REQUIRED',
-      message: '로그인이 필요합니다.',
-    ),
-  );
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requestCount += 1;
+    lastPath = options.path;
+    final requestBytes = await requestStream?.fold<List<int>>(
+      <int>[],
+      (bytes, chunk) => bytes..addAll(chunk),
+    );
+    if (requestBytes != null) {
+      lastBody = jsonDecode(utf8.decode(requestBytes));
+    }
+    final body = statusCode == 200
+        ? {
+            'accessToken': 'new-access',
+            'refreshToken': 'new-refresh',
+            'accessExpiresAt': '2026-03-01T00:00:00Z',
+            'refreshExpiresAt': '2026-04-01T00:00:00Z',
+          }
+        : {
+            'error': {'code': 'INVALID_REFRESH_TOKEN', 'message': '만료된 토큰'},
+          };
+    return ResponseBody.fromString(
+      jsonEncode(body),
+      statusCode,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

@@ -18,7 +18,9 @@ class DollarTrappedApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         useMaterial3: true,
       ),
-      home: initiallyAuthenticated ? const UsdKrwPage() : const AuthPage(),
+      home: initiallyAuthenticated
+          ? const UsdKrwPage(initialPage: 2)
+          : const AuthPage(),
     );
   }
 }

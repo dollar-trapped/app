@@ -11,6 +11,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/app.dart';
 
 void main() {
+  testWidgets('opens the USD room when the session is restored', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const DollarTrappedApp(initiallyAuthenticated: true),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('USD방'), findsOneWidget);
+    expect(find.text('최근 1개월'), findsNothing);
+  });
+
   testWidgets('shows the authentication entry actions', (
     WidgetTester tester,
   ) async {
