@@ -103,7 +103,7 @@ class _SignUpPageState extends State<SignUpPage> {
         setState(
           () => _errorMessage = error.statusCode == 409
               ? '이미 가입된 이메일입니다. 로그인해 주세요.'
-              : error.message,
+              : error.userMessage,
         );
       }
     } catch (_) {
@@ -165,7 +165,7 @@ class _SignUpPageState extends State<SignUpPage> {
     };
     return invalidTokenCodes.contains(error.code)
         ? '이메일 인증이 만료되었거나 유효하지 않습니다. 인증 메일을 다시 요청해 주세요.'
-        : error.message;
+        : error.userMessage;
   }
 
   @override

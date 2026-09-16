@@ -60,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
         (route) => false,
       );
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (mounted) setState(() => _errorMessage = error.userMessage);
     } catch (_) {
       if (mounted) {
         setState(() => _errorMessage = '로그인 요청을 처리하지 못했어요. 다시 시도해 주세요.');

@@ -3,6 +3,7 @@ class ApiException implements Exception {
     required this.statusCode,
     required this.code,
     required this.message,
+    this.details = const [],
     this.requestId,
     this.retryAfter,
   });
@@ -10,6 +11,7 @@ class ApiException implements Exception {
   final int? statusCode;
   final String code;
   final String message;
+  final List<ApiErrorDetail> details;
   final String? requestId;
   final Duration? retryAfter;
 
@@ -23,10 +25,21 @@ class ApiException implements Exception {
         ? Map<String, dynamic>.from(response!['error'] as Map)
         : response;
     final retrySeconds = json?['retryAfterSeconds'];
+    final details = (json?['details'] as List? ?? const [])
+        .whereType<Map>()
+        .map(
+          (detail) => ApiErrorDetail(
+            field: detail['field'] as String? ?? '',
+            reason: detail['reason'] as String? ?? '',
+          ),
+        )
+        .where((detail) => detail.field.isNotEmpty || detail.reason.isNotEmpty)
+        .toList(growable: false);
     return ApiException(
       statusCode: statusCode,
       code: json?['code'] as String? ?? 'NETWORK_ERROR',
       message: json?['message'] as String? ?? fallbackMessage,
+      details: details,
       requestId: json?['requestId'] as String?,
       retryAfter: retrySeconds is num
           ? Duration(seconds: retrySeconds.ceil())
@@ -34,6 +47,24 @@ class ApiException implements Exception {
     );
   }
 
+  String get userMessage {
+    if (details.isEmpty) return message;
+    return details
+        .map(
+          (detail) => detail.field.isEmpty
+              ? detail.reason
+              : '${detail.field}: ${detail.reason}',
+        )
+        .join('\n');
+  }
+
   @override
   String toString() => 'ApiException($statusCode, $code): $message';
+}
+
+class ApiErrorDetail {
+  const ApiErrorDetail({required this.field, required this.reason});
+
+  final String field;
+  final String reason;
 }

@@ -55,7 +55,7 @@ class _MyPageState extends State<MyPage> {
         _currentRate = double.tryParse(rate.rate) ?? _currentRate;
       });
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (mounted) setState(() => _errorMessage = error.userMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '내 정보를 불러오지 못했어요.');
     } finally {
@@ -86,7 +86,7 @@ class _MyPageState extends State<MyPage> {
         context,
       ).showSnackBar(const SnackBar(content: Text('변경사항을 저장했어요.')));
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (mounted) setState(() => _errorMessage = error.userMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '변경사항을 저장하지 못했어요.');
     } finally {
@@ -163,7 +163,7 @@ class _MyPageState extends State<MyPage> {
         (route) => false,
       );
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (mounted) setState(() => _errorMessage = error.userMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '회원 탈퇴를 완료하지 못했습니다.');
     } finally {
@@ -491,7 +491,7 @@ class _BlockedUsersPageState extends State<_BlockedUsersPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ).showSnackBar(SnackBar(content: Text(error.userMessage)));
       }
     } catch (_) {
       if (mounted) {

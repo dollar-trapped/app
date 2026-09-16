@@ -180,7 +180,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
       final message =
           error.statusCode == 409 || error.code == 'ALREADY_REPORTED'
           ? '이미 신고한 메시지입니다.'
-          : error.message;
+          : error.userMessage;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
