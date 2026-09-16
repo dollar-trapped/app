@@ -103,6 +103,68 @@ void main() {
     expect(find.text('오늘도 달러방 출석합니다.'), findsOneWidget);
   });
 
+  testWidgets('aligns the current users messages on the right', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final ownMessageX = tester.getTopLeft(find.text('오늘도 달러방 출석합니다.')).dx;
+    final otherMessageX = tester.getTopLeft(find.text('환율 보고 계신가요?')).dx;
+
+    expect(ownMessageX, greaterThan(otherMessageX));
+  });
+
+  testWidgets('uses the outgoing Figma bubble style for the current user', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final bubble = tester.widget<Container>(
+      find.byKey(const Key('chat-bubble-own')),
+    );
+    final decoration = bubble.decoration! as BoxDecoration;
+
+    expect(decoration.color, const Color(0xFFEAF7EE));
+  });
+
+  testWidgets('keeps sending disabled for whitespace-only input', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '   ');
+    await tester.pump();
+
+    final sendButton = tester.widget<ElevatedButton>(
+      find.byKey(const Key('chat-send')),
+    );
+    expect(sendButton.onPressed, isNull);
+  });
+
   testWidgets('confirms a report for another users message', (
     WidgetTester tester,
   ) async {

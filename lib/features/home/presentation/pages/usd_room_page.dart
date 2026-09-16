@@ -88,6 +88,13 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
         );
         return;
       }
+      if (error.scope == 'SEND_MESSAGE' &&
+          (error.code == 'BAD_REQUEST' || error.code == 'VALIDATION_ERROR')) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('메시지 내용을 확인해 주세요.')));
+        return;
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
@@ -354,7 +361,8 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                     width: 44,
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: _messageController.text.isEmpty
+                      key: const Key('chat-send'),
+                      onPressed: _messageController.text.trim().isEmpty
                           ? null
                           : _sendMessage,
                       style: ElevatedButton.styleFrom(
@@ -463,6 +471,10 @@ class _MessageList extends StatelessWidget {
             ),
           ),
         ];
+        final oldestMessage = messages.isEmpty ? null : messages.last;
+        if (oldestMessage != null) {
+          items.add(_DateLabel(date: oldestMessage.createdAt));
+        }
         return ListView.separated(
           reverse: true,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -479,6 +491,12 @@ class _MessageList extends StatelessWidget {
     final period = local.hour < 12 ? '오전' : '오후';
     final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
     return '$period $hour:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  static String _formatDate(DateTime time) {
+    const weekdays = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+    final local = time.toLocal();
+    return '${local.month}월 ${local.day}일 ${weekdays[local.weekday - 1]}';
   }
 
   static Widget _messageWidget(
@@ -502,6 +520,7 @@ class _MessageList extends StatelessWidget {
           : const Color(0xFF008A29),
       message: message.content,
       time: _formatTime(message.createdAt),
+      isMine: message.author.id == currentUserId,
       onLongPress:
           currentUserId == null ||
               message.author.id == null ||
@@ -546,8 +565,12 @@ class _RealtimeChatMessage extends StatelessWidget {
       nickname: author['nickname'] as String? ?? '익명',
       holding: author['usdAmount'] == null ? '' : "\$${author['usdAmount']}",
       profit: _MessageList._profitText(author['profitRate'] as String?),
+      profitColor: (author['profitRate'] as String?)?.startsWith('-') ?? false
+          ? const Color(0xFF2463B5)
+          : const Color(0xFF008A29),
       message: message.content,
       time: _MessageList._formatTime(DateTime.now()),
+      isMine: authorId == currentUserId,
       onLongPress:
           currentUserId == null || authorId == null || authorId == currentUserId
           ? null
@@ -565,6 +588,7 @@ class _ChatMessage extends StatelessWidget {
     required this.time,
     this.profitColor = const Color(0xFF008A29),
     this.onLongPress,
+    this.isMine = false,
   });
 
   final String nickname;
@@ -574,74 +598,100 @@ class _ChatMessage extends StatelessWidget {
   final String time;
   final Color profitColor;
   final VoidCallback? onLongPress;
+  final bool isMine;
 
   @override
   Widget build(BuildContext context) {
-    const alignment = CrossAxisAlignment.start;
+    final alignment = isMine
+        ? CrossAxisAlignment.end
+        : CrossAxisAlignment.start;
     return GestureDetector(
       onLongPress: onLongPress,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        crossAxisAlignment: alignment,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                nickname,
+      child: Align(
+        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: alignment,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  nickname,
+                  style: const TextStyle(
+                    color: Color(0xFF151916),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    height: 20 / 13,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  holding,
+                  style: const TextStyle(
+                    color: Color(0xFF667069),
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  profit,
+                  style: TextStyle(
+                    color: profitColor,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(
+              key: Key(isMine ? 'chat-bubble-own' : 'chat-bubble-incoming'),
+              constraints: const BoxConstraints(maxWidth: 304),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isMine
+                    ? const Color(0xFFEAF7EE)
+                    : const Color(0xFFF5F7F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                message,
                 style: const TextStyle(
                   color: Color(0xFF151916),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  height: 20 / 13,
+                  fontSize: 15,
+                  height: 1.6,
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                holding,
-                style: const TextStyle(
-                  color: Color(0xFF667069),
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                profit,
-                style: TextStyle(color: profitColor, fontSize: 12, height: 1.5),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            constraints: const BoxConstraints(maxWidth: 304),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7F5),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              message,
+            const SizedBox(height: 8),
+            Text(
+              time,
               style: const TextStyle(
-                color: Color(0xFF151916),
-                fontSize: 15,
-                height: 1.6,
+                color: Color(0xFF667069),
+                fontSize: 12,
+                height: 1.5,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            time,
-            style: const TextStyle(
-              color: Color(0xFF667069),
-              fontSize: 12,
-              height: 1.5,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+class _DateLabel extends StatelessWidget {
+  const _DateLabel({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    _MessageList._formatDate(date),
+    style: const TextStyle(color: Color(0xFF667069), fontSize: 12, height: 1.5),
+  );
 }
 
 enum _MessageAction { report, block }
