@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/auth/token_store.dart';
 import '../../../../core/network/api_config.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/realtime/dollar_socket.dart';
 import '../../../auth/presentation/pages/auth_page.dart';
 import '../../../shared/data/api_models.dart';
@@ -35,6 +36,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   final _messageController = TextEditingController();
   late Future<MessagePage> _messagesFuture;
   final _realtimeMessages = <RealtimeMessage>[];
+  final _blockedUserIds = <String>{};
   DollarSocket? _socket;
   StreamSubscription<RealtimeMessage>? _messageSubscription;
   StreamSubscription<DollarSocketState>? _stateSubscription;
@@ -43,11 +45,13 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   StreamSubscription<String>? _sendFailureSubscription;
   var _socketState = DollarSocketState.disconnected;
   var _ownsSocket = false;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _messagesFuture = widget.repository.getMessages();
+    _loadModerationContext();
     _socket = context.read<DollarSocket?>();
     if (_socket == null) {
       final tokenStore = context.read<TokenStore?>();
@@ -60,7 +64,8 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
     }
     final socket = _socket!;
     _messageSubscription = socket.messages.listen((message) {
-      if (mounted) setState(() => _realtimeMessages.insert(0, message));
+      if (!mounted || _isBlockedRealtimeMessage(message)) return;
+      setState(() => _realtimeMessages.insert(0, message));
     });
     _stateSubscription = socket.states.listen((state) {
       if (mounted) setState(() => _socketState = state);
@@ -98,6 +103,110 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
 
   void _reloadMessages() {
     setState(() => _messagesFuture = widget.repository.getMessages());
+  }
+
+  Future<void> _loadModerationContext() async {
+    try {
+      final results = await Future.wait([
+        widget.repository.getMe(),
+        widget.repository.getBlockedUsers(),
+      ]);
+      if (!mounted) return;
+      final user = results[0] as User;
+      final blockedUsers = results[1] as List<BlockedUser>;
+      setState(() {
+        _currentUserId = user.id;
+        _blockedUserIds.addAll(blockedUsers.map((user) => user.userId));
+      });
+    } catch (_) {
+      // Chat reading remains available when moderation context cannot load.
+    }
+  }
+
+  bool _isBlockedRealtimeMessage(RealtimeMessage message) {
+    final author = message.data['author'];
+    final authorId = author is Map ? author['id'] as String? : null;
+    return authorId != null && _blockedUserIds.contains(authorId);
+  }
+
+  Future<void> _moderateMessage({
+    required String messageId,
+    required String authorId,
+  }) async {
+    final action = await showModalBottomSheet<_MessageAction>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: const Text('신고'),
+              onTap: () => Navigator.pop(context, _MessageAction.report),
+            ),
+            ListTile(
+              title: const Text('차단'),
+              onTap: () => Navigator.pop(context, _MessageAction.block),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == _MessageAction.report) {
+      await _reportMessage(messageId);
+    } else {
+      await _blockUser(authorId);
+    }
+  }
+
+  Future<void> _reportMessage(String messageId) async {
+    try {
+      await widget.repository.reportMessage(messageId, reason: 'OTHER');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('신고되었습니다.')));
+      }
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      final message =
+          error.statusCode == 409 || error.code == 'ALREADY_REPORTED'
+          ? '이미 신고한 메시지입니다.'
+          : error.message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('신고하지 못했습니다. 다시 시도해 주세요.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _blockUser(String userId) async {
+    setState(() {
+      _blockedUserIds.add(userId);
+      _realtimeMessages.removeWhere((message) {
+        final author = message.data['author'];
+        return author is Map && author['id'] == userId;
+      });
+    });
+    try {
+      await widget.repository.blockUser(userId);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('사용자를 차단했습니다.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('차단하지 못했습니다. 다시 시도해 주세요.')),
+        );
+      }
+    }
   }
 
   @override
@@ -191,7 +300,10 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
               child: _MessageList(
                 future: _messagesFuture,
                 realtimeMessages: _realtimeMessages,
+                blockedUserIds: _blockedUserIds,
+                currentUserId: _currentUserId,
                 onRetry: _reloadMessages,
+                onModerate: _moderateMessage,
               ),
             ),
             InkWell(onTap: widget.onRateBarTap, child: const _RateBar()),
@@ -281,12 +393,22 @@ class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.future,
     required this.realtimeMessages,
+    required this.blockedUserIds,
+    required this.currentUserId,
     required this.onRetry,
+    required this.onModerate,
   });
 
   final Future<MessagePage> future;
   final List<RealtimeMessage> realtimeMessages;
+  final Set<String> blockedUserIds;
+  final String? currentUserId;
   final VoidCallback onRetry;
+  final Future<void> Function({
+    required String messageId,
+    required String authorId,
+  })
+  onModerate;
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +426,13 @@ class _MessageList extends StatelessWidget {
             ),
           );
         }
-        final messages = snapshot.data?.items ?? const <ChatMessage>[];
+        final messages = (snapshot.data?.items ?? const <ChatMessage>[])
+            .where(
+              (message) =>
+                  message.author.id == null ||
+                  !blockedUserIds.contains(message.author.id),
+            )
+            .toList();
         if (messages.isEmpty && realtimeMessages.isEmpty) {
           return const Center(
             child: Text(
@@ -314,10 +442,26 @@ class _MessageList extends StatelessWidget {
           );
         }
         final items = <Widget>[
-          ...realtimeMessages.map(
-            (message) => _RealtimeChatMessage(message: message),
+          ...realtimeMessages
+              .where((message) {
+                final author = message.data['author'];
+                final authorId = author is Map ? author['id'] as String? : null;
+                return authorId == null || !blockedUserIds.contains(authorId);
+              })
+              .map(
+                (message) => _RealtimeChatMessage(
+                  message: message,
+                  currentUserId: currentUserId,
+                  onModerate: onModerate,
+                ),
+              ),
+          ...messages.map(
+            (message) => _messageWidget(
+              message,
+              currentUserId: currentUserId,
+              onModerate: onModerate,
+            ),
           ),
-          ...messages.map(_messageWidget),
         ];
         return ListView.separated(
           reverse: true,
@@ -337,7 +481,15 @@ class _MessageList extends StatelessWidget {
     return '$period $hour:${local.minute.toString().padLeft(2, '0')}';
   }
 
-  static Widget _messageWidget(ChatMessage message) {
+  static Widget _messageWidget(
+    ChatMessage message, {
+    required String? currentUserId,
+    required Future<void> Function({
+      required String messageId,
+      required String authorId,
+    })
+    onModerate,
+  }) {
     final profit = message.author.profitRate;
     return _ChatMessage(
       nickname: message.author.nickname,
@@ -350,6 +502,13 @@ class _MessageList extends StatelessWidget {
           : const Color(0xFF008A29),
       message: message.content,
       time: _formatTime(message.createdAt),
+      onLongPress:
+          currentUserId == null ||
+              message.author.id == null ||
+              message.author.id == currentUserId
+          ? null
+          : () =>
+                onModerate(messageId: message.id, authorId: message.author.id!),
     );
   }
 
@@ -363,21 +522,36 @@ class _MessageList extends StatelessWidget {
 }
 
 class _RealtimeChatMessage extends StatelessWidget {
-  const _RealtimeChatMessage({required this.message});
+  const _RealtimeChatMessage({
+    required this.message,
+    required this.currentUserId,
+    required this.onModerate,
+  });
 
   final RealtimeMessage message;
+  final String? currentUserId;
+  final Future<void> Function({
+    required String messageId,
+    required String authorId,
+  })
+  onModerate;
 
   @override
   Widget build(BuildContext context) {
     final author = message.data['author'] is Map
         ? Map<String, dynamic>.from(message.data['author'] as Map)
         : const <String, dynamic>{};
+    final authorId = author['id'] as String?;
     return _ChatMessage(
       nickname: author['nickname'] as String? ?? '익명',
       holding: author['usdAmount'] == null ? '' : "\$${author['usdAmount']}",
       profit: _MessageList._profitText(author['profitRate'] as String?),
       message: message.content,
       time: _MessageList._formatTime(DateTime.now()),
+      onLongPress:
+          currentUserId == null || authorId == null || authorId == currentUserId
+          ? null
+          : () => onModerate(messageId: message.id, authorId: authorId),
     );
   }
 }
@@ -390,6 +564,7 @@ class _ChatMessage extends StatelessWidget {
     required this.message,
     required this.time,
     this.profitColor = const Color(0xFF008A29),
+    this.onLongPress,
   });
 
   final String nickname;
@@ -398,71 +573,78 @@ class _ChatMessage extends StatelessWidget {
   final String message;
   final String time;
   final Color profitColor;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     const alignment = CrossAxisAlignment.start;
-    return Column(
-      crossAxisAlignment: alignment,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              nickname,
+    return GestureDetector(
+      onLongPress: onLongPress,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: alignment,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                nickname,
+                style: const TextStyle(
+                  color: Color(0xFF151916),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 20 / 13,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                holding,
+                style: const TextStyle(
+                  color: Color(0xFF667069),
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                profit,
+                style: TextStyle(color: profitColor, fontSize: 12, height: 1.5),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxWidth: 304),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              message,
               style: const TextStyle(
                 color: Color(0xFF151916),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                height: 20 / 13,
+                fontSize: 15,
+                height: 1.6,
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              holding,
-              style: const TextStyle(
-                color: Color(0xFF667069),
-                fontSize: 12,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              profit,
-              style: TextStyle(color: profitColor, fontSize: 12, height: 1.5),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 304),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7F5),
-            borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            message,
+          const SizedBox(height: 8),
+          Text(
+            time,
             style: const TextStyle(
-              color: Color(0xFF151916),
-              fontSize: 15,
-              height: 1.6,
+              color: Color(0xFF667069),
+              fontSize: 12,
+              height: 1.5,
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          time,
-          style: const TextStyle(
-            color: Color(0xFF667069),
-            fontSize: 12,
-            height: 1.5,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
+
+enum _MessageAction { report, block }
 
 class _RateBar extends StatelessWidget {
   const _RateBar();

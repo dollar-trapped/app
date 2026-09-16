@@ -417,6 +417,52 @@ void main() {
     expect(newestY, greaterThan(oldestY));
   });
 
+  testWidgets('does not render a WebSocket message from a blocked author', (
+    tester,
+  ) async {
+    final connection = _FakeConnection();
+    final socket = DollarSocket(
+      url: 'wss://example.test/api/v1/ws?roomId=usd',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async => connection,
+    );
+    await tester.pumpWidget(
+      Provider<DollarSocket>.value(
+        value: socket,
+        child: MaterialApp(
+          home: UsdRoomPage(
+            repository: MockDollarRepository(),
+            onRateBarTap: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('환율 보고 계신가요?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('차단'));
+    await tester.pumpAndSettle();
+
+    await socket.connect();
+    connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+    await tester.pump();
+    connection.add({'type': 'AUTH_OK'});
+    connection.add({
+      'type': 'MESSAGE',
+      'message': {
+        'id': 'message-from-blocked-user',
+        'content': '차단 후 실시간 메시지',
+        'author': {'id': 'user-2', 'nickname': '이달러'},
+      },
+    });
+    await tester.pump();
+
+    expect(find.text('차단 후 실시간 메시지'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(socket.dispose);
+  });
+
   testWidgets(
     'clears the session and shows auth entry when token refresh fails',
     (tester) async {
