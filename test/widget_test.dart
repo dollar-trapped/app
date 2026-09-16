@@ -81,6 +81,18 @@ void main() {
     expect(find.text(r'파란달러  $3,000 · +5.2%'), findsOneWidget);
   });
 
+  testWidgets('offers an opt-in remember login control', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const DollarTrappedApp());
+
+    await tester.tap(find.text('로그인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('로그인 유지하기'), findsOneWidget);
+    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+  });
+
   testWidgets('removes a blocked author message immediately', (
     WidgetTester tester,
   ) async {
@@ -120,6 +132,25 @@ void main() {
     final otherMessageX = tester.getTopLeft(find.text('환율 보고 계신가요?')).dx;
 
     expect(ownMessageX, greaterThan(otherMessageX));
+  });
+
+  testWidgets('renders the latest chat history message at the bottom', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final latestY = tester.getTopLeft(find.text('오늘도 달러방 출석합니다.')).dy;
+    final oldestY = tester.getTopLeft(find.text('다들 성투하세요.')).dy;
+
+    expect(latestY, greaterThan(oldestY));
   });
 
   testWidgets('uses the outgoing Figma bubble style for the current user', (

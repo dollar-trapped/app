@@ -429,6 +429,7 @@ void main() {
         },
       });
       await tester.pump();
+      await tester.pump();
 
       expect(find.text('실제 전송 메시지'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

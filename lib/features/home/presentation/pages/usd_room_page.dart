@@ -34,6 +34,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
   static const _action = Color(0xFF008A29);
 
   final _messageController = TextEditingController();
+  final _messageScrollController = ScrollController();
   late Future<MessagePage> _messagesFuture;
   final _realtimeMessages = <RealtimeMessage>[];
   final _blockedUserIds = <String>{};
@@ -65,7 +66,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
     final socket = _socket!;
     _messageSubscription = socket.messages.listen((message) {
       if (!mounted || _isBlockedRealtimeMessage(message)) return;
-      setState(() => _realtimeMessages.insert(0, message));
+      setState(() => _realtimeMessages.add(message));
     });
     _stateSubscription = socket.states.listen((state) {
       if (mounted) setState(() => _socketState = state);
@@ -225,6 +226,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
     _sendFailureSubscription?.cancel();
     if (_ownsSocket) _socket?.dispose();
     _messageController.dispose();
+    _messageScrollController.dispose();
     super.dispose();
   }
 
@@ -309,6 +311,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                 realtimeMessages: _realtimeMessages,
                 blockedUserIds: _blockedUserIds,
                 currentUserId: _currentUserId,
+                scrollController: _messageScrollController,
                 onRetry: _reloadMessages,
                 onModerate: _moderateMessage,
               ),
@@ -403,6 +406,7 @@ class _MessageList extends StatelessWidget {
     required this.realtimeMessages,
     required this.blockedUserIds,
     required this.currentUserId,
+    required this.scrollController,
     required this.onRetry,
     required this.onModerate,
   });
@@ -411,6 +415,7 @@ class _MessageList extends StatelessWidget {
   final List<RealtimeMessage> realtimeMessages;
   final Set<String> blockedUserIds;
   final String? currentUserId;
+  final ScrollController scrollController;
   final VoidCallback onRetry;
   final Future<void> Function({
     required String messageId,
@@ -423,7 +428,8 @@ class _MessageList extends StatelessWidget {
     return FutureBuilder<MessagePage>(
       future: future,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            realtimeMessages.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
@@ -441,6 +447,9 @@ class _MessageList extends StatelessWidget {
                   !blockedUserIds.contains(message.author.id),
             )
             .toList();
+        messages.sort(
+          (first, second) => first.createdAt.compareTo(second.createdAt),
+        );
         if (messages.isEmpty && realtimeMessages.isEmpty) {
           return const Center(
             child: Text(
@@ -450,6 +459,14 @@ class _MessageList extends StatelessWidget {
           );
         }
         final items = <Widget>[
+          if (messages.isNotEmpty) _DateLabel(date: messages.first.createdAt),
+          ...messages.map(
+            (message) => _messageWidget(
+              message,
+              currentUserId: currentUserId,
+              onModerate: onModerate,
+            ),
+          ),
           ...realtimeMessages
               .where((message) {
                 final author = message.data['author'];
@@ -463,20 +480,13 @@ class _MessageList extends StatelessWidget {
                   onModerate: onModerate,
                 ),
               ),
-          ...messages.map(
-            (message) => _messageWidget(
-              message,
-              currentUserId: currentUserId,
-              onModerate: onModerate,
-            ),
-          ),
         ];
-        final oldestMessage = messages.isEmpty ? null : messages.last;
-        if (oldestMessage != null) {
-          items.add(_DateLabel(date: oldestMessage.createdAt));
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!scrollController.hasClients) return;
+          scrollController.jumpTo(scrollController.position.maxScrollExtent);
+        });
         return ListView.separated(
-          reverse: true,
+          controller: scrollController,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           itemCount: items.length,
           separatorBuilder: (_, _) => const SizedBox(height: 24),
