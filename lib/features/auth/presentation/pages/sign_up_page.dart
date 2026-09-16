@@ -75,11 +75,7 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     } on ApiException catch (error) {
       if (mounted) {
-        setState(
-          () => _errorMessage = error.statusCode == 409
-              ? '이미 가입된 이메일입니다. 로그인해 주세요.'
-              : error.message,
-        );
+        setState(() => _errorMessage = _signUpErrorMessage(error));
       }
     } catch (_) {
       if (mounted) {
@@ -156,6 +152,20 @@ class _SignUpPageState extends State<SignUpPage> {
     return expiredCodes.contains(error.code)
         ? '인증 코드가 만료되었습니다. 인증 메일을 다시 요청해 주세요.'
         : '인증 코드가 올바르지 않습니다.';
+  }
+
+  String _signUpErrorMessage(ApiException error) {
+    if (error.statusCode == 409) {
+      return '이미 가입된 이메일입니다. 로그인해 주세요.';
+    }
+    const invalidTokenCodes = {
+      'INVALID_VERIFICATION_TOKEN',
+      'VERIFICATION_TOKEN_EXPIRED',
+      'EMAIL_VERIFICATION_EXPIRED',
+    };
+    return invalidTokenCodes.contains(error.code)
+        ? '이메일 인증이 만료되었거나 유효하지 않습니다. 인증 메일을 다시 요청해 주세요.'
+        : error.message;
   }
 
   @override
