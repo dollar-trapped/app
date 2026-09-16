@@ -20,6 +20,50 @@ abstract interface class TokenStore {
   Future<void> clear();
 }
 
+/// Keeps every active session in memory, and persists it only when the user
+/// explicitly chooses to keep the login on this device.
+class RememberingTokenStore implements TokenStore {
+  RememberingTokenStore(this._persistentStore);
+
+  final TokenStore _persistentStore;
+  TokenPair? _memoryTokens;
+  var _rememberSession = false;
+
+  void setRememberSession(bool value) {
+    _rememberSession = value;
+  }
+
+  @override
+  Future<TokenPair?> read() async {
+    final memoryTokens = _memoryTokens;
+    if (memoryTokens != null) return memoryTokens;
+
+    final persistentTokens = await _persistentStore.read();
+    if (persistentTokens != null) {
+      _memoryTokens = persistentTokens;
+      _rememberSession = true;
+    }
+    return persistentTokens;
+  }
+
+  @override
+  Future<void> write(TokenPair tokens) async {
+    _memoryTokens = tokens;
+    if (_rememberSession) {
+      await _persistentStore.write(tokens);
+    } else {
+      await _persistentStore.clear();
+    }
+  }
+
+  @override
+  Future<void> clear() async {
+    _memoryTokens = null;
+    _rememberSession = false;
+    await _persistentStore.clear();
+  }
+}
+
 /// Tokens are deliberately stored in platform secure storage, never in logs or
 /// ordinary preferences.
 class SecureTokenStore implements TokenStore {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../../core/auth/token_store.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../../home/presentation/pages/usd_krw_page.dart';
 import '../../../shared/data/dollar_repository.dart';
@@ -21,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
+  bool _rememberLogin = false;
   String? _errorMessage;
 
   bool get _canSubmit =>
@@ -41,6 +44,10 @@ class _LoginPageState extends State<LoginPage> {
       _errorMessage = null;
     });
     try {
+      final tokenStore = context.read<TokenStore?>();
+      if (tokenStore is RememberingTokenStore) {
+        tokenStore.setRememberSession(_rememberLogin);
+      }
       await widget.repository.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -92,6 +99,15 @@ class _LoginPageState extends State<LoginPage> {
                 onChanged: (_) => setState(() {}),
                 obscureText: true,
                 decoration: const InputDecoration(labelText: '비밀번호'),
+              ),
+              CheckboxListTile(
+                value: _rememberLogin,
+                onChanged: (value) {
+                  setState(() => _rememberLogin = value ?? false);
+                },
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('로그인 유지하기'),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),

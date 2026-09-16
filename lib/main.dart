@@ -28,7 +28,7 @@ Future<void> main() async {
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
-  final tokenStore = SecureTokenStore();
+  final tokenStore = RememberingTokenStore(SecureTokenStore());
   final apiClient = ApiClient(tokenStore);
   final repository = const bool.fromEnvironment('USE_MOCK_REPOSITORY')
       ? MockDollarRepository()
