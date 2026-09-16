@@ -166,4 +166,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('차단한 사용자가 없습니다.'), findsOneWidget);
   });
+
+  testWidgets('requires two confirmations before deleting an account', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MyPage(repository: MockDollarRepository(), onBack: () {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('회원 탈퇴'));
+    await tester.tap(find.text('회원 탈퇴'));
+    await tester.pumpAndSettle();
+    expect(find.text('회원 탈퇴하시겠어요?'), findsOneWidget);
+
+    await tester.tap(find.text('계속'));
+    await tester.pumpAndSettle();
+    expect(find.text('비밀번호를 입력해 주세요'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).last, 'password123');
+    await tester.tap(find.text('탈퇴하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('로그인'), findsOneWidget);
+  });
 }

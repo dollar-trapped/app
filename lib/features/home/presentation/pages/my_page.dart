@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../auth/presentation/pages/auth_page.dart';
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/realtime/dollar_socket.dart';
 import '../../../shared/data/api_models.dart';
 import '../../../shared/data/dollar_repository.dart';
 
@@ -28,6 +30,7 @@ class _MyPageState extends State<MyPage> {
   String? _errorMessage;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -98,6 +101,74 @@ class _MyPageState extends State<MyPage> {
       MaterialPageRoute<void>(builder: (_) => const AuthPage()),
       (route) => false,
     );
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('회원 탈퇴하시겠어요?'),
+        content: const Text('탈퇴하면 계정과 로그인 정보가 삭제되며 되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('계속'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+
+    final passwordController = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('비밀번호를 입력해 주세요'),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '비밀번호'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, passwordController.text),
+            child: const Text('탈퇴하기'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || password == null || password.isEmpty || _isDeleting) return;
+
+    setState(() => _isDeleting = true);
+    try {
+      await widget.repository.deleteAccount(password);
+      if (!mounted) return;
+      try {
+        await context.read<DollarSocket>().disconnect();
+      } on ProviderNotFoundException {
+        // The room owns its socket when no shared socket is provided.
+      }
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const AuthPage()),
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = '회원 탈퇴를 완료하지 못했습니다.');
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
   }
 
   @override
@@ -366,6 +437,14 @@ class _MyPageState extends State<MyPage> {
                             height: 20 / 13,
                           ),
                         ),
+                      ),
+                      TextButton(
+                        onPressed: _isDeleting ? null : _deleteAccount,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size.fromHeight(44),
+                          foregroundColor: Colors.red.shade700,
+                        ),
+                        child: Text(_isDeleting ? '탈퇴 처리 중...' : '회원 탈퇴'),
                       ),
                     ],
                   ],

@@ -5,6 +5,7 @@ import 'package:dollar_trapped/core/auth/token_store.dart';
 import 'package:dollar_trapped/core/network/api_config.dart';
 import 'package:dollar_trapped/core/realtime/dollar_socket.dart';
 import 'package:dollar_trapped/features/auth/presentation/pages/auth_page.dart';
+import 'package:dollar_trapped/features/home/presentation/pages/my_page.dart';
 import 'package:dollar_trapped/features/home/presentation/pages/usd_room_page.dart';
 import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
@@ -461,6 +462,44 @@ void main() {
     expect(find.text('차단 후 실시간 메시지'), findsNothing);
     await tester.pumpWidget(const SizedBox());
     await tester.runAsync(socket.dispose);
+  });
+
+  testWidgets('closes an active WebSocket connection after account deletion', (
+    tester,
+  ) async {
+    final connection = _FakeConnection();
+    final socket = DollarSocket(
+      url: 'wss://example.test/api/v1/ws?roomId=usd',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async => connection,
+    );
+    await socket.connect();
+    connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+    await tester.pump();
+    connection.add({'type': 'AUTH_OK'});
+    await tester.pump();
+
+    await tester.pumpWidget(
+      Provider<DollarSocket>.value(
+        value: socket,
+        child: MaterialApp(
+          home: MyPage(repository: MockDollarRepository(), onBack: () {}),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('회원 탈퇴'));
+    await tester.tap(find.text('회원 탈퇴'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('계속'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'password123');
+    await tester.tap(find.text('탈퇴하기'));
+    await tester.pump(kThemeAnimationDuration);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AuthPage), findsOneWidget);
+    expect(connection.closeCount, 1);
   });
 
   testWidgets(
