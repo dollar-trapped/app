@@ -40,6 +40,7 @@ void main() {
 
     expect(find.text('달러방에서 만나요.'), findsOneWidget);
     expect(find.text('가입하기'), findsOneWidget);
+    expect(find.text('비밀번호는 10자 이상 입력해 주세요.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'dollar@example.com');
     await tester.enterText(find.byType(TextField).at(2), 'password123');

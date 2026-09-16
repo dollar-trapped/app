@@ -18,6 +18,7 @@ class _SignUpPageState extends State<SignUpPage> {
   static const _muted = Color(0xFF667069);
   static const _surface = Color(0xFFF5F7F5);
   static const _action = Color(0xFF008A29);
+  static const _minimumPasswordLength = 10;
 
   final _emailController = TextEditingController();
   final _verificationCodeController = TextEditingController();
@@ -34,7 +35,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool get _canSubmit =>
       _emailController.text.isNotEmpty &&
-      _passwordController.text.isNotEmpty &&
+      _passwordController.text.length >= _minimumPasswordLength &&
       _nicknameController.text.isNotEmpty &&
       _agreedToTerms &&
       _agreedToPrivacy;
@@ -327,7 +328,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               controller: _passwordController,
                               label: '비밀번호',
                               hintText: '비밀번호 입력',
-                              helperText: '로그인에 사용할 비밀번호예요.',
+                              helperText:
+                                  '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
                               obscureText: true,
                               onChanged: (_) => setState(() {}),
                             ),
