@@ -6,7 +6,10 @@ abstract interface class DollarRepository {
     required String email,
     required String password,
     required String nickname,
+    required String verificationToken,
   });
+  Future<void> requestEmailVerification({required String email});
+  Future<String> verifyEmail({required String email, required String code});
   Future<AuthSession> logIn({required String email, required String password});
   Future<void> logOut();
 

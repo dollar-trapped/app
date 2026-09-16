@@ -35,10 +35,20 @@ class MockDollarRepository implements DollarRepository {
     required String email,
     required String password,
     required String nickname,
+    required String verificationToken,
   }) async {
     _user = _userFor(email: email, nickname: nickname);
     return _session();
   }
+
+  @override
+  Future<void> requestEmailVerification({required String email}) async {}
+
+  @override
+  Future<String> verifyEmail({
+    required String email,
+    required String code,
+  }) async => 'mock-verification-token';
 
   @override
   Future<AuthSession> logIn({

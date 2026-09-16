@@ -12,6 +12,7 @@ void main() {
       email: 'new@example.com',
       password: 'password123',
       nickname: '새달러',
+      verificationToken: 'verification-token',
     );
     final user = await repository.updateMe(nickname: '파란달러');
     await repository.blockUser('user-2');

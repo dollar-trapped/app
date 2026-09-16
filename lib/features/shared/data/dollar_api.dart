@@ -22,11 +22,35 @@ class DollarApi implements DollarRepository {
     required String email,
     required String password,
     required String nickname,
+    required String verificationToken,
   }) => _auth('/auth/signup', {
     'email': email,
     'password': password,
     'nickname': nickname,
+    'verificationToken': verificationToken,
   });
+  @override
+  Future<void> requestEmailVerification({required String email}) async {
+    await _client.post<void>(
+      '/auth/email/verification',
+      data: {'email': email},
+      skipAuth: true,
+    );
+  }
+
+  @override
+  Future<String> verifyEmail({
+    required String email,
+    required String code,
+  }) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      '/auth/email/verify',
+      data: {'email': email, 'code': code},
+      skipAuth: true,
+    );
+    return response.data!['verificationToken'] as String;
+  }
+
   @override
   Future<AuthSession> logIn({
     required String email,

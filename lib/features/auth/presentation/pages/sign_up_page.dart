@@ -20,11 +20,16 @@ class _SignUpPageState extends State<SignUpPage> {
   static const _action = Color(0xFF008A29);
 
   final _emailController = TextEditingController();
+  final _verificationCodeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nicknameController = TextEditingController();
   bool _agreedToTerms = false;
   bool _agreedToPrivacy = false;
   bool _isSubmitting = false;
+  bool _isRequestingVerification = false;
+  bool _isVerifyingEmail = false;
+  String? _verificationToken;
+  String? _verificationMessage;
   String? _errorMessage;
 
   bool get _canSubmit =>
@@ -37,13 +42,19 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   void dispose() {
     _emailController.dispose();
+    _verificationCodeController.dispose();
     _passwordController.dispose();
     _nicknameController.dispose();
     super.dispose();
   }
 
   Future<void> _signUp() async {
-    if (!_canSubmit || _isSubmitting) return;
+    if (!_canSubmit || _isSubmitting || _verificationToken == null) {
+      if (_verificationToken == null) {
+        setState(() => _errorMessage = '이메일 인증을 완료해 주세요.');
+      }
+      return;
+    }
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -53,6 +64,7 @@ class _SignUpPageState extends State<SignUpPage> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         nickname: _nicknameController.text.trim(),
+        verificationToken: _verificationToken!,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -62,7 +74,13 @@ class _SignUpPageState extends State<SignUpPage> {
         (route) => false,
       );
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.message);
+      if (mounted) {
+        setState(
+          () => _errorMessage = error.statusCode == 409
+              ? '이미 가입된 이메일입니다. 로그인해 주세요.'
+              : error.message,
+        );
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _errorMessage = '가입 요청을 처리하지 못했어요. 다시 시도해 주세요.');
@@ -70,6 +88,74 @@ class _SignUpPageState extends State<SignUpPage> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _requestVerification() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || _isRequestingVerification) return;
+    setState(() {
+      _isRequestingVerification = true;
+      _errorMessage = null;
+      _verificationMessage = null;
+      _verificationToken = null;
+    });
+    try {
+      await widget.repository.requestEmailVerification(email: email);
+      if (mounted) setState(() => _verificationMessage = '인증 코드를 이메일로 보냈어요.');
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(
+          () => _errorMessage = error.statusCode == 409
+              ? '이미 가입된 이메일입니다. 로그인해 주세요.'
+              : error.message,
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = '인증 메일을 보내지 못했어요.');
+    } finally {
+      if (mounted) setState(() => _isRequestingVerification = false);
+    }
+  }
+
+  Future<void> _verifyEmail() async {
+    if (_verificationCodeController.text.trim().isEmpty || _isVerifyingEmail) {
+      return;
+    }
+    setState(() {
+      _isVerifyingEmail = true;
+      _errorMessage = null;
+    });
+    try {
+      final token = await widget.repository.verifyEmail(
+        email: _emailController.text.trim(),
+        code: _verificationCodeController.text.trim(),
+      );
+      if (mounted) {
+        setState(() {
+          _verificationToken = token;
+          _verificationMessage = '이메일 인증이 완료되었습니다.';
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() => _errorMessage = _verificationErrorMessage(error));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _errorMessage = '인증 코드를 확인하지 못했어요.');
+    } finally {
+      if (mounted) setState(() => _isVerifyingEmail = false);
+    }
+  }
+
+  String _verificationErrorMessage(ApiException error) {
+    const expiredCodes = {
+      'VERIFICATION_EXPIRED',
+      'EMAIL_VERIFICATION_EXPIRED',
+      'VERIFICATION_TOKEN_EXPIRED',
+    };
+    return expiredCodes.contains(error.code)
+        ? '인증 코드가 만료되었습니다. 인증 메일을 다시 요청해 주세요.'
+        : '인증 코드가 올바르지 않습니다.';
   }
 
   @override
@@ -162,8 +248,70 @@ class _SignUpPageState extends State<SignUpPage> {
                               hintText: '이메일 주소 입력',
                               helperText: '로그인과 계정 복구에 사용해요.',
                               keyboardType: TextInputType.emailAddress,
-                              onChanged: (_) => setState(() {}),
+                              onChanged: (_) => setState(() {
+                                _verificationToken = null;
+                                _verificationMessage = null;
+                              }),
                             ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed:
+                                    _emailController.text.trim().isEmpty ||
+                                        _isRequestingVerification
+                                    ? null
+                                    : _requestVerification,
+                                child: Text(
+                                  _isRequestingVerification
+                                      ? '인증 메일 보내는 중...'
+                                      : '인증 메일 받기',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: _verificationCodeController,
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setState(() {
+                                      _verificationToken = null;
+                                    }),
+                                    decoration: const InputDecoration(
+                                      labelText: '인증 코드',
+                                      hintText: '메일로 받은 인증 코드 입력',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  height: 48,
+                                  child: OutlinedButton(
+                                    onPressed: _isVerifyingEmail
+                                        ? null
+                                        : _verifyEmail,
+                                    child: Text(
+                                      _isVerifyingEmail ? '확인 중...' : '인증 확인',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_verificationMessage != null) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _verificationMessage!,
+                                style: TextStyle(
+                                  color: _verificationToken == null
+                                      ? _muted
+                                      : _action,
+                                  fontSize: 12,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 16),
                             _SignUpField(
                               controller: _passwordController,

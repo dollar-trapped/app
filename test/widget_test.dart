@@ -42,8 +42,15 @@ void main() {
     expect(find.text('가입하기'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'dollar@example.com');
-    await tester.enterText(find.byType(TextField).at(1), 'password123');
-    await tester.enterText(find.byType(TextField).at(2), '달러물림');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.enterText(find.byType(TextField).at(3), '달러물림');
+    await tester.ensureVisible(find.text('인증 메일 받기'));
+    await tester.tap(find.text('인증 메일 받기'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(1), '123456');
+    await tester.tap(find.text('인증 확인'));
+    await tester.pumpAndSettle();
+    expect(find.text('이메일 인증이 완료되었습니다.'), findsOneWidget);
     await tester.ensureVisible(find.byType(Checkbox).at(0));
     await tester.tap(find.byType(Checkbox).at(0));
     await tester.pump();
