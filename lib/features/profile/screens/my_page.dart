@@ -1,11 +1,13 @@
+import 'package:dollar_trapped/features/profile/screens/blocked_users_page.dart';
+import 'package:dollar_trapped/features/profile/widgets/info_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../auth/presentation/pages/auth_page.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/realtime/dollar_socket.dart';
-import '../../../shared/data/api_models.dart';
-import '../../../shared/data/dollar_repository.dart';
+import 'package:dollar_trapped/features/auth/screens/auth_page.dart';
+import 'package:dollar_trapped/core/network/api_exception.dart';
+import 'package:dollar_trapped/core/realtime/dollar_socket.dart';
+import 'package:dollar_trapped/features/shared/data/api_models.dart';
+import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key, required this.onBack, required this.repository});
@@ -295,7 +297,7 @@ class _MyPageState extends State<MyPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _InfoField(
+                      InfoField(
                         label: '닉네임',
                         controller: _nicknameController,
                         helper: '채팅에 표시되는 이름이에요.',
@@ -315,7 +317,7 @@ class _MyPageState extends State<MyPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: _InfoField(
+                            child: InfoField(
                               label: '보유량 (USD)',
                               controller: _holdingController,
                               helper: '보유한 달러 금액',
@@ -328,7 +330,7 @@ class _MyPageState extends State<MyPage> {
                           ),
                           SizedBox(width: 12),
                           Expanded(
-                            child: _InfoField(
+                            child: InfoField(
                               label: '평균 매수가 (원)',
                               controller: _averagePriceController,
                               helper: '1달러당 매수 가격',
@@ -408,9 +410,8 @@ class _MyPageState extends State<MyPage> {
                       OutlinedButton(
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => _BlockedUsersPage(
-                              repository: widget.repository,
-                            ),
+                            builder: (_) =>
+                                BlockedUsersPage(repository: widget.repository),
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
@@ -455,170 +456,6 @@ class _MyPageState extends State<MyPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _BlockedUsersPage extends StatefulWidget {
-  const _BlockedUsersPage({required this.repository});
-
-  final DollarRepository repository;
-
-  @override
-  State<_BlockedUsersPage> createState() => _BlockedUsersPageState();
-}
-
-class _BlockedUsersPageState extends State<_BlockedUsersPage> {
-  late Future<List<BlockedUser>> _blockedUsersFuture;
-  String? _unblockingUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    _blockedUsersFuture = widget.repository.getBlockedUsers();
-  }
-
-  void _reload() {
-    setState(() => _blockedUsersFuture = widget.repository.getBlockedUsers());
-  }
-
-  Future<void> _unblock(BlockedUser user) async {
-    setState(() => _unblockingUserId = user.userId);
-    try {
-      await widget.repository.unblockUser(user.userId);
-      _reload();
-    } on ApiException catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.userMessage)));
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('차단을 해제하지 못했습니다. 다시 시도해 주세요.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _unblockingUserId = null);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('차단 관리')),
-      body: FutureBuilder<List<BlockedUser>>(
-        future: _blockedUsersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: TextButton(
-                onPressed: _reload,
-                child: const Text('차단 목록을 다시 불러오기'),
-              ),
-            );
-          }
-          final users = snapshot.data ?? const <BlockedUser>[];
-          if (users.isEmpty) {
-            return const Center(child: Text('차단한 사용자가 없습니다.'));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(24),
-            itemCount: users.length,
-            separatorBuilder: (_, _) => const Divider(),
-            itemBuilder: (context, index) {
-              final user = users[index];
-              final isUnblocking = _unblockingUserId == user.userId;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(user.nickname),
-                trailing: TextButton(
-                  onPressed: isUnblocking ? null : () => _unblock(user),
-                  child: Text(isUnblocking ? '해제 중...' : '차단 해제'),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _InfoField extends StatelessWidget {
-  const _InfoField({
-    required this.label,
-    required this.controller,
-    required this.helper,
-    required this.onChanged,
-    this.keyboardType,
-  });
-
-  final String label;
-  final TextEditingController controller;
-  final String helper;
-  final ValueChanged<String> onChanged;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF151916),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            height: 20 / 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            keyboardType: keyboardType,
-            textAlignVertical: TextAlignVertical.center,
-            cursorHeight: 24,
-            style: const TextStyle(
-              color: Color(0xFF151916),
-              fontSize: 15,
-              height: 24 / 15,
-            ),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              constraints: const BoxConstraints.tightFor(height: 52),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              enabledBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: Color(0xFFE1E6E2)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: const BorderSide(color: _MyPageState._action),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          helper,
-          style: const TextStyle(
-            color: Color(0xFF667069),
-            fontSize: 12,
-            height: 1.5,
-          ),
-        ),
-      ],
     );
   }
 }
