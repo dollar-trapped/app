@@ -366,20 +366,28 @@ class DollarSocket {
   }
 
   Future<void> dispose() async {
-    _disposed = true;
-    _heartbeatTimer?.cancel();
-    _reconnectTimer?.cancel();
+    await disconnect();
     for (final pending in _pending.values) {
       pending.timer?.cancel();
     }
     _pending.clear();
     await _subscription?.cancel();
-    await _connection?.close();
     await _states.close();
     await _messages.close();
     await _errors.close();
     await _deletedMessageIds.close();
     await _failedMessageIds.close();
+  }
+
+  /// Stops the transport and prevents reconnects while retaining streams for
+  /// an owning widget to dispose later.
+  Future<void> disconnect() async {
+    _disposed = true;
+    _heartbeatTimer?.cancel();
+    _reconnectTimer?.cancel();
+    final connection = _connection;
+    _connection = null;
+    await connection?.close();
   }
 
   static Future<SocketConnection> _connectChannel(Uri url) async {
