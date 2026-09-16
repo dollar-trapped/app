@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dollar_trapped/app.dart';
+import 'package:dollar_trapped/features/home/presentation/pages/my_page.dart';
+import 'package:dollar_trapped/features/home/presentation/pages/usd_room_page.dart';
+import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 
 void main() {
   testWidgets('opens the USD room when the session is restored', (
@@ -76,5 +79,91 @@ void main() {
     await tester.pump();
 
     expect(find.text(r'파란달러  $3,000 · +5.2%'), findsOneWidget);
+  });
+
+  testWidgets('removes a blocked author message immediately', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('환율 보고 계신가요?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('차단'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('환율 보고 계신가요?'), findsNothing);
+    expect(find.text('오늘도 달러방 출석합니다.'), findsOneWidget);
+  });
+
+  testWidgets('confirms a report for another users message', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UsdRoomPage(
+          repository: MockDollarRepository(),
+          onRateBarTap: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.text('환율 보고 계신가요?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('신고'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('신고되었습니다.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'does not show moderation actions for the current users message',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UsdRoomPage(
+            repository: MockDollarRepository(),
+            onRateBarTap: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.text('오늘도 달러방 출석합니다.'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('신고'), findsNothing);
+      expect(find.text('차단'), findsNothing);
+    },
+  );
+
+  testWidgets('lists and unblocks users from the profile page', (
+    WidgetTester tester,
+  ) async {
+    final repository = MockDollarRepository();
+    await repository.blockUser('user-2');
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MyPage(repository: repository, onBack: () {}),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('차단 관리'));
+    await tester.tap(find.text('차단 관리'));
+    await tester.pumpAndSettle();
+    expect(find.text('차단 사용자'), findsOneWidget);
+
+    await tester.tap(find.text('차단 해제'));
+    await tester.pumpAndSettle();
+    expect(find.text('차단한 사용자가 없습니다.'), findsOneWidget);
   });
 }
