@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:dollar_trapped/core/auth/token_store.dart';
 import 'package:dollar_trapped/core/network/api_client.dart';
-import 'package:dollar_trapped/features/home/presentation/pages/usd_krw_page.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 import 'package:dollar_trapped/features/shared/data/dollar_api.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';

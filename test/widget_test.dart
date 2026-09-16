@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:dollar_trapped/app.dart';
-import 'package:dollar_trapped/features/home/presentation/pages/my_page.dart';
-import 'package:dollar_trapped/features/home/presentation/pages/usd_room_page.dart';
+import 'package:dollar_trapped/features/profile/screens/my_page.dart';
+import 'package:dollar_trapped/features/chat/screens/usd_room_page.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 
 void main() {

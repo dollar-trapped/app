@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'features/auth/presentation/pages/auth_page.dart';
-import 'features/home/presentation/pages/usd_krw_page.dart';
+import 'package:dollar_trapped/features/auth/screens/auth_page.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
 
 class DollarTrappedApp extends StatelessWidget {
   const DollarTrappedApp({super.key, this.initiallyAuthenticated = false});
