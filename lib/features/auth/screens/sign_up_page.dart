@@ -1,8 +1,10 @@
+import 'package:dollar_trapped/features/auth/widgets/sign_up_field.dart';
+import 'package:dollar_trapped/features/auth/widgets/agreement_row.dart';
 import 'package:flutter/material.dart';
 
-import '../../../home/presentation/pages/usd_krw_page.dart';
-import '../../../shared/data/dollar_repository.dart';
-import '../../../../core/network/api_exception.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
+import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
+import 'package:dollar_trapped/core/network/api_exception.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key, required this.repository});
@@ -253,7 +255,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                               const SizedBox(height: 12),
                             ],
-                            _SignUpField(
+                            SignUpField(
                               controller: _emailController,
                               label: '이메일',
                               hintText: '이메일 주소 입력',
@@ -324,7 +326,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               ),
                             ],
                             const SizedBox(height: 16),
-                            _SignUpField(
+                            SignUpField(
                               controller: _passwordController,
                               label: '비밀번호',
                               hintText: '비밀번호 입력',
@@ -334,7 +336,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
-                            _SignUpField(
+                            SignUpField(
                               controller: _nicknameController,
                               label: '닉네임',
                               hintText: '닉네임 입력',
@@ -342,14 +344,14 @@ class _SignUpPageState extends State<SignUpPage> {
                               onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 20),
-                            _AgreementRow(
+                            AgreementRow(
                               label: '[필수] 이용약관 동의',
                               value: _agreedToTerms,
                               onChanged: (value) =>
                                   setState(() => _agreedToTerms = value),
                             ),
                             const SizedBox(height: 4),
-                            _AgreementRow(
+                            AgreementRow(
                               label: '[필수] 개인정보 수집·이용 동의',
                               value: _agreedToPrivacy,
                               onChanged: (value) =>
@@ -403,143 +405,6 @@ class _SignUpPageState extends State<SignUpPage> {
             const SizedBox(height: 34),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SignUpField extends StatelessWidget {
-  const _SignUpField({
-    required this.controller,
-    required this.label,
-    required this.hintText,
-    required this.helperText,
-    required this.onChanged,
-    this.keyboardType,
-    this.obscureText = false,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hintText;
-  final String helperText;
-  final ValueChanged<String> onChanged;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            height: 20 / 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 52,
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            style: const TextStyle(fontSize: 15, height: 1.6),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(
-                color: Color(0xFF667069),
-                fontSize: 15,
-                height: 1.6,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE1E6E2)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF008A29)),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          helperText,
-          style: const TextStyle(
-            color: Color(0xFF667069),
-            fontSize: 12,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AgreementRow extends StatelessWidget {
-  const _AgreementRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Checkbox(
-              value: value,
-              onChanged: (checked) => onChanged(checked ?? false),
-              activeColor: const Color(0xFF008A29),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(4),
-              ),
-              side: const BorderSide(color: Color(0xFFE1E6E2)),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                height: 20 / 13,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              minimumSize: const Size(44, 44),
-              padding: EdgeInsets.zero,
-              foregroundColor: const Color(0xFF667069),
-            ),
-            child: const Text(
-              '보기',
-              style: TextStyle(fontSize: 12, height: 1.5),
-            ),
-          ),
-        ],
       ),
     );
   }

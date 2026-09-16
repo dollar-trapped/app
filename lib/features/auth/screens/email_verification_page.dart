@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../home/presentation/pages/usd_krw_page.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
 
 class EmailVerificationPage extends StatelessWidget {
   const EmailVerificationPage({super.key, required this.email});

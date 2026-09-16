@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/auth/token_store.dart';
-import '../../../../core/network/api_exception.dart';
-import '../../../home/presentation/pages/usd_krw_page.dart';
-import '../../../shared/data/dollar_repository.dart';
-import '../widgets/auth_button.dart';
+import 'package:dollar_trapped/core/auth/token_store.dart';
+import 'package:dollar_trapped/core/network/api_exception.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
+import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
+import 'package:dollar_trapped/features/auth/widgets/auth_button.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.repository});

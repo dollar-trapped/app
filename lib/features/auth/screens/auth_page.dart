@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../../../home/presentation/pages/usd_krw_page.dart';
-import '../../../shared/data/dollar_repository.dart';
-import '../../../shared/data/mock_dollar_repository.dart';
-import 'login_page.dart';
-import 'sign_up_page.dart';
-import '../widgets/auth_button.dart';
+import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
+import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
+import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
+import 'package:dollar_trapped/features/auth/screens/login_page.dart';
+import 'package:dollar_trapped/features/auth/screens/sign_up_page.dart';
+import 'package:dollar_trapped/features/auth/widgets/auth_button.dart';
 
 class AuthPage extends StatelessWidget {
   const AuthPage({super.key});
