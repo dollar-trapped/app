@@ -192,6 +192,43 @@ void main() {
     },
   );
 
+  test('does not retry a message after a validation error', () async {
+    final connection = _FakeConnection();
+    final socket = DollarSocket(
+      url: 'wss://example.test/api/v1/ws',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async => connection,
+      ackTimeout: const Duration(milliseconds: 5),
+    );
+    final failures = <String>[];
+    final subscription = socket.failedMessageIds.listen(failures.add);
+    await socket.connect();
+    connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+    await _flush();
+    connection.add({'type': 'AUTH_OK'});
+    await _flush();
+
+    await socket.sendMessage('잘못된 메시지');
+    connection.add({
+      'type': 'ERROR',
+      'error': {
+        'code': 'BAD_REQUEST',
+        'message': '입력값을 확인해 주세요.',
+        'scope': 'SEND_MESSAGE',
+      },
+    });
+    await _flush();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(failures, isEmpty);
+    expect(
+      _types(connection.sent).where((type) => type == 'SEND_MESSAGE'),
+      hasLength(1),
+    );
+    await subscription.cancel();
+    await socket.dispose();
+  });
+
   test('rejects message sending before AUTH_OK', () async {
     final connection = _FakeConnection();
     final socket = DollarSocket(

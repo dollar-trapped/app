@@ -267,6 +267,12 @@ class DollarSocket {
       if (!recovered) _errors.add(socketError);
       return;
     }
+    if (socketError.scope == 'SEND_MESSAGE' &&
+        (code == 'BAD_REQUEST' || code == 'VALIDATION_ERROR')) {
+      for (final pending in List<_PendingMessage>.of(_pending.values)) {
+        _discardPending(pending);
+      }
+    }
     _errors.add(socketError);
   }
 
@@ -298,6 +304,12 @@ class DollarSocket {
     pending.timer?.cancel();
     _pending.remove(pending.clientMessageId);
     _failedMessageIds.add(pending.clientMessageId);
+  }
+
+  void _discardPending(_PendingMessage pending) {
+    if (!identical(_pending[pending.clientMessageId], pending)) return;
+    pending.timer?.cancel();
+    _pending.remove(pending.clientMessageId);
   }
 
   void _resumePendingMessages() {
