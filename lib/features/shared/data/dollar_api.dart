@@ -98,8 +98,13 @@ class DollarApi implements DollarRepository {
   }
 
   @override
-  Future<void> deleteAccount(String password) =>
-      _client.post<void>('/users/me/deletion', data: {'password': password});
+  Future<void> deleteAccount(String password) async {
+    await _client.post<void>(
+      '/users/me/deletion',
+      data: {'password': password},
+    );
+    await _tokens.clear();
+  }
 
   @override
   Future<MessagePage> getMessages({
