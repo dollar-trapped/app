@@ -109,6 +109,28 @@ class _LoginPageState extends State<LoginPage> {
                 controlAffinity: ListTileControlAffinity.leading,
                 title: const Text('로그인 유지하기'),
               ),
+              TextButton(
+                onPressed: _isSubmitting
+                    ? null
+                    : () => showDialog<void>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('비밀번호 재설정'),
+                          content: const Text('비밀번호 재설정 기능을 준비하고 있어요.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('확인'),
+                            ),
+                          ],
+                        ),
+                      ),
+                style: TextButton.styleFrom(
+                  foregroundColor: _muted,
+                  minimumSize: const Size(0, 44),
+                ),
+                child: const Text('비밀번호 재설정'),
+              ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Text(
