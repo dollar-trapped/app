@@ -526,6 +526,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('설정'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('회원 탈퇴'));
     await tester.tap(find.text('회원 탈퇴'));
     await tester.pumpAndSettle();

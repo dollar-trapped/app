@@ -46,7 +46,7 @@ void main() {
     expect(find.byType(RewardedTestButton), findsNothing);
   });
 
-  testWidgets('profile top-right button opens and returns from gacha page', (
+  testWidgets('profile draw card opens and returns from gacha page', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -56,16 +56,17 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(
-      tester.getCenter(find.text('뽑기')).dx,
+      tester.getCenter(find.text('설정')).dx,
       greaterThan(tester.getCenter(find.text('마이페이지')).dx),
     );
     expect(find.byType(RewardedTestButton), findsNothing);
-    await tester.tap(find.text('뽑기'));
+    await tester.ensureVisible(find.text('닉네임 뽑기  →'));
+    await tester.tap(find.text('닉네임 뽑기  →'));
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsOneWidget);
     expect(find.byType(RewardedTestButton), findsOneWidget);
-    expect(find.textContaining('실제 아이템은 지급되지'), findsOneWidget);
-    await tester.pageBack();
+    expect(find.textContaining('뽑기권과 아이템은 지급되지'), findsOneWidget);
+    await tester.tap(find.text('‹'));
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsNothing);
     expect(find.text('마이페이지'), findsOneWidget);

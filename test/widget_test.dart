@@ -80,10 +80,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('마이페이지'), findsOneWidget);
+    await tester.ensureVisible(find.text('닉네임 수정'));
+    await tester.tap(find.text('닉네임 수정'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '파란달러');
+    await tester.tap(find.text('변경사항 저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('파란달러'), findsOneWidget);
+    await tester.ensureVisible(find.text('내 달러 포지션'));
+    await tester.tap(find.text('내 달러 포지션'));
+    await tester.pumpAndSettle();
     expect(find.text('내 달러 포지션 · 선택'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField).at(0), '파란달러');
-    await tester.enterText(find.byType(TextField).at(1), '3,000');
+    await tester.enterText(find.byType(TextField).at(0), '3,000');
     await tester.pump();
 
     expect(find.text(r'파란달러  $3,000 · +5.2%'), findsOneWidget);
@@ -258,6 +266,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('설정'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('차단 관리'));
     await tester.tap(find.text('차단 관리'));
     await tester.pumpAndSettle();
@@ -278,6 +288,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('설정'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('회원 탈퇴'));
     await tester.tap(find.text('회원 탈퇴'));
     await tester.pumpAndSettle();
