@@ -17,18 +17,16 @@ class CosmeticContent extends StatelessWidget {
     builder: (context, constraints) => SingleChildScrollView(
       child: ConstrainedBox(
         constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: IntrinsicHeight(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(padding: const EdgeInsets.all(24), child: content),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: actions,
-              ),
-            ],
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(padding: const EdgeInsets.all(24), child: content),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: actions,
+            ),
+          ],
         ),
       ),
     ),
