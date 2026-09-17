@@ -1,6 +1,5 @@
 import 'package:dollar_trapped/features/chat/widgets/message_list.dart';
 import 'package:dollar_trapped/features/chat/widgets/rate_bar.dart';
-import 'package:dollar_trapped/features/ads/widgets/usd_room_ads.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -395,7 +394,6 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
                 ],
               ),
             ),
-            const UsdRoomAds(),
             const SizedBox(height: 34),
           ],
         ),

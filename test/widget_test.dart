@@ -145,9 +145,6 @@ void main() {
   testWidgets('renders the latest chat history message at the bottom', (
     WidgetTester tester,
   ) async {
-    // Keep both ends of the history visible alongside the new ad footer.
-    await tester.binding.setSurfaceSize(const Size(800, 1000));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
       MaterialApp(
         home: UsdRoomPage(
