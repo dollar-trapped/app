@@ -1,0 +1,66 @@
+# AdMob Android 테스트 광고
+
+## 변경 파일
+
+| 파일 | 변경 내용 |
+| --- | --- |
+| `pubspec.yaml`, `pubspec.lock` | 공식 패키지 9.1.0 및 광고 설정 asset 등록 |
+| `config/admob_test.json` | Google Android 테스트 앱/배너/보상형 ID 통합 관리 |
+| `android/app/build.gradle.kts` | 설정 파일 읽기, Manifest placeholder 주입, release 빌드 차단 |
+| `android/app/src/main/AndroidManifest.xml` | SDK 앱 ID metadata |
+| `lib/main.dart` | 앱 시작 시 비동기 SDK 초기화 |
+| `lib/core/ads/ad_config.dart` | 설정 읽기·검증 및 플랫폼/build mode 제한 |
+| `lib/core/ads/mobile_ads_service.dart` | 공통 초기화와 안전한 dispose |
+| `lib/core/ads/adaptive_banner_service.dart` | Adaptive 배너 로드·실패·폐기 처리 |
+| `lib/core/ads/rewarded_ad_service.dart` | preload·표시·보상 로그·폐기·재로드 |
+| `lib/features/ads/widgets/usd_room_ads.dart` | 배너와 임시 테스트 광고 버튼 |
+| `lib/features/chat/screens/usd_room_page.dart` | 하단에 광고 위젯 추가만 수행 |
+| `test/ad_services_test.dart` | 광고 설정, 중복 호출, 보상 로그, 실패 복구, 늦은 콜백 검증 |
+| `test/widget_test.dart`, `test/dollar_socket_test.dart` | 메시지 순서 비교 테스트 2개의 화면 높이 조정 |
+| `analysis_options.yaml` | 생성된 `build/**` 의존성 소스를 분석에서 제외 |
+| `macos/Flutter/GeneratedPluginRegistrant.swift` | 광고 패키지의 WebView 의존성에 따른 자동 생성 변경 |
+| `docs/admob-testing.md` | 구성·검증 결과·실기기 테스트 절차 |
+
+## 실행한 검증
+
+- `flutter analyze`: No issues found.
+- `flutter test`: 48개 모두 통과.
+- `flutter build apk --debug`: 성공.
+- 병합된 Android Manifest에서 Google 테스트 앱 ID 주입 확인.
+- `flutter build apk --release`: `verifyAdmobReleaseConfiguration`에서 의도대로 차단됨.
+- `git diff --check`: 통과.
+- 실제 기기에서의 광고 수신·시청은 아직 실행하지 않았습니다. 아래 절차로 확인합니다.
+
+## 구성
+
+- 공식 `google_mobile_ads` 패키지를 사용합니다.
+- 모든 앱/광고 단위 ID는 `config/admob_test.json`에서 관리합니다. Google이 제공한 데모 ID만 포함하며 실제 ID는 없습니다.
+- Gradle은 같은 JSON에서 앱 ID를 읽어 Manifest placeholder에 주입합니다. Flutter는 asset으로 배너/보상형 ID를 읽습니다.
+- Android debug/profile에서만 광고를 사용합니다. Dart에서 release/다른 플랫폼을 비활성화하고, Android `preReleaseBuild`에서도 release 빌드를 차단합니다. 따라서 현재 `flutter run --release`도 허용하지 않습니다. production 전환은 별도 구현과 검토가 필요합니다.
+- 앱 시작 시 SDK 초기화를 시작하되 앱 시작을 기다리게 하지 않습니다. 각 광고 서비스는 동일한 초기화 Future를 기다린 후 요청합니다.
+- USD방 광고 위젯 생성 시 보상형 광고를 미리 로드합니다. 로드 실패 시 버튼으로 재시도하며, 재시도만으로 광고를 자동 표시하지 않습니다.
+- 보상형 광고를 닫거나 표시 실패 시 dispose 후 다음 광고를 preload합니다. 준비 중/표시 중 중복 탭은 차단합니다.
+- `onUserEarnedReward`에서는 `debugPrint('[AdMob] reward earned')`만 호출합니다. 조기 종료나 단순 닫기 이벤트로는 보상 로그를 출력하지 않습니다.
+- 배너는 사용 가능한 가로폭으로 Adaptive 크기를 요청하며 폭/방향 변경 시 새 서비스로 다시 로드합니다. 실패한 배너는 표시하지 않습니다. 화면 재진입 시 다시 요청할 수 있습니다.
+- SSV, 뽑기 API, 인벤토리 및 실제 보상 지급은 구현하지 않았습니다.
+
+## Android 실기기 확인
+
+1. USB 디버깅을 켠 Android 기기를 연결하고 `flutter devices`로 확인합니다.
+2. `flutter run --debug -d <device-id>`로 앱을 실행합니다. 네이티브 패키지가 추가되었으므로 기존 앱의 hot reload만으로 확인하지 않습니다.
+3. 기존 로그인 또는 둘러보기 흐름으로 USD방에 진입합니다. 하단 배너의 Google 테스트 광고 표시와 채팅 입력·스크롤이 유지되는지 확인합니다.
+4. 화면 회전/분할 화면으로 폭을 변경합니다. 배너가 가용 폭에 맞게 다시 로드되고 잘리거나 중복되지 않는지 확인합니다.
+5. 광고 준비 후 `임시 광고 보고 뽑기 (테스트 · 보상 없음)`를 누릅니다. Google Rewarded 테스트 광고가 한 번만 열리는지 확인합니다.
+6. 끝까지 시청하여 보상 조건을 충족합니다. Flutter 콘솔에 `[AdMob] reward earned`가 출력되고, 실제 자산·아이템·보상이 변경되지 않는지 확인합니다.
+7. 광고를 닫고 다음 광고 준비가 완료된 뒤 다시 표시합니다. 빠르게 연속 탭해도 중복 표시되지 않아야 합니다.
+8. 새 광고를 보상 조건 충족 전에 닫습니다. 해당 시청으로는 reward 로그가 없어야 합니다.
+9. 비행기 모드에서 앱을 새로 시작하거나 미리 로드한 광고를 소진합니다. 로드 실패에도 앱이 유지되고 재시도 버튼이 표시되는지 확인합니다. 네트워크 복구 후 재시도 → 준비 완료 → 다시 탭하여 표시합니다. 이미 캐시된 광고는 오프라인에서도 표시될 수 있습니다.
+10. 로드 중 USD방/앱 화면을 닫았다가 재진입하여 dispose 이후 예외나 중복 광고가 없는지 확인합니다. 광고 표시 실패는 `test/ad_services_test.dart`에서 콜백/플랫폼 예외를 주입하여 별도로 검증합니다.
+11. `flutter build apk --release`가 `AdMob is TEST ONLY` 메시지로 실패하는지 확인합니다.
+
+## 공식 문서
+
+- https://developers.google.com/admob/flutter/quick-start
+- https://developers.google.com/admob/flutter/banner
+- https://developers.google.com/admob/flutter/rewarded
+- https://developers.google.com/admob/flutter/test-ads
