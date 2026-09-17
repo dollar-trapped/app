@@ -62,29 +62,13 @@ class MessageList extends StatelessWidget {
             ),
           );
         }
-        final items = <Widget>[
-          if (messages.isNotEmpty) _DateLabel(date: messages.first.createdAt),
-          ...messages.map(
-            (message) => _messageWidget(
-              message,
-              currentUserId: currentUserId,
-              onModerate: onModerate,
-            ),
-          ),
-          ...realtimeMessages
-              .where((message) {
-                final author = message.data['author'];
-                final authorId = author is Map ? author['id'] as String? : null;
-                return authorId == null || !blockedUserIds.contains(authorId);
-              })
-              .map(
-                (message) => _RealtimeChatMessage(
-                  message: message,
-                  currentUserId: currentUserId,
-                  onModerate: onModerate,
-                ),
-              ),
-        ];
+        // Filter data now, but construct bubbles only for the visible viewport.
+        final visibleRealtime = realtimeMessages.where((message) {
+          final author = message.data['author'];
+          final authorId = author is Map ? author['id'] as String? : null;
+          return authorId == null || !blockedUserIds.contains(authorId);
+        }).toList();
+        final headerCount = messages.isEmpty ? 0 : 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!scrollController.hasClients) return;
           scrollController.jumpTo(scrollController.position.maxScrollExtent);
@@ -92,9 +76,26 @@ class MessageList extends StatelessWidget {
         return ListView.separated(
           controller: scrollController,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          itemCount: items.length,
+          itemCount: headerCount + messages.length + visibleRealtime.length,
           separatorBuilder: (_, _) => const SizedBox(height: 24),
-          itemBuilder: (_, index) => items[index],
+          itemBuilder: (_, index) {
+            if (headerCount == 1 && index == 0) {
+              return _DateLabel(date: messages.first.createdAt);
+            }
+            final messageIndex = index - headerCount;
+            if (messageIndex < messages.length) {
+              return _messageWidget(
+                messages[messageIndex],
+                currentUserId: currentUserId,
+                onModerate: onModerate,
+              );
+            }
+            return _RealtimeChatMessage(
+              message: visibleRealtime[messageIndex - messages.length],
+              currentUserId: currentUserId,
+              onModerate: onModerate,
+            );
+          },
         );
       },
     );
