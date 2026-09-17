@@ -103,103 +103,100 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context, constraints) => SingleChildScrollView(
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
-          child: IntrinsicHeight(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F7F5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('로그인 계정', style: ProfileStyle.caption),
-                            const SizedBox(height: 8),
-                            Text(
-                              widget.email ?? '계정 정보를 불러오지 못했어요.',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                height: 1.5,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F7F5),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      const SizedBox(height: 24),
-                      const Text('이용 관리', style: ProfileStyle.caption),
-                      const SizedBox(height: 4),
-                      AccountMenuRow(
-                        label: '차단 관리',
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                BlockedUsersPage(repository: widget.repository),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text('안내', style: ProfileStyle.caption),
-                      const SizedBox(height: 4),
-                      AccountMenuRow(
-                        label: '이용약관',
-                        onTap: () => showProfileComingSoon(context, '이용약관'),
-                      ),
-                      const SizedBox(height: 4),
-                      AccountMenuRow(
-                        label: '개인정보 처리방침',
-                        onTap: () =>
-                            showProfileComingSoon(context, '개인정보 처리방침'),
-                      ),
-                      if (_errorMessage != null)
-                        Text(
-                          _errorMessage!,
-                          style: const TextStyle(color: Color(0xFFB42318)),
-                        ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      AccountMenuRow(label: '로그아웃', onTap: _logOut),
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton(
-                          onPressed: _isDeleting ? null : _deleteAccount,
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(0, 44),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            foregroundColor: const Color(0xFFB42318),
-                            textStyle: const TextStyle(
-                              fontFamily: 'Noto Sans KR',
-                              fontSize: 13,
-                              height: 20 / 13,
-                              fontWeight: FontWeight.w500,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('로그인 계정', style: ProfileStyle.caption),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.email ?? '계정 정보를 불러오지 못했어요.',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.5,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          child: Text(_isDeleting ? '탈퇴 처리 중...' : '회원 탈퇴'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('이용 관리', style: ProfileStyle.caption),
+                    const SizedBox(height: 4),
+                    AccountMenuRow(
+                      label: '차단 관리',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              BlockedUsersPage(repository: widget.repository),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text('달러물림 · v1.0.0', style: ProfileStyle.caption),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('안내', style: ProfileStyle.caption),
+                    const SizedBox(height: 4),
+                    AccountMenuRow(
+                      label: '이용약관',
+                      onTap: () => showProfileComingSoon(context, '이용약관'),
+                    ),
+                    const SizedBox(height: 4),
+                    AccountMenuRow(
+                      label: '개인정보 처리방침',
+                      onTap: () => showProfileComingSoon(context, '개인정보 처리방침'),
+                    ),
+                    if (_errorMessage != null)
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Color(0xFFB42318)),
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AccountMenuRow(label: '로그아웃', onTap: _logOut),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: _isDeleting ? null : _deleteAccount,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(0, 44),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          foregroundColor: const Color(0xFFB42318),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Noto Sans KR',
+                            fontSize: 13,
+                            height: 20 / 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        child: Text(_isDeleting ? '탈퇴 처리 중...' : '회원 탈퇴'),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('달러물림 · v1.0.0', style: ProfileStyle.caption),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
