@@ -9,10 +9,56 @@ import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 import 'package:dollar_trapped/features/shared/data/dollar_api.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
+import 'package:dollar_trapped/features/exchange/widgets/history_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+    'chart skips identical values but repaints changed rate or time',
+    (tester) async {
+      Future<CustomPainter> painter(String rate, String time) async {
+        final history = ExchangeRateHistory.fromJson({
+          'pair': 'USD-KRW',
+          'range': '1D',
+          'interval': '10m',
+          'from': '2026-09-11T00:00:00Z',
+          'to': '2026-09-11T00:20:00Z',
+          'isPartial': false,
+          'points': [
+            _pointJson('2026-09-11T00:00:00Z', '1340'),
+            _pointJson(time, rate),
+          ],
+        });
+        await tester.pumpWidget(
+          MaterialApp(
+            home: HistoryChartSection(
+              future: Future.value(history),
+              onRetry: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        return tester
+            .widget<CustomPaint>(
+              find.descendant(
+                of: find.byKey(const Key('exchange-rate-history-chart')),
+                matching: find.byType(CustomPaint),
+              ),
+            )
+            .painter!;
+      }
+
+      final original = await painter('1342', '2026-09-11T00:10:00Z');
+      final same = await painter('1342.00', '2026-09-11T00:10:00Z');
+      expect(same.shouldRepaint(original), isFalse);
+      final rateChanged = await painter('1343', '2026-09-11T00:10:00Z');
+      expect(rateChanged.shouldRepaint(same), isTrue);
+      final timeChanged = await painter('1343', '2026-09-11T00:20:00Z');
+      expect(timeChanged.shouldRepaint(rateChanged), isTrue);
+    },
+  );
+
   test('sorts history points by server timestamp', () {
     final history = ExchangeRateHistory.fromJson({
       'pair': 'USD-KRW',

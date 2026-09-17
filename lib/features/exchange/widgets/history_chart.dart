@@ -152,6 +152,15 @@ class _HistoryChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HistoryChartPainter oldDelegate) =>
-      !identical(points, oldDelegate.points);
+  bool shouldRepaint(_HistoryChartPainter oldDelegate) {
+    if (identical(points, oldDelegate.points)) return false;
+    if (points.length != oldDelegate.points.length) return true;
+    for (var i = 0; i < points.length; i++) {
+      if (points[i].time != oldDelegate.points[i].time ||
+          points[i].rate != oldDelegate.points[i].rate) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
