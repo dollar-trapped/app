@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/gacha/screens/cosmetic_gacha_page.dart';
 import 'package:dollar_trapped/features/profile/screens/blocked_users_page.dart';
 import 'package:dollar_trapped/features/profile/widgets/info_field.dart';
 import 'package:flutter/material.dart';
@@ -241,6 +242,17 @@ class _MyPageState extends State<MyPage> {
                       height: 1.5,
                     ),
                   ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const CosmeticGachaPage(),
+                      ),
+                    ),
+                    icon: const Icon(Icons.card_giftcard, size: 20),
+                    label: const Text('뽑기'),
+                  ),
+                  const SizedBox(width: 12),
                 ],
               ),
             ),
