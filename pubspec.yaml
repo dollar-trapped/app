@@ -64,6 +64,17 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  fonts:
+    - family: Jua
+      fonts:
+        - asset: assets/fonts/Jua-Regular.ttf
+    - family: Noto Sans KR
+      fonts:
+        - asset: assets/fonts/NotoSansKR.ttf
+    - family: Noto Serif KR
+      fonts:
+        - asset: assets/fonts/NotoSerifKR.ttf
+
   assets:
     - config/admob_test.json
     - .env
