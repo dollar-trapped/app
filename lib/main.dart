@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/ads/mobile_ads_service.dart';
 import 'core/auth/session_restorer.dart';
 import 'core/auth/token_store.dart';
 import 'core/network/api_client.dart';
@@ -13,6 +16,7 @@ import 'features/shared/data/mock_dollar_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized(); //runApp 전에 Flutter 서비스 사용을 위해 바인딩 초기화
+  unawaited(MobileAdsService.instance.initialize());
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {
