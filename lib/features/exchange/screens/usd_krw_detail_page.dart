@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/ads/widgets/adaptive_banner.dart';
 import 'package:dollar_trapped/features/exchange/widgets/exchange_quote.dart';
 import 'package:dollar_trapped/features/exchange/widgets/period_tab.dart';
 import 'package:dollar_trapped/features/exchange/widgets/history_chart.dart';
@@ -160,7 +161,7 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage> {
                 ),
               ),
             ),
-            const SizedBox(height: 34),
+            const SafeArea(top: false, child: AdaptiveBanner()),
           ],
         ),
       ),
