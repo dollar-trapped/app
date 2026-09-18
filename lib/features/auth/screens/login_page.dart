@@ -1,3 +1,4 @@
+import 'password_reset_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -112,19 +113,24 @@ class _LoginPageState extends State<LoginPage> {
               TextButton(
                 onPressed: _isSubmitting
                     ? null
-                    : () => showDialog<void>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('비밀번호 재설정'),
-                          content: const Text('비밀번호 재설정 기능을 준비하고 있어요.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('확인'),
+                    : () async {
+                        final changed = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (_) => PasswordResetPage(
+                              repository: widget.repository,
+                              email: _emailController.text.trim(),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                        if (!context.mounted || changed != true) return;
+                        _passwordController.clear();
+                        setState(() => _errorMessage = null);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('비밀번호를 변경했어요. 새 비밀번호로 로그인해 주세요.'),
+                          ),
+                        );
+                      },
                 style: TextButton.styleFrom(
                   foregroundColor: _muted,
                   minimumSize: const Size(0, 44),
