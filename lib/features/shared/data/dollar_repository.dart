@@ -1,3 +1,4 @@
+import '../../gacha/data/cosmetic_models.dart';
 import 'api_models.dart';
 
 /// Contract used by presentation code, independent of the HTTP implementation.
@@ -12,6 +13,15 @@ abstract interface class DollarRepository {
   Future<String> verifyEmail({required String email, required String code});
   Future<AuthSession> logIn({required String email, required String password});
   Future<void> logOut();
+  Future<void> requestPasswordReset(String email);
+  Future<String> verifyPasswordReset(String email, String code);
+  Future<void> resetPassword(String token, String password);
+  Future<CosmeticCatalog> getCosmeticCatalog();
+  Future<CosmeticInventory> getMyCosmetics();
+  Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment);
+  Future<CosmeticDraw> drawCosmetic(String requestId);
+  Future<AdRewardSession> createAdRewardSession(String requestId);
+  Future<AdRewardSession> getAdRewardSession(String sessionId);
 
   Future<User> getMe();
   Future<User> updateMe({

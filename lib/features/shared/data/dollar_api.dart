@@ -1,3 +1,4 @@
+import '../../gacha/data/cosmetic_models.dart';
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
 import 'api_models.dart';
@@ -193,5 +194,75 @@ class DollarApi implements DollarRepository {
             queryParameters: {'range': range},
           )).data!,
         ),
+      );
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    await _client.post<void>(
+      '/auth/password/verification',
+      data: {'email': email},
+      skipAuth: true,
+    );
+  }
+
+  @override
+  Future<String> verifyPasswordReset(String email, String code) async {
+    final r = await _client.post<Map<String, dynamic>>(
+      '/auth/password/verify',
+      data: {'email': email, 'code': code},
+      skipAuth: true,
+    );
+    return r.data!['passwordResetToken'] as String;
+  }
+
+  @override
+  Future<void> resetPassword(String token, String password) async {
+    await _client.post<void>(
+      '/auth/password/reset',
+      data: {'passwordResetToken': token, 'newPassword': password},
+      skipAuth: true,
+    );
+  }
+
+  @override
+  Future<CosmeticCatalog> getCosmeticCatalog() async =>
+      CosmeticCatalog.fromJson(
+        (await _client.get<Map<String, dynamic>>('/cosmetics')).data!,
+      );
+  @override
+  Future<CosmeticInventory> getMyCosmetics() async =>
+      CosmeticInventory.fromJson(
+        (await _client.get<Map<String, dynamic>>('/users/me/cosmetics')).data!,
+      );
+  @override
+  Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment) async =>
+      CosmeticEquipment.fromJson(
+        (await _client.put<Map<String, dynamic>>(
+          '/users/me/cosmetic-equipment',
+          data: equipment.toRequest(),
+        )).data!,
+      );
+  @override
+  Future<CosmeticDraw> drawCosmetic(String requestId) async =>
+      CosmeticDraw.fromJson(
+        (await _client.post<Map<String, dynamic>>(
+          '/gacha/draws',
+          data: {'drawRequestId': requestId},
+        )).data!,
+      );
+  @override
+  Future<AdRewardSession> createAdRewardSession(String requestId) async =>
+      AdRewardSession.fromJson(
+        (await _client.post<Map<String, dynamic>>(
+          '/ad-reward-sessions',
+          data: {'sessionRequestId': requestId},
+        )).data!,
+      );
+  @override
+  Future<AdRewardSession> getAdRewardSession(String sessionId) async =>
+      AdRewardSession.fromJson(
+        (await _client.get<Map<String, dynamic>>(
+          '/ad-reward-sessions/${Uri.encodeComponent(sessionId)}',
+        )).data!,
       );
 }

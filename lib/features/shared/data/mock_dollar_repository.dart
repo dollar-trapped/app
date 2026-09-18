@@ -1,3 +1,4 @@
+import '../../gacha/data/cosmetic_models.dart';
 import 'api_models.dart';
 import 'dollar_repository.dart';
 
@@ -192,4 +193,34 @@ class MockDollarRepository implements DollarRepository {
       isPartial: false,
     );
   }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {}
+  @override
+  Future<String> verifyPasswordReset(String email, String code) async =>
+      'mock-reset-token';
+  @override
+  Future<void> resetPassword(String token, String password) async {}
+  @override
+  Future<CosmeticCatalog> getCosmeticCatalog() async =>
+      const CosmeticCatalog(items: [], probabilities: {}, duplicateTokens: 0);
+  @override
+  Future<CosmeticInventory> getMyCosmetics() async => const CosmeticInventory(
+    items: [],
+    equipment: CosmeticEquipment(version: 0),
+    tickets: 0,
+    settingTokens: 0,
+  );
+  @override
+  Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment) async =>
+      equipment;
+  @override
+  Future<CosmeticDraw> drawCosmetic(String requestId) async =>
+      throw StateError('뽑기권이 없습니다.');
+  @override
+  Future<AdRewardSession> createAdRewardSession(String requestId) async =>
+      throw StateError('Mock에서는 광고 보상을 지급하지 않습니다.');
+  @override
+  Future<AdRewardSession> getAdRewardSession(String sessionId) async =>
+      throw StateError('Mock 광고 세션이 없습니다.');
 }
