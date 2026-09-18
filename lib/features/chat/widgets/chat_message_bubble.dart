@@ -1,3 +1,5 @@
+import '../../gacha/data/cosmetic_models.dart';
+import '../../gacha/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
 
 class ChatMessageBubble extends StatelessWidget {
@@ -11,8 +13,10 @@ class ChatMessageBubble extends StatelessWidget {
     this.profitColor = const Color(0xFF008A29),
     this.onLongPress,
     this.isMine = false,
+    this.cosmetics,
   });
 
+  final MessageCosmetics? cosmetics;
   final String nickname;
   final String holding;
   final String profit;
@@ -39,15 +43,24 @@ class ChatMessageBubble extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  nickname,
-                  style: const TextStyle(
-                    color: Color(0xFF151916),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    height: 20 / 13,
+                if (cosmetics != null)
+                  ServerCosmeticNickname(
+                    nickname: nickname,
+                    size: 13,
+                    color: cosmetics!.color,
+                    font: cosmetics!.font,
+                    background: cosmetics!.background,
+                  )
+                else
+                  Text(
+                    nickname,
+                    style: const TextStyle(
+                      color: Color(0xFF151916),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      height: 20 / 13,
+                    ),
                   ),
-                ),
                 const SizedBox(width: 8),
                 Text(
                   holding,

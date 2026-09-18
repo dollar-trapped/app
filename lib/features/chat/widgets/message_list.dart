@@ -1,3 +1,4 @@
+import '../../gacha/data/cosmetic_models.dart';
 import 'package:dollar_trapped/features/chat/widgets/chat_message_bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
@@ -126,6 +127,7 @@ class MessageList extends StatelessWidget {
     final profit = message.author.profitRate;
     return ChatMessageBubble(
       nickname: message.author.nickname,
+      cosmetics: message.author.cosmetics,
       holding: message.author.usdAmount == null
           ? ''
           : r'$' + message.author.usdAmount!,
@@ -178,6 +180,11 @@ class _RealtimeChatMessage extends StatelessWidget {
     final authorId = author['id'] as String?;
     return ChatMessageBubble(
       nickname: author['nickname'] as String? ?? '익명',
+      cosmetics: author['cosmetics'] is Map
+          ? MessageCosmetics.fromJson(
+              Map<String, dynamic>.from(author['cosmetics'] as Map),
+            )
+          : null,
       holding: author['usdAmount'] == null ? '' : "\$${author['usdAmount']}",
       profit: MessageList._profitText(author['profitRate'] as String?),
       profitColor: (author['profitRate'] as String?)?.startsWith('-') ?? false
