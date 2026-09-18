@@ -1,3 +1,5 @@
+import '../../gacha/data/cosmetic_models.dart';
+import '../../gacha/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,11 +19,11 @@ class MyPage extends StatefulWidget {
     super.key,
     required this.onBack,
     required this.repository,
-    this.appearance = NicknameAppearance.dollarGreen,
+    this.appearance,
   });
 
   /// Presentation input for Figma variants; no item is granted or persisted.
-  final NicknameAppearance appearance;
+  final NicknameAppearance? appearance;
   final VoidCallback onBack;
   final DollarRepository repository;
   @override
@@ -30,6 +32,21 @@ class MyPage extends StatefulWidget {
 
 class _MyPageState extends State<MyPage> {
   User? _user;
+  CosmeticInventory? _inventory;
+  CosmeticItem? _item(String? id) {
+    for (final item in _inventory?.items ?? <CosmeticItem>[]) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
+  String get _equipmentDescription =>
+      widget.appearance?.description ??
+      [
+        _item(_inventory?.equipment.colorId)?.name ?? '기본 글자색',
+        _item(_inventory?.equipment.fontId)?.name ?? '기본 글꼴',
+        _item(_inventory?.equipment.backgroundId)?.name ?? '배경 없음',
+      ].join(' · ');
   String? _error;
   @override
   void initState() {
@@ -42,6 +59,12 @@ class _MyPageState extends State<MyPage> {
     try {
       final user = await widget.repository.getMe();
       if (mounted) setState(() => _user = user);
+      try {
+        final inventory = await widget.repository.getMyCosmetics();
+        if (mounted) setState(() => _inventory = inventory);
+      } catch (_) {
+        /* Account details remain usable if inventory is unavailable. */
+      }
     } catch (error) {
       if (mounted) {
         setState(
@@ -124,29 +147,38 @@ class _MyPageState extends State<MyPage> {
                     width: 32,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
+                else if (widget.appearance == null)
+                  ServerCosmeticNickname(
+                    nickname: _user!.nickname,
+                    size: 24,
+                    color: _item(_inventory?.equipment.colorId),
+                    font: _item(_inventory?.equipment.fontId),
+                    background: _item(_inventory?.equipment.backgroundId),
+                  )
                 else
                   Text(
                     _user!.nickname,
                     style: ProfileStyle.title.copyWith(
-                      color: widget.appearance.color,
+                      color: widget.appearance!.color,
                     ),
                   ),
                 const SizedBox(height: 12),
-                Text(
-                  widget.appearance.description,
-                  style: ProfileStyle.caption,
-                ),
+                Text(_equipmentDescription, style: ProfileStyle.caption),
                 const SizedBox(height: 12),
                 ProfileSecondaryButton(
                   label: '내 아이템 · 꾸미기',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => CosmeticItemsPage(
-                        nickname: _user?.nickname ?? '닉네임',
-                        holding: _user?.usdAmount,
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CosmeticItemsPage(
+                          nickname: _user?.nickname ?? '닉네임',
+                          repository: widget.repository,
+                          holding: _user?.usdAmount,
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                    if (mounted) await _loadProfile();
+                  },
                 ),
               ],
             ),
@@ -185,12 +217,17 @@ class _MyPageState extends State<MyPage> {
                 const SizedBox(height: 12),
                 ProfileSecondaryButton(
                   label: '닉네임 뽑기  →',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          CosmeticGachaPage(nickname: _user?.nickname ?? '닉네임'),
-                    ),
-                  ),
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CosmeticGachaPage(
+                          nickname: _user?.nickname ?? '닉네임',
+                          repository: widget.repository,
+                        ),
+                      ),
+                    );
+                    if (mounted) await _loadProfile();
+                  },
                 ),
               ],
             ),

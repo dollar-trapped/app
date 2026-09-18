@@ -109,43 +109,32 @@ void main() {
     expect(find.text('0장'), findsOneWidget);
   });
 
-  testWidgets('items entry changes empty categories and opens nickname draw', (
-    tester,
-  ) async {
-    final repository = MockDollarRepository();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MyPage(repository: repository, onBack: () {}),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('내 아이템 · 꾸미기'));
-    await tester.pumpAndSettle();
-    expect(find.byType(CosmeticItemsPage), findsOneWidget);
-    expect(find.text('초록달러'), findsOneWidget);
-    expect(find.text(r'$2,000'), findsOneWidget);
-    expect(find.text('아직 모은 글자색이 없어요.'), findsOneWidget);
-    await tester.tap(find.text('글꼴'));
-    await tester.pump();
-    expect(find.text('아직 모은 글꼴이 없어요.'), findsOneWidget);
-    expect(find.text('0개'), findsOneWidget);
-    await tester.tap(find.text('배경'));
-    await tester.pump();
-    expect(find.text('아직 모은 배경이 없어요.'), findsOneWidget);
-    await tester.ensureVisible(find.text('닉네임 뽑기'));
-    await tester.tap(find.text('닉네임 뽑기'));
-    await tester.pumpAndSettle();
-    expect(find.byType(CosmeticGachaPage), findsOneWidget);
-    expect(find.text('초록달러'), findsOneWidget);
-    await tester.tap(find.text('‹'));
-    await tester.pumpAndSettle();
-    expect(find.text('아직 모은 배경이 없어요.'), findsOneWidget);
-    await tester.ensureVisible(find.text('기본 모습으로 적용'));
-    await tester.tap(find.text('기본 모습으로 적용'));
-    await tester.pump();
-    expect(find.textContaining('실제 아이템 적용은 준비 중'), findsOneWidget);
-    expect((await repository.getMe()).nickname, '초록달러');
-  });
+  testWidgets(
+    'profile opens server inventory and returns after applying basic appearance',
+    (tester) async {
+      final repository = MockDollarRepository();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MyPage(repository: repository, onBack: () {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('내 아이템 · 꾸미기'));
+      await tester.pumpAndSettle();
+      expect(find.text('아직 모은 글자색이 없어요.'), findsOneWidget);
+      await tester.tap(find.text('글꼴'));
+      await tester.pump();
+      expect(find.text('아직 모은 글꼴이 없어요.'), findsOneWidget);
+      await tester.tap(find.text('배경'));
+      await tester.pump();
+      expect(find.text('아직 모은 배경이 없어요.'), findsOneWidget);
+      await tester.ensureVisible(find.text('기본 모습으로 적용'));
+      await tester.tap(find.text('기본 모습으로 적용'));
+      await tester.pumpAndSettle();
+      expect(find.text('마이페이지'), findsOneWidget);
+      expect((await repository.getMe()).nickname, '초록달러');
+    },
+  );
 
   testWidgets('gold presentation changes only nickname and equipment label', (
     tester,

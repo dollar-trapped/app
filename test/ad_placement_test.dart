@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dollar_trapped/features/ads/widgets/adaptive_banner.dart';
 import 'package:dollar_trapped/features/ads/widgets/rewarded_test_button.dart';
 import 'package:dollar_trapped/features/chat/screens/usd_room_page.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
   testWidgets('USD room contains no advertising UI', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -65,7 +67,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsOneWidget);
     expect(find.byType(RewardedTestButton), findsOneWidget);
-    expect(find.textContaining('뽑기권과 아이템은 지급되지'), findsOneWidget);
+    expect(find.textContaining('보상은 서버 검증 후 반영'), findsOneWidget);
     await tester.tap(find.text('‹'));
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsNothing);
