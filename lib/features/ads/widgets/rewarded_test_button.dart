@@ -32,7 +32,7 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
   @override
   void initState() {
     super.initState();
-    if (widget.repository != null) {
+    if (!AdConfig.isTest && widget.repository != null) {
       _rewards = AdRewardSessionService(widget.repository!);
     }
     if (AdConfig.rewardedEnabled) unawaited(_service.preload());
@@ -51,17 +51,18 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
       if (!mounted) return;
       setState(
         () => _message = granted
-            ? '보상이 확인됐어요.'
+            ? '보상이 확인됐어요. 뽑기권을 갱신합니다.'
             : _rewards!.session == null
-            ? '보상 세션이 만료됐어요.'
-            : '서버 보상 확인 대기 중 · 다시 확인',
+            ? '보상 확인 기간이 만료됐어요. 다시 시도해 주세요.'
+            : '광고 시청은 완료됐어요. 서버에서 보상을 확인 중입니다. 잠시 후 다시 확인해 주세요.',
       );
       if (granted) widget.onVerified?.call();
     } catch (e) {
       if (mounted) {
         setState(
-          () =>
-              _message = e is ApiException ? e.userMessage : '보상 확인 실패 · 다시 확인',
+          () => _message = e is ApiException
+              ? e.userMessage
+              : '서버에 연결하지 못했어요. 광고를 다시 보지 않고 보상 확인을 재시도할 수 있어요.',
         );
       }
     } finally {
@@ -72,7 +73,21 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
   Future<void> _watch() async {
     if (_busy) return;
     if (_rewards == null) {
-      await _service.show();
+      if (!AdConfig.isTest) {
+        setState(() => _message = '보상 서비스를 준비하지 못했어요. 화면을 다시 열어 주세요.');
+        return;
+      }
+      setState(() => _message = null);
+      await _service.show(
+        onClosed: (earned) {
+          if (!mounted) return;
+          setState(
+            () => _message = earned
+                ? '테스트 광고 시청을 완료했어요. 뽑기권은 지급되지 않습니다.'
+                : '테스트 광고 시청이 완료되지 않았어요.',
+          );
+        },
+      );
       return;
     }
     setState(() {
@@ -90,7 +105,11 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
     }
     try {
       final session = await _rewards!.create();
-      if (!mounted || session == null) return;
+      if (!mounted) return;
+      if (session == null) {
+        setState(() => _busy = false);
+        return;
+      }
       if (session.status != 'PENDING' ||
           !session.expiresAt.isAfter(DateTime.now())) {
         await _verify();
@@ -151,15 +170,18 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
                 !widget.enabled ||
                     !AdConfig.rewardedEnabled ||
                     _busy ||
-                    status == RewardedStatus.loading ||
+                    (_rewards?.session == null &&
+                        status == RewardedStatus.loading) ||
                     status == RewardedStatus.showing
                 ? null
                 : () => unawaited(_watch()),
             child: Text(
               !AdConfig.rewardedEnabled
                   ? '보상형 광고 준비 중'
+                  : status == RewardedStatus.showing
+                  ? (AdConfig.isTest ? '테스트 광고 표시 중…' : '광고 표시 중…')
                   : _busy
-                  ? '보상 확인 중…'
+                  ? (_rewards?.busy == true ? '서버 보상 확인 중…' : '광고 준비 중…')
                   : _rewards?.session != null
                   ? '보상 다시 확인'
                   : switch (status) {
@@ -168,10 +190,18 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
                       RewardedStatus.showing =>
                         AdConfig.isTest ? '테스트 광고 표시 중…' : '광고 표시 중…',
                       RewardedStatus.failed => '광고 로드 실패 · 다시 준비하기',
-                      _ => '▷  광고 보고 뽑기권 받기',
+                      _ =>
+                        AdConfig.isTest
+                            ? '▷  테스트 광고 보기 · 보상 없음'
+                            : '▷  광고 보고 뽑기권 받기',
                     },
             ),
           ),
+          if (AdConfig.isTest)
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Text('개발용 테스트 광고입니다. 시청해도 실제 뽑기권은 지급되지 않아요.'),
+            ),
           if (_message != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),

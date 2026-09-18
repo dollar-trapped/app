@@ -240,7 +240,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
               ? '1회 뽑기'
               : '뽑기권이 필요해요',
           hint: AdConfig.isTest
-              ? '테스트 광고 사용 중 · 보상은 서버 검증 후 반영돼요.'
+              ? '테스트 광고는 뽑기권을 지급하지 않아요.'
               : '광고 보상은 서버 검증 후 반영돼요.',
           onPressed:
               !_loading &&

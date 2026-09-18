@@ -67,7 +67,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsOneWidget);
     expect(find.byType(RewardedTestButton), findsOneWidget);
-    expect(find.textContaining('보상은 서버 검증 후 반영'), findsOneWidget);
+    expect(find.text('테스트 광고는 뽑기권을 지급하지 않아요.'), findsOneWidget);
     await tester.tap(find.text('‹'));
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsNothing);
