@@ -9,7 +9,7 @@
 - 마이페이지 → 내 아이템: `/users/me/cosmetics`의 실제 보유 목록·장착 상태 사용. 선택 중에는 로컬 미리보기만 변경한다. 적용 버튼이 `PUT /users/me/cosmetic-equipment`를 호출한다. 해제 슬롯은 명시적 null, 나머지 선택 ID와 `expectedVersion`을 전송한다. 409에서는 최신 상태를 다시 읽고 재선택을 안내한다.
 - 마이페이지 → 닉네임 뽑기: 보유 API의 `drawEntitlementCount`를 표시하며, 카탈로그 API의 희귀도 확률(bps / 100)과 중복 보상을 안내한다. `/gacha/draws` 응답만 결과로 표시한다. NEW_COSMETIC과 DUPLICATE를 구분한다.
 - 뽑기 요청 UUID는 전송 전에 계정별 secure storage에 저장한다. 타임아웃·화면 재진입·앱 재시작 이후 같은 UUID로 결과를 재확인한다. 응답 확인 후 키를 삭제한다. 저장 실패 시 요청을 보내지 않는다. 서버의 drawRequestId 멱등성 처리를 전제로 한다.
-- 광고는 미리 로드한다. 시청 버튼에서 보상 세션을 생성하고 응답의 `customData`를 `ServerSideVerificationOptions`로 광고 표시 전에 설정한다. earned 이벤트는 로그만 남기고, 광고 종료 후 세션을 조회한다. GRANTED일 때만 보유 현황을 다시 조회한다. PENDING은 최대 10회(2초 간격) 확인한 뒤 수동 재확인 버튼을 제공한다. EXPIRED는 새 시도를 허용한다. 앱에서 `/admob/ssv`를 호출하지 않는다.
+- 실제 광고는 미리 로드한다. 시청 버튼에서 보상 세션을 생성하고 응답의 `customData`를 `ServerSideVerificationOptions`로 광고 표시 전에 설정한다. earned 이벤트는 로그만 남기고, 광고 종료 후 세션을 조회한다. GRANTED일 때만 보유 현황을 다시 조회한다. PENDING은 최대 10회(2초 간격) 확인한 뒤 수동 재확인 버튼을 제공한다. EXPIRED는 새 시도를 허용한다. 앱에서 `/admob/ssv`를 호출하지 않는다.
 - 채팅 API/소켓이 보낸 장식 스냅샷은 닉네임에만 표시한다. 보유량·수익률·말풍선, 메시지 송수신 및 신고·차단 처리는 유지한다. 과거 메시지의 장식은 서버 스냅샷을 따른다.
 
 ## 표시 매핑
@@ -21,7 +21,7 @@
 
 ## 테스트 광고 제한
 
-Android debug/profile은 Google 공식 테스트 ID를, release는 `config/admob_production.json`의 실제 앱·배너·보상형 ID를 사용한다. Google 테스트 광고 시청만으로 이 서버에 실제 SSV 콜백이 전달되거나 보상이 지급된다고 가정하지 않는다. 실제 지급 검증은 서버와 연결된 AdMob SSV 설정 및 검증 가능한 테스트 환경이 필요하다. 앱에서 로컬로 뽑기권을 증가시키거나 보상 검증을 우회하지 않는다.
+Android debug/profile은 Google 공식 테스트 ID를, release는 `config/admob_production.json`의 실제 앱·배너·보상형 ID를 사용한다. Google 데모 ID를 사용하는 debug/profile에서는 보상 없음 안내를 표시하고 광고만 재생한다. 실제 보상 세션 생성·조회·잔액 갱신은 실행하지 않는다. 테스트 완료 콜백은 시청 완료 안내만 표시한다. 실제 지급 검증은 서버와 연결된 AdMob SSV 설정 및 검증 가능한 테스트 환경이 필요하다. 앱에서 로컬로 뽑기권을 증가시키거나 보상 검증을 우회하지 않는다.
 
 Google 참고: https://developers.google.com/admob/flutter/ssv
 
