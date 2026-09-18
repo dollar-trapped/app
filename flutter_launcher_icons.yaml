@@ -1,0 +1,10 @@
+# Regenerate with: dart run flutter_launcher_icons
+# Keep the supplied logo unchanged; platform icon sizes are generated from it.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/branding/app_icon.png
+  adaptive_icon_background: '#FFFDF9'
+  adaptive_icon_foreground: assets/branding/app_icon.png
+  adaptive_icon_foreground_inset: 0
+  remove_alpha_ios: true
