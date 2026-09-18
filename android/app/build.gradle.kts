@@ -30,7 +30,7 @@ tasks.configureEach {
 }
 
 android {
-    namespace = "com.example.dollar_trapped"
+    namespace = "com.dollarmullim.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -42,7 +42,7 @@ android {
     defaultConfig {
         manifestPlaceholders["admobAppId"] = admobTest["androidAppId"] as String
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.dollar_trapped"
+        applicationId = "com.dollarmullim.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

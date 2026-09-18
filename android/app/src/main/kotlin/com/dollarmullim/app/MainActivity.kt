@@ -1,4 +1,4 @@
-package com.example.dollar_trapped
+package com.dollarmullim.app
 
 import io.flutter.embedding.android.FlutterActivity
 
