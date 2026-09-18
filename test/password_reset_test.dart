@@ -17,6 +17,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.sentEmail, 'user@example.com');
       expect(find.text('재전송 (60초)'), findsOneWidget);
+      expect(find.textContaining('발송 후 5분'), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, '000000');
       await tester.tap(find.text('인증 코드 확인'));
       await tester.pumpAndSettle();
@@ -25,12 +26,20 @@ void main() {
       await tester.enterText(find.byType(TextField).last, '123456');
       await tester.tap(find.text('인증 코드 확인'));
       await tester.pumpAndSettle();
+      expect(find.textContaining('코드 확인 후 10분'), findsOneWidget);
       await tester.enterText(find.byType(TextField).at(1), 'new-password');
       await tester.enterText(find.byType(TextField).at(2), 'different');
       await tester.tap(find.text('비밀번호 변경'));
       await tester.pumpAndSettle();
       expect(repo.newPassword, isNull);
       await tester.enterText(find.byType(TextField).at(2), 'new-password');
+      repo.rejectPassword = true;
+      await tester.tap(find.text('비밀번호 변경'));
+      await tester.pumpAndSettle();
+      expect(find.text('비밀번호 규칙을 확인해 주세요.'), findsOneWidget);
+      expect(repo.token, 'verified-reset-token');
+      expect(repo.newPassword, isNull);
+      repo.rejectPassword = false;
       await tester.tap(find.text('비밀번호 변경'));
       await tester.pumpAndSettle();
       expect(repo.token, 'verified-reset-token');
@@ -43,6 +52,7 @@ void main() {
 
 class _Repo extends MockDollarRepository {
   String? sentEmail, token, newPassword;
+  bool rejectPassword = false;
   @override
   Future<void> requestPasswordReset(String email) async {
     sentEmail = email;
@@ -63,6 +73,13 @@ class _Repo extends MockDollarRepository {
   @override
   Future<void> resetPassword(String resetToken, String password) async {
     token = resetToken;
+    if (rejectPassword) {
+      throw const ApiException(
+        statusCode: 400,
+        code: 'VALIDATION_ERROR',
+        message: '비밀번호 규칙을 확인해 주세요.',
+      );
+    }
     newPassword = password;
   }
 }

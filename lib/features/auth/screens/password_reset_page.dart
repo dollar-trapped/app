@@ -143,6 +143,8 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
             if (_step == 1) ...[
               const SizedBox(height: 16),
               const Text('등록된 계정이 있다면 인증 코드가 발송됩니다. 이메일을 확인해 주세요.'),
+              const SizedBox(height: 8),
+              const Text('인증 코드는 발송 후 5분 동안 유효합니다. 재전송은 60초 후 가능합니다.'),
               TextField(
                 controller: _code,
                 enabled: !_busy,
@@ -156,6 +158,8 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
               ),
             ],
             if (_step == 2) ...[
+              const SizedBox(height: 16),
+              const Text('코드 확인 후 10분 이내에 비밀번호를 변경해 주세요.'),
               TextField(
                 controller: _password,
                 enabled: !_busy,
@@ -169,7 +173,9 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                 decoration: const InputDecoration(labelText: '새 비밀번호 확인'),
               ),
               const SizedBox(height: 12),
-              const Text('변경 후 모든 기기에서 다시 로그인해야 합니다.'),
+              const Text(
+                '변경하면 현재 기기를 포함한 모든 기기에서 로그아웃됩니다. 새 비밀번호로 다시 로그인해 주세요.',
+              ),
             ],
             if (_error != null)
               Padding(
