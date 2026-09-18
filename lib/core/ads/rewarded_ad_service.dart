@@ -1,3 +1,4 @@
+import 'ad_config.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -8,11 +9,13 @@ import 'mobile_ads_service.dart';
 enum RewardedStatus { idle, loading, ready, showing, failed }
 
 /// Owns the single-use ad, prevents concurrent loads/shows, and never grants
-/// rewards. The temporary reward callback deliberately only logs an event.
+/// rewards. Server verification is handled separately after the ad closes.
 class RewardedAdService extends ChangeNotifier {
   RewardedAd? _ad;
   RewardedAd? _showingAd;
   bool _disposed = false;
+  bool _earned = false;
+  void Function(bool earned)? _onClosed;
   RewardedStatus _status = RewardedStatus.idle;
   RewardedStatus get status => _status;
 
@@ -33,12 +36,14 @@ class RewardedAdService extends ChangeNotifier {
     try {
       final config = await MobileAdsService.instance.initialize();
       if (_disposed) return;
-      if (config == null) {
+      if (config == null ||
+          config.rewardedId == null ||
+          !AdConfig.rewardedEnabled) {
         _setStatus(RewardedStatus.failed);
         return;
       }
       await RewardedAd.load(
-        adUnitId: config.rewardedId,
+        adUnitId: config.rewardedId!,
         request: const AdRequest(),
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (ad) {
@@ -61,7 +66,10 @@ class RewardedAdService extends ChangeNotifier {
     }
   }
 
-  Future<void> show() async {
+  Future<void> show({
+    String? customData,
+    void Function(bool earned)? onClosed,
+  }) async {
     if (_disposed || _status == RewardedStatus.showing) return;
     final ad = _ad;
     if (ad == null) {
@@ -69,6 +77,8 @@ class RewardedAdService extends ChangeNotifier {
       return; // A retry never opens an ad without another explicit tap.
     }
     _ad = null;
+    _earned = false;
+    _onClosed = onClosed;
     _showingAd = ad;
     _setStatus(RewardedStatus.showing);
     ad.fullScreenContentCallback = FullScreenContentCallback<RewardedAd>(
@@ -79,8 +89,15 @@ class RewardedAdService extends ChangeNotifier {
       },
     );
     try {
+      if (customData != null) {
+        await ad.setServerSideOptions(
+          ServerSideVerificationOptions(customData: customData),
+        );
+        if (_disposed) return;
+      }
       await ad.show(
         onUserEarnedReward: (_, _) {
+          _earned = true;
           debugPrint('[AdMob] reward earned');
         },
       );
@@ -93,6 +110,9 @@ class RewardedAdService extends ChangeNotifier {
   void _finish(RewardedAd ad) {
     if (!identical(_showingAd, ad)) return;
     _showingAd = null;
+    final callback = _onClosed;
+    _onClosed = null;
+    if (!_disposed) callback?.call(_earned);
     unawaited(_disposeAndPreload(ad));
   }
 

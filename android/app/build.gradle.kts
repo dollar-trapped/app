@@ -6,22 +6,27 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Single source of truth for Google-provided demo IDs (also a Flutter asset).
-val admobConfig = JsonSlurper().parse(file("../../config/admob_test.json")) as Map<*, *>
-check(admobConfig["mode"] == "test") { "Only test AdMob configuration is implemented." }
-
-// Fail closed: never package this test-only integration for production.
+// The same environment files are read by Dart. Never use demo IDs in release.
+val admobTest = JsonSlurper().parse(file("../../config/admob_test.json")) as Map<*, *>
+val admobProduction = JsonSlurper().parse(file("../../config/admob_production.json")) as Map<*, *>
+check(admobTest["mode"] == "test")
 val verifyAdmobReleaseConfiguration = tasks.register("verifyAdmobReleaseConfiguration") {
     doLast {
-        throw GradleException(
-            "AdMob is TEST ONLY. Release builds are blocked until production configuration is implemented."
-        )
+        check(admobProduction["mode"] == "production")
+        val appId = admobProduction["androidAppId"] as String
+        val bannerId = admobProduction["androidAdaptiveBannerId"] as String
+        check(Regex("ca-app-pub-[0-9]{16}~[0-9]{10}").matches(appId))
+        check(Regex("ca-app-pub-[0-9]{16}/[0-9]{10}").matches(bannerId))
+        val rewardedId = admobProduction["androidRewardedId"] as String
+        check(Regex("ca-app-pub-[0-9]{16}/[0-9]{10}").matches(rewardedId))
+        val ids = listOf(appId, bannerId, rewardedId)
+        check(ids.none { it.startsWith("ca-app-pub-3940256099942544") }) {
+            "Google demo IDs cannot be used in a release build."
+        }
     }
 }
 tasks.configureEach {
-    if (name == "preReleaseBuild") {
-        dependsOn(verifyAdmobReleaseConfiguration)
-    }
+    if (name == "preReleaseBuild") dependsOn(verifyAdmobReleaseConfiguration)
 }
 
 android {
@@ -35,7 +40,7 @@ android {
     }
 
     defaultConfig {
-        manifestPlaceholders["admobAppId"] = admobConfig["androidAppId"] as String
+        manifestPlaceholders["admobAppId"] = admobTest["androidAppId"] as String
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.dollar_trapped"
         // You can update the following values to match your application needs.
@@ -48,6 +53,7 @@ android {
 
     buildTypes {
         release {
+            manifestPlaceholders["admobAppId"] = admobProduction["androidAppId"] as String
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

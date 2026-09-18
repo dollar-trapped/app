@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dollar_trapped/core/ads/ad_config.dart';
 import 'package:dollar_trapped/core/ads/adaptive_banner_service.dart';
 import 'package:dollar_trapped/core/ads/rewarded_ad_service.dart';
@@ -59,6 +60,24 @@ void main() {
     expect(AdConfig.enabled, isFalse);
   });
 
+  test('production IDs use the corrected units and reject demo IDs', () async {
+    final json =
+        jsonDecode(await rootBundle.loadString('config/admob_production.json'))
+            as Map<String, dynamic>;
+    final config = AdConfig.fromJson(json, production: true);
+    expect(config.bannerId, 'ca-app-pub-8613152611947698/5428058208');
+    expect(config.rewardedId, 'ca-app-pub-8613152611947698/2766235844');
+    expect(json['androidAppId'], 'ca-app-pub-8613152611947698~7427088470');
+    expect(
+      () => AdConfig.fromJson({
+        ...json,
+        'androidAdaptiveBannerId': 'ca-app-pub-3940256099942544/9214589741',
+      }, production: true),
+      throwsStateError,
+    );
+    expect(() => AdConfig.fromJson(json, production: false), throwsStateError);
+  });
+
   test(
     'reward logs only on earned callback; dismiss disposes and preloads',
     () async {
@@ -93,6 +112,33 @@ void main() {
       } finally {
         debugPrint = originalPrint;
       }
+    },
+  );
+
+  test(
+    'SSV custom data is configured before display and verification starts after close',
+    () async {
+      final service = RewardedAdService();
+      await service.preload();
+      final ad = loadedRewarded();
+      ad.rewardedAdLoadCallback.onAdLoaded(ad);
+      bool? earned;
+      await service.show(
+        customData: 'signed-session-data',
+        onClosed: (value) => earned = value,
+      );
+      final methods = calls.map((c) => c.method).toList();
+      expect(
+        methods.indexOf('setServerSideVerificationOptions'),
+        lessThan(methods.indexOf('showAdWithoutView')),
+      );
+      expect(methods, contains('setServerSideVerificationOptions'));
+      ad.onUserEarnedRewardCallback!(ad, RewardItem(1, 'test'));
+      expect(earned, isNull);
+      ad.fullScreenContentCallback!.onAdDismissedFullScreenContent!(ad);
+      expect(earned, isTrue);
+      await flush();
+      service.dispose();
     },
   );
 

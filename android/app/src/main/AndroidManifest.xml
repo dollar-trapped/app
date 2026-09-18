@@ -5,7 +5,7 @@
         android:label="dollar_trapped"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- TEST ONLY: supplied from config/admob_test.json by Gradle. -->
+        <!-- Supplied by Gradle from the configuration for this build type. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />
