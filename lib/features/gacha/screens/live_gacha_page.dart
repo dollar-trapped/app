@@ -10,6 +10,7 @@ import '../services/request_id.dart';
 import '../widgets/cosmetic_layout.dart';
 import '../widgets/server_cosmetic_preview.dart';
 import 'owned_cosmetics_page.dart';
+import '../widgets/gacha_reveal.dart';
 
 class LiveGachaPage extends StatefulWidget {
   const LiveGachaPage({
@@ -311,97 +312,99 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
     final color = item.type == 'NAME_COLOR' ? item : null,
         font = item.type == 'NAME_FONT' ? item : null,
         bg = item.type == 'NAME_BACKGROUND' ? item : null;
-    return PopScope(
-      canPop: !_busy,
-      child: ProfileLayout(
-        title: '뽑기 결과',
-        child: CosmeticContent(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                result.duplicate ? '이미 보유한 아이템' : '새로운 아이템',
-                style: const TextStyle(color: ProfileStyle.action),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                result.duplicate ? '익숙한 취향을\n다시 만났어요.' : '새로운 취향을\n뽑았어요.',
-                style: ProfileStyle.title,
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7F5),
-                  borderRadius: BorderRadius.circular(16),
+    return GachaReveal(
+      child: PopScope(
+        canPop: !_busy,
+        child: ProfileLayout(
+          title: '뽑기 결과',
+          child: CosmeticContent(
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  result.duplicate ? '이미 보유한 아이템' : '새로운 아이템',
+                  style: const TextStyle(color: ProfileStyle.action),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      '${item.type} · ${item.rarity}',
-                      style: ProfileStyle.caption,
-                    ),
-                    const SizedBox(height: 16),
-                    ServerCosmeticNickname(
-                      nickname: widget.nickname,
-                      color: color,
-                      font: font,
-                      background: bg,
-                      size: 32,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      item.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(height: 24),
+                Text(
+                  result.duplicate ? '익숙한 취향을\n다시 만났어요.' : '새로운 취향을\n뽑았어요.',
+                  style: ProfileStyle.title,
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F7F5),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${item.type} · ${item.rarity}',
+                        style: ProfileStyle.caption,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      ServerCosmeticNickname(
+                        nickname: widget.nickname,
+                        color: color,
+                        font: font,
+                        background: bg,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              ServerCosmeticPreview(
-                nickname: widget.nickname,
-                color: color,
-                font: font,
-                background: bg,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                result.duplicate
-                    ? '중복 보상으로 설정 토큰 ${result.tokensGranted}개를 받았어요.'
-                    : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
-                style: ProfileStyle.caption,
-              ),
-              if (_error != null)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-            ],
-          ),
-          actions: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              CosmeticAction(
-                label: _busy ? '적용 중…' : '지금 적용',
-                hint: '',
-                onPressed:
-                    _busy ||
-                        ![
-                          'NAME_COLOR',
-                          'NAME_FONT',
-                          'NAME_BACKGROUND',
-                        ].contains(item.type)
-                    ? null
-                    : _apply,
-              ),
-              const SizedBox(height: 12),
-              ProfileSecondaryButton(
-                label: '보관만 하기',
-                onPressed: () {
-                  if (!_busy) Navigator.of(context).pop();
-                },
-              ),
-            ],
+                const SizedBox(height: 24),
+                ServerCosmeticPreview(
+                  nickname: widget.nickname,
+                  color: color,
+                  font: font,
+                  background: bg,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  result.duplicate
+                      ? '중복 보상으로 설정 토큰 ${result.tokensGranted}개를 받았어요.'
+                      : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
+                  style: ProfileStyle.caption,
+                ),
+                if (_error != null)
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
+            ),
+            actions: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CosmeticAction(
+                  label: _busy ? '적용 중…' : '지금 적용',
+                  hint: '',
+                  onPressed:
+                      _busy ||
+                          ![
+                            'NAME_COLOR',
+                            'NAME_FONT',
+                            'NAME_BACKGROUND',
+                          ].contains(item.type)
+                      ? null
+                      : _apply,
+                ),
+                const SizedBox(height: 12),
+                ProfileSecondaryButton(
+                  label: '보관만 하기',
+                  onPressed: () {
+                    if (!_busy) Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
