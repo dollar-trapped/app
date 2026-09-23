@@ -137,7 +137,7 @@ class MessageList extends StatelessWidget {
           : const Color(0xFF008A29),
       message: message.content,
       time: _formatTime(message.createdAt),
-      isMine: message.author.id == currentUserId,
+      isMine: currentUserId != null && message.author.id == currentUserId,
       onLongPress:
           currentUserId == null ||
               message.author.id == null ||
@@ -192,7 +192,7 @@ class _RealtimeChatMessage extends StatelessWidget {
           : const Color(0xFF008A29),
       message: message.content,
       time: MessageList._formatTime(DateTime.now()),
-      isMine: authorId == currentUserId,
+      isMine: currentUserId != null && authorId == currentUserId,
       onLongPress:
           currentUserId == null || authorId == null || authorId == currentUserId
           ? null
