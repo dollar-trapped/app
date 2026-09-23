@@ -1,11 +1,19 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Presentation only: the draw has already been confirmed by the server.
+/// Presentation only: waiting never grants an item or reveals an invented result.
 class GachaReveal extends StatefulWidget {
-  const GachaReveal({super.key, required this.child, this.isPreview = false});
+  const GachaReveal({
+    super.key,
+    required this.child,
+    this.isPreview = false,
+    this.waitingForResult = false,
+    this.rarity = 'COMMON',
+  });
   final Widget child;
   final bool isPreview;
+  final bool waitingForResult;
+  final String rarity;
 
   @override
   State<GachaReveal> createState() => _GachaRevealState();
@@ -15,19 +23,36 @@ class _GachaRevealState extends State<GachaReveal>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2200),
+    animationBehavior: AnimationBehavior.preserve,
+    duration: Duration(
+      milliseconds: switch (widget.rarity) {
+        'RARE' => 4800,
+        'SPECIAL' => 6400,
+        _ => 3200,
+      },
+    ),
   );
-  bool _started = false;
+  bool _waitingStarted = false;
+  bool _spinning = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _controller.value = 1;
-    } else if (!_started) {
-      _controller.forward();
+    if (widget.waitingForResult && !_waitingStarted) {
+      _waitingStarted = true;
+      if (!MediaQuery.disableAnimationsOf(context)) {
+        _controller.repeat(
+          max: .48,
+          period: const Duration(milliseconds: 1200),
+        );
+      }
     }
-    _started = true;
+  }
+
+  void _turnCard() {
+    if (widget.waitingForResult || _spinning) return;
+    setState(() => _spinning = true);
+    _controller.forward(from: 0);
   }
 
   @override
@@ -41,10 +66,37 @@ class _GachaRevealState extends State<GachaReveal>
     animation: _controller,
     builder: (context, _) {
       final t = _controller.value;
-      if (t == 1) return widget.child;
-      final reveal = Curves.easeOut.transform(((t - .76) / .24).clamp(0, 1));
+      if (!widget.waitingForResult && t == 1) return widget.child;
+      final enhanced =
+          !widget.waitingForResult &&
+          (widget.rarity == 'RARE' || widget.rarity == 'SPECIAL');
+      final turns = switch (widget.rarity) {
+        'RARE' => 5,
+        'SPECIAL' => 7,
+        _ => 3,
+      };
+      final spinEnd = (turns * 800) / (turns * 800 + 800);
+      final spin = (t / spinEnd).clamp(0.0, 1.0);
+      final palette = <Color>[
+        const Color(0xFF447956),
+        const Color(0xFF327CC5),
+        const Color(0xFF9258CC),
+        if (widget.rarity == 'SPECIAL') const Color(0xFFE1B64A),
+      ];
+      final colorProgress = enhanced ? ((t - .18) / .56).clamp(0.0, 1.0) : 0.0;
+      final position = colorProgress * (palette.length - 1);
+      final index = position.floor();
+      final cardColor = Color.lerp(
+        palette[index],
+        palette[math.min(index + 1, palette.length - 1)],
+        position - index,
+      )!;
+      final glowColor = enhanced ? cardColor : const Color(0xFFE3D99A);
+      final reveal = Curves.easeOut.transform(
+        ((t - spinEnd - .04) / (1 - spinEnd - .04)).clamp(0, 1),
+      );
       final burst = Curves.easeOutCubic.transform(
-        ((t - .48) / .45).clamp(0, 1),
+        ((t - spinEnd) / (1 - spinEnd)).clamp(0, 1),
       );
       return Stack(
         fit: StackFit.expand,
@@ -92,7 +144,7 @@ class _GachaRevealState extends State<GachaReveal>
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
                                         colors: [
-                                          const Color(0xFFE3D99A).withValues(
+                                          glowColor.withValues(
                                             alpha: .12 + burst * .35,
                                           ),
                                           const Color(0x00102D22),
@@ -122,50 +174,81 @@ class _GachaRevealState extends State<GachaReveal>
                                         ),
                                       ),
                                     ),
-                                  Transform.rotate(
-                                    angle:
-                                        math.sin(t * math.pi * 18) *
-                                        .055 *
-                                        (1 - burst),
-                                    child: Transform.scale(
-                                      scale:
-                                          .9 +
-                                          .1 * math.sin(t * math.pi) +
-                                          burst * .12,
-                                      child: Container(
-                                        width: size * .58,
-                                        height: size * .76,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                  Semantics(
+                                    button:
+                                        !widget.waitingForResult && !_spinning,
+                                    label: '카드를 터치해 뽑기 결과 열기',
+                                    child: GestureDetector(
+                                      key: const Key('gacha-card-touch'),
+                                      onTap:
+                                          widget.waitingForResult || _spinning
+                                          ? null
+                                          : _turnCard,
+                                      child: Transform(
+                                        key: const Key('gacha-card-turn'),
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()
+                                          ..setEntry(3, 2, .0015)
+                                          ..rotateY(
+                                            widget.waitingForResult
+                                                ? 0
+                                                : spin * math.pi * 2 * turns,
+                                          )
+                                          ..rotateZ(
+                                            math.sin(t * math.pi * 18) *
+                                                .055 *
+                                                (1 - burst),
                                           ),
-                                          gradient: const LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              Color(0xFF447956),
-                                              Color(0xFF173E2B),
-                                            ],
-                                          ),
-                                          border: Border.all(
-                                            color: const Color(0xFFE3D99A),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFFE3D99A,
-                                              ).withValues(alpha: burst * .35),
-                                              blurRadius: 40 * burst,
-                                              spreadRadius: 8 * burst,
+                                        child: Transform.scale(
+                                          scale:
+                                              .9 +
+                                              .1 * math.sin(t * math.pi) +
+                                              burst * .12,
+                                          child: Container(
+                                            width: size * .58,
+                                            height: size * .76,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  cardColor,
+                                                  Color.lerp(
+                                                    cardColor,
+                                                    const Color(0xFF102D22),
+                                                    .65,
+                                                  )!,
+                                                ],
+                                              ),
+                                              border: Border.all(
+                                                color: enhanced
+                                                    ? Color.lerp(
+                                                        glowColor,
+                                                        Colors.white,
+                                                        .5,
+                                                      )!
+                                                    : const Color(0xFFE3D99A),
+                                                width: 1.5,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: glowColor.withValues(
+                                                    alpha: .15 + burst * .35,
+                                                  ),
+                                                  blurRadius: 16 + 40 * burst,
+                                                  spreadRadius: 8 * burst,
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.auto_awesome,
-                                            color: Color(0xFFF2E9BB),
-                                            size: 48,
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.auto_awesome,
+                                                color: Color(0xFFF2E9BB),
+                                                size: 48,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -185,20 +268,35 @@ class _GachaRevealState extends State<GachaReveal>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          '나만의 분위기를 여는 중',
+                        Text(
+                          widget.waitingForResult
+                              ? '나만의 분위기를 준비하는 중'
+                              : _spinning
+                              ? '어떤 아이템이 숨어 있을까요?'
+                              : '카드를 터치해서 열어보세요',
                           style: TextStyle(color: Color(0xFFC5D9BD)),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: TextButton(
-                            onPressed: () => _controller.value = 1,
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white70,
+                        if (widget.waitingForResult)
+                          const Padding(
+                            padding: EdgeInsets.all(28),
+                            child: Text(
+                              '뽑기 결과를 확인하고 있어요.',
+                              style: TextStyle(color: Colors.white70),
                             ),
-                            child: const Text('연출 건너뛰기'),
-                          ),
-                        ),
+                          )
+                        else if (_spinning)
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: TextButton(
+                              onPressed: () => _controller.value = 1,
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                              ),
+                              child: const Text('연출 건너뛰기'),
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 80),
                       ],
                     );
                   },

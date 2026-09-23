@@ -82,6 +82,9 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
         ),
       );
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('장식을 적용했어요. 새로 보내는 채팅부터 반영돼요.')),
+      );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -204,7 +207,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
         ),
         actions: CosmeticAction(
           label: _ids.every((id) => id == null) ? '기본 모습으로 적용' : '이대로 적용',
-          hint: '적용 전까지 장착 상태는 바뀌지 않아요.',
+          hint: '적용하면 새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.',
           onPressed: _busy || _inventory == null ? null : _save,
         ),
       ),
