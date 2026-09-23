@@ -28,7 +28,11 @@ class UsdRoomPage extends StatefulWidget {
   State<UsdRoomPage> createState() => _UsdRoomPageState();
 }
 
-class _UsdRoomPageState extends State<UsdRoomPage> {
+class _UsdRoomPageState extends State<UsdRoomPage>
+    with AutomaticKeepAliveClientMixin<UsdRoomPage> {
+  @override
+  bool get wantKeepAlive => true;
+
   static const _ink = Color(0xFF151916);
   static const _muted = Color(0xFF667069);
   static const _surface = Color(0xFFF5F7F5);
@@ -262,6 +266,7 @@ class _UsdRoomPageState extends State<UsdRoomPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       body: SafeArea(
         bottom: false,

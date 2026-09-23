@@ -40,6 +40,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         MockDollarRepository();
     return PageView(
       controller: _pageController,
+      onPageChanged: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       children: [
         MyPage(
           repository: repository,
