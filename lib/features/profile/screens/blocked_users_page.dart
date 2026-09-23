@@ -1,3 +1,4 @@
+import '../widgets/profile_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 import 'package:dollar_trapped/features/shared/data/dollar_repository.dart';
@@ -27,10 +28,15 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
   }
 
   Future<void> _unblock(BlockedUser user) async {
+    if (_unblockingUserId != null) return;
     setState(() => _unblockingUserId = user.userId);
     try {
       await widget.repository.unblockUser(user.userId);
+      if (!mounted) return;
       _reload();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('차단을 해제했어요. 이 사용자의 채팅이 다시 표시돼요.')),
+      );
     } on ApiException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -50,9 +56,9 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('차단 관리')),
-      body: FutureBuilder<List<BlockedUser>>(
+    return ProfileLayout(
+      title: '차단 관리',
+      child: FutureBuilder<List<BlockedUser>>(
         future: _blockedUsersFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -73,15 +79,31 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
           return ListView.separated(
             padding: const EdgeInsets.all(24),
             itemCount: users.length,
-            separatorBuilder: (_, _) => const Divider(),
+            separatorBuilder: (_, _) => const Divider(color: Color(0xFFE1E6E2)),
             itemBuilder: (context, index) {
               final user = users[index];
               final isUnblocking = _unblockingUserId == user.userId;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
+                leading: const CircleAvatar(
+                  backgroundColor: ProfileStyle.soft,
+                  child: Icon(
+                    Icons.person_off_outlined,
+                    color: ProfileStyle.forest,
+                  ),
+                ),
                 title: Text(user.nickname),
+                subtitle: const Text(
+                  '이 사용자의 채팅을 숨기고 있어요.',
+                  style: ProfileStyle.caption,
+                ),
                 trailing: TextButton(
-                  onPressed: isUnblocking ? null : () => _unblock(user),
+                  style: TextButton.styleFrom(
+                    foregroundColor: ProfileStyle.action,
+                  ),
+                  onPressed: _unblockingUserId != null
+                      ? null
+                      : () => _unblock(user),
                   child: Text(isUnblocking ? '해제 중...' : '차단 해제'),
                 ),
               );

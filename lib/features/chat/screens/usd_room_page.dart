@@ -1,3 +1,4 @@
+import '../widgets/message_actions_sheet.dart';
 import 'package:dollar_trapped/features/chat/widgets/message_list.dart';
 import 'package:dollar_trapped/features/chat/widgets/rate_bar.dart';
 import 'dart:async';
@@ -19,8 +20,10 @@ class UsdRoomPage extends StatefulWidget {
     super.key,
     required this.onRateBarTap,
     required this.repository,
+    this.isActive = true,
   });
 
+  final bool isActive;
   final VoidCallback onRateBarTap;
   final DollarRepository repository;
 
@@ -44,6 +47,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   late Future<MessagePage> _messagesFuture;
   final _realtimeMessages = <RealtimeMessage>[];
   final _blockedUserIds = <String>{};
+  final _hiddenMessageIds = <String>{};
   DollarSocket? _socket;
   StreamSubscription<RealtimeMessage>? _messageSubscription;
   StreamSubscription<DollarSocketState>? _stateSubscription;
@@ -71,7 +75,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     }
     final socket = _socket!;
     _messageSubscription = socket.messages.listen((message) {
-      if (!mounted || _isBlockedRealtimeMessage(message)) return;
+      if (!mounted) return;
       setState(() => _realtimeMessages.add(message));
     });
     _stateSubscription = socket.states.listen((state) {
@@ -130,43 +134,63 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       final blockedUsers = results[1] as List<BlockedUser>;
       setState(() {
         _currentUserId = user.id;
-        _blockedUserIds.addAll(blockedUsers.map((user) => user.userId));
+        final freshIds = blockedUsers.map((user) => user.userId).toSet();
+        final unblocked = _blockedUserIds.difference(freshIds).isNotEmpty;
+        _blockedUserIds
+          ..clear()
+          ..addAll(freshIds);
+        if (unblocked) {
+          // The server omits blocked authors from history; fetch them again.
+          _messagesFuture = widget.repository.getMessages();
+          _realtimeMessages.clear();
+        }
       });
     } catch (_) {
       // Chat reading remains available when moderation context cannot load.
     }
   }
 
-  bool _isBlockedRealtimeMessage(RealtimeMessage message) {
-    final author = message.data['author'];
-    final authorId = author is Map ? author['id'] as String? : null;
-    return authorId != null && _blockedUserIds.contains(authorId);
+  @override
+  void didUpdateWidget(covariant UsdRoomPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadModerationContext();
+    }
   }
 
   Future<void> _moderateMessage({
     required String messageId,
     required String authorId,
   }) async {
-    final action = await showModalBottomSheet<_MessageAction>(
+    FocusManager.instance.primaryFocus?.unfocus();
+    final action = await showModalBottomSheet<MessageAction>(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text('신고'),
-              onTap: () => Navigator.pop(context, _MessageAction.report),
-            ),
-            ListTile(
-              title: const Text('차단'),
-              onTap: () => Navigator.pop(context, _MessageAction.block),
-            ),
-          ],
-        ),
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * .85,
       ),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const MessageActionsSheet(),
     );
     if (!mounted || action == null) return;
-    if (action == _MessageAction.report) {
+    if (action == MessageAction.hide) {
+      setState(() => _hiddenMessageIds.add(messageId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('메시지를 숨겼어요.'),
+          action: SnackBarAction(
+            label: '되돌리기',
+            onPressed: () {
+              if (mounted) setState(() => _hiddenMessageIds.remove(messageId));
+            },
+          ),
+        ),
+      );
+    } else if (action == MessageAction.report) {
       await _reportMessage(messageId);
     } else {
       await _blockUser(authorId);
@@ -200,13 +224,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   }
 
   Future<void> _blockUser(String userId) async {
-    setState(() {
-      _blockedUserIds.add(userId);
-      _realtimeMessages.removeWhere((message) {
-        final author = message.data['author'];
-        return author is Map && author['id'] == userId;
-      });
-    });
+    setState(() => _blockedUserIds.add(userId));
     try {
       await widget.repository.blockUser(userId);
       if (mounted) {
@@ -216,6 +234,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       }
     } catch (_) {
       if (mounted) {
+        setState(() => _blockedUserIds.remove(userId));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('차단하지 못했습니다. 다시 시도해 주세요.')),
         );
@@ -317,6 +336,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                 future: _messagesFuture,
                 realtimeMessages: _realtimeMessages,
                 blockedUserIds: _blockedUserIds,
+                hiddenMessageIds: _hiddenMessageIds,
                 currentUserId: _currentUserId,
                 scrollController: _messageScrollController,
                 onRetry: _reloadMessages,
@@ -406,5 +426,3 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     );
   }
 }
-
-enum _MessageAction { report, block }

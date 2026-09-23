@@ -10,6 +10,7 @@ class MessageList extends StatelessWidget {
     required this.future,
     required this.realtimeMessages,
     required this.blockedUserIds,
+    this.hiddenMessageIds = const {},
     required this.currentUserId,
     required this.scrollController,
     required this.onRetry,
@@ -19,6 +20,7 @@ class MessageList extends StatelessWidget {
   final Future<MessagePage> future;
   final List<RealtimeMessage> realtimeMessages;
   final Set<String> blockedUserIds;
+  final Set<String> hiddenMessageIds;
   final String? currentUserId;
   final ScrollController scrollController;
   final VoidCallback onRetry;
@@ -55,7 +57,13 @@ class MessageList extends StatelessWidget {
         messages.sort(
           (first, second) => first.createdAt.compareTo(second.createdAt),
         );
-        if (messages.isEmpty && realtimeMessages.isEmpty) {
+        // Filter data now, but construct bubbles only for the visible viewport.
+        final visibleRealtime = realtimeMessages.where((message) {
+          final author = message.data['author'];
+          final authorId = author is Map ? author['id'] as String? : null;
+          return authorId == null || !blockedUserIds.contains(authorId);
+        }).toList();
+        if (messages.isEmpty && visibleRealtime.isEmpty) {
           return const Center(
             child: Text(
               '아직 메시지가 없어요.',
@@ -63,12 +71,6 @@ class MessageList extends StatelessWidget {
             ),
           );
         }
-        // Filter data now, but construct bubbles only for the visible viewport.
-        final visibleRealtime = realtimeMessages.where((message) {
-          final author = message.data['author'];
-          final authorId = author is Map ? author['id'] as String? : null;
-          return authorId == null || !blockedUserIds.contains(authorId);
-        }).toList();
         final headerCount = messages.isEmpty ? 0 : 1;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!scrollController.hasClients) return;
@@ -85,11 +87,19 @@ class MessageList extends StatelessWidget {
             }
             final messageIndex = index - headerCount;
             if (messageIndex < messages.length) {
+              if (hiddenMessageIds.contains(messages[messageIndex].id)) {
+                return const _HiddenMessage();
+              }
               return _messageWidget(
                 messages[messageIndex],
                 currentUserId: currentUserId,
                 onModerate: onModerate,
               );
+            }
+            if (hiddenMessageIds.contains(
+              visibleRealtime[messageIndex - messages.length].id,
+            )) {
+              return const _HiddenMessage();
             }
             return _RealtimeChatMessage(
               message: visibleRealtime[messageIndex - messages.length],
@@ -210,5 +220,38 @@ class _DateLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     MessageList._formatDate(date),
     style: const TextStyle(color: Color(0xFF667069), fontSize: 12, height: 1.5),
+  );
+}
+
+class _HiddenMessage extends StatelessWidget {
+  const _HiddenMessage();
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7F5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE1E6E2)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.visibility_off_outlined,
+            size: 16,
+            color: Color(0xFF667069),
+          ),
+          SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '숨겨진 메시지',
+              style: TextStyle(color: Color(0xFF667069), fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }

@@ -19,10 +19,12 @@ class UsdKrwPage extends StatefulWidget {
 
 class _UsdKrwPageState extends State<UsdKrwPage> {
   late final PageController _pageController;
+  late int _activePage;
 
   @override
   void initState() {
     super.initState();
+    _activePage = widget.initialPage;
     _pageController = PageController(initialPage: widget.initialPage);
   }
 
@@ -40,7 +42,10 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         MockDollarRepository();
     return PageView(
       controller: _pageController,
-      onPageChanged: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+      onPageChanged: (page) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        setState(() => _activePage = page);
+      },
       children: [
         MyPage(
           repository: repository,
@@ -52,6 +57,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         ),
         UsdKrwDetailPage(repository: repository),
         UsdRoomPage(
+          isActive: _activePage == 2,
           repository: repository,
           onRateBarTap: () => _pageController.animateToPage(
             1,

@@ -227,7 +227,7 @@ void main() {
 
     await tester.longPress(find.text('환율 보고 계신가요?'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('신고'));
+    await tester.tap(find.text('신고하기'));
     await tester.pumpAndSettle();
 
     expect(find.text('신고되었습니다.'), findsOneWidget);
@@ -249,7 +249,7 @@ void main() {
       await tester.longPress(find.text('오늘도 달러방 출석합니다.'));
       await tester.pumpAndSettle();
 
-      expect(find.text('신고'), findsNothing);
+      expect(find.text('신고하기'), findsNothing);
       expect(find.text('차단'), findsNothing);
     },
   );
