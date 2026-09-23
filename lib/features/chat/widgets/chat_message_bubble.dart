@@ -40,8 +40,11 @@ class ChatMessageBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: alignment,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              alignment: isMine ? WrapAlignment.end : WrapAlignment.start,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
               children: [
                 if (cosmetics != null)
                   ServerCosmeticNickname(
@@ -61,7 +64,6 @@ class ChatMessageBubble extends StatelessWidget {
                       height: 20 / 13,
                     ),
                   ),
-                const SizedBox(width: 8),
                 Text(
                   holding,
                   style: const TextStyle(
@@ -70,15 +72,28 @@ class ChatMessageBubble extends StatelessWidget {
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  profit,
-                  style: TextStyle(
-                    color: profitColor,
-                    fontSize: 12,
-                    height: 1.5,
+                if (profit.isEmpty && holding.isNotEmpty)
+                  const Tooltip(
+                    message: '매수환율 또는 현재 환율 정보가 없어 수익률을 확인할 수 없어요.',
+                    triggerMode: TooltipTriggerMode.tap,
+                    child: Text(
+                      '수익률 —',
+                      style: TextStyle(
+                        color: Color(0xFF667069),
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    profit,
+                    style: TextStyle(
+                      color: profitColor,
+                      fontSize: 12,
+                      height: 1.5,
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 8),
