@@ -203,13 +203,13 @@ class MockDollarRepository implements DollarRepository {
   Future<void> resetPassword(String token, String password) async {}
   @override
   Future<CosmeticCatalog> getCosmeticCatalog() async =>
-      const CosmeticCatalog(items: [], probabilities: {}, duplicateTokens: 0);
+      const CosmeticCatalog(items: [], probabilities: {});
   @override
   Future<CosmeticInventory> getMyCosmetics() async => const CosmeticInventory(
     items: [],
     equipment: CosmeticEquipment(version: 0),
     tickets: 0,
-    settingTokens: 0,
+    dollarChips: 0,
   );
   @override
   Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment) async =>

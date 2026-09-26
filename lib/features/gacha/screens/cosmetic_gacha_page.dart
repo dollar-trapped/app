@@ -51,42 +51,22 @@ class CosmeticGachaPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('내 달러칩'),
+                    Text('0개', key: Key('gacha-chip-balance')),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 const RewardedTestButton(),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: ProfileStyle.forest,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '달러물림 / 닉네임 컬렉션',
-                        style: ProfileStyle.caption.copyWith(
-                          color: ProfileStyle.soft,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        nickname,
-                        style: const TextStyle(
-                          fontFamily: 'Noto Serif KR',
-                          fontSize: 36,
-                          height: 46 / 36,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        '평단은 못 바꿔도, 분위기는 바꿉니다.',
-                        style: ProfileStyle.caption.copyWith(
-                          color: ProfileStyle.soft,
-                        ),
-                      ),
-                    ],
+                const Text(
+                  '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.6,
+                    color: ProfileStyle.muted,
                   ),
                 ),
                 const SizedBox(height: 16),

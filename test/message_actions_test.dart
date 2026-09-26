@@ -19,6 +19,44 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('other report requires a nonblank description and sends it', (
+    tester,
+  ) async {
+    final repo = _Repo();
+    await open(tester, repo: repo);
+    await tester.tap(find.text('신고하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('신고 접수'));
+    await tester.pumpAndSettle();
+    expect(repo.reportCalls, 0);
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('기타').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), '   ');
+    await tester.tap(find.text('신고 접수'));
+    await tester.pumpAndSettle();
+    expect(repo.reportCalls, 0);
+    expect(find.text('기타 신고는 상세 사유를 입력해 주세요.'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField), '  개인정보를 공개했어요.  ');
+    await tester.tap(find.text('신고 접수'));
+    await tester.pumpAndSettle();
+    expect(repo.reportCalls, 1);
+    expect(repo.reportReason, 'OTHER');
+    expect(repo.reportDescription, '개인정보를 공개했어요.');
+    expect(find.text('신고되었습니다.'), findsOneWidget);
+  });
+
+  testWidgets('cancel report sends no request', (tester) async {
+    final repo = _Repo();
+    await open(tester, repo: repo);
+    await tester.tap(find.text('신고하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(repo.reportCalls, 0);
+  });
+
   testWidgets('hide only removes selected message and can be undone', (
     tester,
   ) async {
@@ -106,6 +144,7 @@ void main() {
 class _Repo extends MockDollarRepository {
   int blockCalls = 0, reportCalls = 0;
   bool failBlock = false;
+  String? reportReason, reportDescription;
   @override
   Future<void> blockUser(String userId) async {
     blockCalls++;
@@ -120,6 +159,8 @@ class _Repo extends MockDollarRepository {
     String? description,
   }) {
     reportCalls++;
+    reportReason = reason;
+    reportDescription = description;
     return super.reportMessage(
       messageId,
       reason: reason,

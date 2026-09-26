@@ -1,3 +1,4 @@
+import '../widgets/report_message_dialog.dart';
 import '../widgets/message_actions_sheet.dart';
 import 'package:dollar_trapped/features/chat/widgets/message_list.dart';
 import 'package:dollar_trapped/features/chat/widgets/rate_bar.dart';
@@ -198,8 +199,17 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   }
 
   Future<void> _reportMessage(String messageId) async {
+    final input = await showDialog<MessageReportInput>(
+      context: context,
+      builder: (_) => const ReportMessageDialog(),
+    );
+    if (!mounted || input == null) return;
     try {
-      await widget.repository.reportMessage(messageId, reason: 'OTHER');
+      await widget.repository.reportMessage(
+        messageId,
+        reason: input.reason,
+        description: input.description,
+      );
       if (mounted) {
         ScaffoldMessenger.of(
           context,

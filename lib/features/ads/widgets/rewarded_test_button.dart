@@ -197,11 +197,6 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
                     },
             ),
           ),
-          if (AdConfig.isTest)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('개발용 테스트 광고입니다. 시청해도 실제 뽑기권은 지급되지 않아요.'),
-            ),
           if (_message != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),

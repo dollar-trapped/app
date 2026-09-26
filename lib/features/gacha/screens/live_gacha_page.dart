@@ -149,8 +149,8 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
             const SizedBox(height: 16),
             for (final entry in _catalog!.probabilities.entries)
               Text('${entry.key}: ${(entry.value / 100).toStringAsFixed(2)}%'),
-            Text(
-              '같은 희귀도 안에서는 균등 확률이에요. 중복 시 설정 토큰 ${_catalog!.duplicateTokens}개를 받아요.',
+            const Text(
+              '같은 희귀도 안에서는 균등 확률이에요.\n중복 보상: 일반 1개 · 희귀 3개 · 특별 5개 달러칩\n달러칩 10개마다 뽑기권 1장으로 자동 전환돼요.',
             ),
             const SizedBox(height: 16),
             for (final item in _catalog!.items.where((e) => e.drawable))
@@ -191,45 +191,33 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('내 달러칩'),
+                      Text(
+                        _inventory == null
+                            ? '—'
+                            : '${_inventory!.dollarChips}개',
+                        key: const Key('gacha-chip-balance'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   RewardedTestButton(
                     repository: widget.repository,
                     enabled: !_drawing && !_loading,
                     onVerified: _load,
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: ProfileStyle.forest,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '달러물림 / 닉네임 컬렉션',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          widget.nickname,
-                          style: const TextStyle(
-                            fontFamily: 'Noto Serif KR',
-                            fontSize: 36,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          '평단은 못 바꿔도, 분위기는 바꿉니다.',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ],
+                  const Text(
+                    '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      height: 1.6,
+                      color: ProfileStyle.muted,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text('글자색 · 글꼴 · 배경을 모아보세요.'),
                   TextButton(
                     onPressed: _catalog == null ? null : _showCatalog,
                     child: const Text('획득 목록 · 확률 안내  ›'),
@@ -407,7 +395,7 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
                 const SizedBox(height: 24),
                 Text(
                   result.duplicate
-                      ? '중복 보상으로 설정 토큰 ${result.tokensGranted}개를 받았어요.'
+                      ? '중복 보상으로 달러칩 ${result.chipsGranted}개를 받았어요.'
                       : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
                   style: ProfileStyle.caption,
                 ),

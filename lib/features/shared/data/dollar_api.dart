@@ -157,7 +157,10 @@ class DollarApi implements DollarRepository {
     Json.from(
       (await _client.post<Map<String, dynamic>>(
         '/messages/$messageId/reports',
-        data: {'reason': reason, ?description: description},
+        data: {
+          'reason': reason,
+          if (description != null) 'description': description,
+        },
       )).data!,
     ),
   );

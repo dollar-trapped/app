@@ -103,22 +103,74 @@ class _MyPageState extends State<MyPage> {
   Widget build(BuildContext context) => ProfileLayout(
     title: '마이페이지',
     onBack: widget.onBack,
-    action: SizedBox(
-      width: 60,
-      height: 44,
-      child: TextButton(
-        onPressed: _openSettings,
-        style: TextButton.styleFrom(
-          foregroundColor: ProfileStyle.muted,
+    action: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Tooltip(
+          triggerMode: TooltipTriggerMode.tap,
+          preferBelow: true,
+          verticalOffset: 18,
+          showDuration: const Duration(seconds: 15),
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          constraints: const BoxConstraints(maxWidth: 300),
+          decoration: BoxDecoration(
+            color: ProfileStyle.forest,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
           textStyle: const TextStyle(
-            fontFamily: 'Noto Sans KR',
-            fontSize: 13,
-            height: 20 / 13,
-            fontWeight: FontWeight.w500,
+            fontSize: 12,
+            height: 1.6,
+            color: Colors.white,
+          ),
+          message:
+              '중복하면 달러칩으로 돌려드립니다.\n\n'
+              'COMMON 중복 → 달러칩 1개\n'
+              'RARE 중복 → 달러칩 3개\n'
+              'SPECIAL 중복 → 달러칩 5개\n\n'
+              '10개가 모이면 자동으로 뽑기권 1개가 됩니다.',
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: ProfileStyle.soft,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              _inventory == null ? '달러칩 —' : '달러칩 ${_inventory!.dollarChips}',
+              key: const Key('my-dollar-chip-balance'),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: ProfileStyle.action,
+              ),
+            ),
           ),
         ),
-        child: const Text('설정'),
-      ),
+        SizedBox(
+          width: 60,
+          height: 44,
+          child: TextButton(
+            onPressed: _openSettings,
+            style: TextButton.styleFrom(
+              foregroundColor: ProfileStyle.muted,
+              textStyle: const TextStyle(
+                fontFamily: 'Noto Sans KR',
+                fontSize: 13,
+                height: 20 / 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            child: const Text('설정'),
+          ),
+        ),
+      ],
     ),
     child: SingleChildScrollView(
       padding: const EdgeInsets.all(24),

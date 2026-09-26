@@ -230,6 +230,12 @@ void main() {
     await tester.tap(find.text('신고하기'));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('스팸·광고').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('신고 접수'));
+    await tester.pumpAndSettle();
     expect(find.text('신고되었습니다.'), findsOneWidget);
   });
 

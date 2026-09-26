@@ -22,6 +22,37 @@ const equipmentJson = {
   'version': 7,
 };
 void main() {
+  for (final reason in ['SPAM', 'ABUSE', 'OTHER']) {
+    test('report $reason sends detail under the description field', () async {
+      final adapter = _Adapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = adapter;
+      final store = _Tokens();
+      final api = DollarApi.withDependencies(ApiClient(store, dio: dio), store);
+      final receipt = await api.reportMessage(
+        'message-1',
+        reason: reason,
+        description: '신고 상세 이유',
+      );
+      final request = adapter.requests.single;
+      expect(request.method, 'POST');
+      expect(request.path, '/messages/message-1/reports');
+      expect(request.data, {'reason': reason, 'description': '신고 상세 이유'});
+      expect(receipt.messageId, 'message-1');
+    });
+  }
+  for (final reason in ['SPAM', 'ABUSE']) {
+    test('report $reason omits an absent optional description', () async {
+      final adapter = _Adapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = adapter;
+      final store = _Tokens();
+      final api = DollarApi.withDependencies(ApiClient(store, dio: dio), store);
+      await api.reportMessage('message-1', reason: reason);
+      expect(adapter.requests.single.data, {'reason': reason});
+    });
+  }
+
   test(
     'password endpoints are unauthenticated and use reset-specific token fields',
     () async {
@@ -78,7 +109,7 @@ void main() {
       });
       final draw = await api.drawCosmetic('draw-key');
       expect(draw.duplicate, isTrue);
-      expect(draw.tokensGranted, 1);
+      expect(draw.chipsGranted, 1);
       expect(adapter.requests.last.data, {'drawRequestId': 'draw-key'});
       final session = await api.createAdRewardSession('session-key');
       expect(session.customData, 'signed-data');
@@ -114,6 +145,12 @@ class _Adapter implements HttpClientAdapter {
   ) async {
     requests.add(o);
     final Object data = switch (o.path) {
+      '/messages/message-1/reports' => {
+        'id': 'report-1',
+        'messageId': 'message-1',
+        'status': 'RECEIVED',
+        'createdAt': '2026-09-26T00:00:00Z',
+      },
       '/auth/password/verify' => {
         'passwordResetToken': 'reset-token',
         'expiresAt': '2099-01-01T00:00:00Z',

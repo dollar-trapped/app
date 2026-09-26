@@ -48,7 +48,7 @@ void main() {
             const CosmeticDraw(
               item: item,
               duplicate: false,
-              tokensGranted: 0,
+              chipsGranted: 0,
               ticketsAfter: 0,
             ),
           );
@@ -149,7 +149,7 @@ void main() {
                       result: const CosmeticDraw(
                         item: item,
                         duplicate: false,
-                        tokensGranted: 0,
+                        chipsGranted: 0,
                         ticketsAfter: 0,
                       ),
                     ),
@@ -224,7 +224,7 @@ void main() {
       await _settleAndOpenCard(tester);
       expect(repo.keys, hasLength(2));
       expect(repo.keys[0], repo.keys[1]);
-      expect(find.text('중복 보상으로 설정 토큰 1개를 받았어요.'), findsOneWidget);
+      expect(find.text('중복 보상으로 달러칩 1개를 받았어요.'), findsOneWidget);
       await tester.ensureVisible(find.text('보관만 하기'));
       await tester.tap(find.text('보관만 하기'));
       await _settleAndOpenCard(tester);
@@ -303,7 +303,7 @@ class _Repo extends MockDollarRepository {
         version: 7,
       ),
       tickets: tickets,
-      settingTokens: 0,
+      dollarChips: 0,
     );
   }
 
@@ -315,7 +315,7 @@ class _Repo extends MockDollarRepository {
     return const CosmeticDraw(
       item: item,
       duplicate: true,
-      tokensGranted: 1,
+      chipsGranted: 1,
       ticketsAfter: 0,
     );
   }
@@ -362,7 +362,7 @@ class _RepeatRepo extends _Repo {
     return CosmeticDraw(
       item: item,
       duplicate: false,
-      tokensGranted: 0,
+      chipsGranted: 0,
       ticketsAfter: tickets,
     );
   }

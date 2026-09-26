@@ -50,11 +50,11 @@ class CosmeticInventory {
     required this.items,
     required this.equipment,
     required this.tickets,
-    required this.settingTokens,
+    required this.dollarChips,
   });
   final List<CosmeticItem> items;
   final CosmeticEquipment equipment;
-  final int tickets, settingTokens;
+  final int tickets, dollarChips;
   factory CosmeticInventory.fromJson(JsonMap j) => CosmeticInventory(
     items: (j['items'] as List)
         .map(
@@ -67,19 +67,14 @@ class CosmeticInventory {
       Map<String, dynamic>.from(j['equipment'] as Map),
     ),
     tickets: (j['drawEntitlementCount'] as num).toInt(),
-    settingTokens: (j['settingToken'] as num).toInt(),
+    dollarChips: ((j['dollarChip'] ?? j['settingToken']) as num).toInt(),
   );
 }
 
 class CosmeticCatalog {
-  const CosmeticCatalog({
-    required this.items,
-    required this.probabilities,
-    required this.duplicateTokens,
-  });
+  const CosmeticCatalog({required this.items, required this.probabilities});
   final List<CosmeticItem> items;
   final Map<String, int> probabilities;
-  final int duplicateTokens;
   factory CosmeticCatalog.fromJson(JsonMap j) => CosmeticCatalog(
     items: (j['items'] as List)
         .map((e) => CosmeticItem.fromJson(Map<String, dynamic>.from(e as Map)))
@@ -87,8 +82,6 @@ class CosmeticCatalog {
     probabilities: (j['drawPolicy']['rarityProbabilityBps'] as Map).map(
       (k, v) => MapEntry(k as String, (v as num).toInt()),
     ),
-    duplicateTokens: (j['drawPolicy']['duplicateSettingTokenAmount'] as num)
-        .toInt(),
   );
 }
 
@@ -96,18 +89,19 @@ class CosmeticDraw {
   const CosmeticDraw({
     required this.item,
     required this.duplicate,
-    required this.tokensGranted,
+    required this.chipsGranted,
     required this.ticketsAfter,
   });
   final CosmeticItem item;
   final bool duplicate;
-  final int tokensGranted, ticketsAfter;
+  final int chipsGranted, ticketsAfter;
   factory CosmeticDraw.fromJson(JsonMap j) => CosmeticDraw(
     item: CosmeticItem.fromJson(
       Map<String, dynamic>.from(j['cosmetic'] as Map),
     ),
     duplicate: j['outcome'] == 'DUPLICATE',
-    tokensGranted: (j['settingTokenGranted'] as num).toInt(),
+    chipsGranted: ((j['dollarChipGranted'] ?? j['settingTokenGranted']) as num)
+        .toInt(),
     ticketsAfter: (j['drawEntitlementCountAfter'] as num).toInt(),
   );
 }
