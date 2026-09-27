@@ -196,9 +196,16 @@ class _UsdRoomPageState extends State<UsdRoomPage>
         ).showSnackBar(const SnackBar(content: Text('메시지 내용을 확인해 주세요.')));
         return;
       }
+      final message = ApiException(
+        statusCode: null,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      ).actionableUserMessage;
+      if (message.isEmpty) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      ).showSnackBar(SnackBar(content: Text(message)));
     });
     _sendFailureSubscription = socket.failedMessageIds.listen((_) {
       if (!mounted) return;
@@ -310,7 +317,8 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       final message =
           error.statusCode == 409 || error.code == 'ALREADY_REPORTED'
           ? '이미 신고한 메시지입니다.'
-          : error.userMessage;
+          : error.actionableUserMessage;
+      if (message.isEmpty) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));

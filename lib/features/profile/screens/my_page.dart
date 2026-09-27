@@ -69,7 +69,7 @@ class _MyPageState extends State<MyPage> {
       if (mounted) {
         setState(
           () => _error = error is ApiException
-              ? error.userMessage
+              ? error.actionableUserMessage
               : '내 정보를 불러오지 못했어요.',
         );
       }

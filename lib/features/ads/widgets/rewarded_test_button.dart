@@ -61,7 +61,7 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
       if (mounted) {
         setState(
           () => _message = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '서버에 연결하지 못했어요. 광고를 다시 보지 않고 보상 확인을 재시도할 수 있어요.',
         );
       }
@@ -135,7 +135,7 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
         setState(() {
           _busy = false;
           _message = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '광고 보상 세션을 준비하지 못했어요. 다시 시도해 주세요.';
         });
       }
@@ -197,7 +197,7 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
                     },
             ),
           ),
-          if (_message != null)
+          if (_message?.isNotEmpty == true)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(_message!),

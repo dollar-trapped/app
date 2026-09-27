@@ -53,8 +53,8 @@ void main() {
     await _settleAndOpenCard(tester);
     expect(find.byType(CosmeticResultPage), findsOneWidget);
     expect(find.text('빈티지 골드'), findsOneWidget);
-    await tester.ensureVisible(find.text('보관만 하기'));
-    await tester.tap(find.text('보관만 하기'));
+    await tester.ensureVisible(find.text('지금 적용'));
+    await tester.tap(find.text('지금 적용'));
     await _settleAndOpenCard(tester);
     expect(find.text('0장'), findsOneWidget);
     expect(find.textContaining('지급·저장·적용되지'), findsOneWidget);

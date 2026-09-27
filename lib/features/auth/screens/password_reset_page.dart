@@ -52,7 +52,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
       if (mounted) {
         setState(
           () => _error = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '요청을 처리하지 못했어요. 다시 시도해 주세요.',
         );
       }
@@ -177,7 +177,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                 '변경하면 현재 기기를 포함한 모든 기기에서 로그아웃됩니다. 새 비밀번호로 다시 로그인해 주세요.',
               ),
             ],
-            if (_error != null)
+            if (_error?.isNotEmpty == true)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(

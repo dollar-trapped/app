@@ -58,6 +58,22 @@ class ApiException implements Exception {
         .join('\n');
   }
 
+  /// Hides only the generic validation prompt outside login and signup.
+  /// An empty message still represents a failed request.
+  String get actionableUserMessage {
+    bool isGeneric(String value) =>
+        value.replaceAll(RegExp(r'[\s.!?。]'), '') == '입력값을확인해주세요';
+    if (details.isEmpty) return isGeneric(message) ? '' : message;
+    return details
+        .where((detail) => !isGeneric(detail.reason))
+        .map(
+          (detail) => detail.field.isEmpty
+              ? detail.reason
+              : '${detail.field}: ${detail.reason}',
+        )
+        .join('\n');
+  }
+
   @override
   String toString() => 'ApiException($statusCode, $code): $message';
 }

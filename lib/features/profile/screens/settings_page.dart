@@ -88,7 +88,7 @@ class _SettingsPageState extends State<SettingsPage> {
         (route) => false,
       );
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.userMessage);
+      if (mounted) setState(() => _errorMessage = error.actionableUserMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '회원 탈퇴를 완료하지 못했습니다.');
     } finally {
@@ -158,7 +158,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       label: '개인정보 처리방침',
                       onTap: () => showProfileComingSoon(context, '개인정보 처리방침'),
                     ),
-                    if (_errorMessage != null)
+                    if (_errorMessage?.isNotEmpty == true)
                       Text(
                         _errorMessage!,
                         style: const TextStyle(color: Color(0xFFB42318)),

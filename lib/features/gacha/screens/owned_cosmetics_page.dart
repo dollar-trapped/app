@@ -51,7 +51,9 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () => _error = e is ApiException ? e.userMessage : '아이템을 불러오지 못했어요.',
+          () => _error = e is ApiException
+              ? e.actionableUserMessage
+              : '아이템을 불러오지 못했어요.',
         );
       }
     } finally {
@@ -97,7 +99,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
       } else {
         setState(
           () => _error = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '장착을 저장하지 못했어요. 다시 시도해 주세요.',
         );
       }
@@ -147,7 +149,8 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
             const SizedBox(height: 16),
             if (_busy) const Center(child: CircularProgressIndicator()),
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: Colors.red)),
+              if (_error!.isNotEmpty)
+                Text(_error!, style: const TextStyle(color: Colors.red)),
               TextButton(
                 onPressed: _busy ? null : _load,
                 child: const Text('다시 불러오기'),

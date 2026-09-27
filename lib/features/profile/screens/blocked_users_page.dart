@@ -38,10 +38,10 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
         const SnackBar(content: Text('차단을 해제했어요. 이 사용자의 채팅이 다시 표시돼요.')),
       );
     } on ApiException catch (error) {
-      if (mounted) {
+      if (mounted && error.actionableUserMessage.isNotEmpty) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.userMessage)));
+        ).showSnackBar(SnackBar(content: Text(error.actionableUserMessage)));
       }
     } catch (_) {
       if (mounted) {

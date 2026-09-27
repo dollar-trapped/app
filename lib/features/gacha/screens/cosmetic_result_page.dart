@@ -97,11 +97,6 @@ class CosmeticResultPage extends StatelessWidget {
               hint: '',
               onPressed: () => _finish(context),
             ),
-            const SizedBox(height: 12),
-            ProfileSecondaryButton(
-              label: '보관만 하기',
-              onPressed: () => _finish(context),
-            ),
           ],
         ),
       ),

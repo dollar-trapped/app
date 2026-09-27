@@ -230,8 +230,8 @@ void main() {
       expect(repo.keys, hasLength(2));
       expect(repo.keys[0], repo.keys[1]);
       expect(find.text('중복 보상으로 달러칩 1개를 받았어요.'), findsOneWidget);
-      await tester.ensureVisible(find.text('보관만 하기'));
-      await tester.tap(find.text('보관만 하기'));
+      await tester.ensureVisible(find.text('‹').last);
+      await tester.tap(find.text('‹').last);
       await _settleAndOpenCard(tester);
       expect(find.text('0장'), findsOneWidget);
       expect(repo.saved, isNull);

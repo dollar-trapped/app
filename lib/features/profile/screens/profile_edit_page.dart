@@ -51,7 +51,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         _currentRate = double.tryParse(rate.rate) ?? _currentRate;
       });
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.userMessage);
+      if (mounted) setState(() => _errorMessage = error.actionableUserMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '내 정보를 불러오지 못했어요.');
     } finally {
@@ -111,7 +111,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       setState(() => _user = user);
       Navigator.of(context).pop(true);
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.userMessage);
+      if (mounted) setState(() => _errorMessage = error.actionableUserMessage);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '변경사항을 저장하지 못했어요.');
     } finally {
@@ -164,7 +164,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
           else if (_user == null)
             TextButton(
               onPressed: _loadProfile,
-              child: Text(_errorMessage ?? '다시 시도'),
+              child: Text(
+                (_errorMessage?.isNotEmpty == true ? _errorMessage! : '다시 시도'),
+              ),
             )
           else ...[
             if (widget.section == ProfileEditSection.nickname)
@@ -229,7 +231,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 ],
               ),
             ),
-            if (_errorMessage != null)
+            if (_errorMessage?.isNotEmpty == true)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
                 child: Text(

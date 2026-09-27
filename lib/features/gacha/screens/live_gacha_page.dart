@@ -30,6 +30,12 @@ class LiveGachaPage extends StatefulWidget {
 }
 
 class _LiveGachaPageState extends State<LiveGachaPage> {
+  bool get _hasExchangeChips =>
+      _inventory != null &&
+      _catalog != null &&
+      _catalog!.chipExchangeCost > 0 &&
+      _inventory!.dollarChips >= _catalog!.chipExchangeCost;
+
   bool _exchanging = false;
   String? _exchangeId;
   CosmeticInventory? _inventory;
@@ -79,8 +85,9 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     } catch (e) {
       if (mounted) {
         setState(
-          () =>
-              _error = e is ApiException ? e.userMessage : '뽑기 정보를 불러오지 못했어요.',
+          () => _error = e is ApiException
+              ? e.actionableUserMessage
+              : '뽑기 정보를 불러오지 못했어요.',
         );
       }
     } finally {
@@ -128,7 +135,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       if (mounted) {
         setState(
           () => _error = error is ApiException
-              ? error.userMessage
+              ? error.actionableUserMessage
               : '교환 결과를 확인하지 못했어요. 같은 요청으로 다시 확인해 주세요.',
         );
       }
@@ -184,7 +191,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       if (mounted) {
         setState(
           () => _error = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '뽑기 결과를 확인하지 못했어요. 같은 요청으로 다시 확인해 주세요.',
         );
       }
@@ -268,16 +275,31 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                   const SizedBox(height: 16),
                   OutlinedButton(
                     key: const Key('exchange-dollar-chips'),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: _hasExchangeChips
+                          ? ProfileStyle.action
+                          : Colors.transparent,
+                      disabledBackgroundColor: _hasExchangeChips
+                          ? ProfileStyle.action
+                          : Colors.transparent,
+                      foregroundColor: _hasExchangeChips
+                          ? Colors.white
+                          : ProfileStyle.muted,
+                      disabledForegroundColor: _hasExchangeChips
+                          ? Colors.white70
+                          : ProfileStyle.muted,
+                      side: BorderSide(
+                        color: _hasExchangeChips
+                            ? ProfileStyle.action
+                            : const Color(0xFFE1E6E2),
+                      ),
+                    ),
                     onPressed:
                         !_loading &&
                             !_drawing &&
                             !_exchanging &&
                             _inventory != null &&
-                            (_exchangeId != null ||
-                                (_catalog != null &&
-                                    _catalog!.chipExchangeCost > 0 &&
-                                    _inventory!.dollarChips >=
-                                        _catalog!.chipExchangeCost))
+                            (_exchangeId != null || _hasExchangeChips)
                         ? _exchangeChips
                         : null,
                     child: Text(
@@ -326,7 +348,8 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                   if (_loading)
                     const Center(child: CircularProgressIndicator()),
                   if (_error != null) ...[
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
+                    if (_error!.isNotEmpty)
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
                     TextButton(
                       onPressed: _loading || _drawing || _exchanging
                           ? null
@@ -407,7 +430,7 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
       if (mounted) {
         setState(
           () => _error = e is ApiException
-              ? e.userMessage
+              ? e.actionableUserMessage
               : '장착하지 못했어요. 다시 시도해 주세요.',
         );
       }
@@ -487,7 +510,7 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
                       : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
                   style: ProfileStyle.caption,
                 ),
-                if (_error != null)
+                if (_error?.isNotEmpty == true)
                   Text(_error!, style: const TextStyle(color: Colors.red)),
               ],
             ),
@@ -516,13 +539,6 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
                   onPressed: _busy || result.ticketsAfter <= 0
                       ? null
                       : () => Navigator.of(context).pop(true),
-                ),
-                const SizedBox(height: 12),
-                ProfileSecondaryButton(
-                  label: '보관만 하기',
-                  onPressed: () {
-                    if (!_busy) Navigator.of(context).pop();
-                  },
                 ),
               ],
             ),
