@@ -8,9 +8,10 @@ abstract interface class PendingDrawStore {
 
 /// Stores only an idempotency key, scoped to the authenticated account.
 class SecurePendingDrawStore implements PendingDrawStore {
-  const SecurePendingDrawStore();
+  const SecurePendingDrawStore({this.prefix = 'pending_cosmetic_draw_'});
+  final String prefix;
   static const _storage = FlutterSecureStorage();
-  String _key(String userId) => 'pending_cosmetic_draw_$userId';
+  String _key(String userId) => '$prefix$userId';
   @override
   Future<String?> read(String userId) => _storage.read(key: _key(userId));
   @override

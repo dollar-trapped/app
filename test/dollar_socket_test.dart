@@ -15,6 +15,67 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test('chat ban preserves details and cancels all pending retries', () async {
+    final connection = _FakeConnection();
+    final socket = DollarSocket(
+      url: 'wss://example.test/ws',
+      tokenStore: _MemoryTokenStore(_tokens()),
+      connector: (_) async => connection,
+      ackTimeout: const Duration(milliseconds: 100),
+    );
+    addTearDown(socket.dispose);
+    await socket.connect();
+    connection.add({'type': 'CONNECTED', 'heartbeatIntervalSeconds': 60});
+    await _flush();
+    connection.add({'type': 'AUTH_OK'});
+    await _flush();
+    await socket.sendMessage('제한된 메시지');
+    final rejected = socket.errors.first;
+    connection.add({
+      'type': 'ERROR',
+      'error': {
+        'code': 'CHAT_BANNED',
+        'message': '제한',
+        'scope': 'SEND_MESSAGE',
+        'details': [
+          {'field': 'expiresAt', 'reason': '2026-10-01T00:00:00Z'},
+          {'field': 'userMessage', 'reason': '도배'},
+        ],
+      },
+    });
+    final error = await rejected;
+    expect(error.details.last.reason, '도배');
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    expect(
+      _types(connection.sent).where((type) => type == 'SEND_MESSAGE'),
+      hasLength(1),
+    );
+  });
+
+  test('suspension close clears tokens and stops reconnecting', () async {
+    final connection = _SuspendedConnection();
+    final tokens = _MemoryTokenStore(_tokens());
+    var connects = 0;
+    final socket = DollarSocket(
+      url: 'wss://example.test/ws',
+      tokenStore: tokens,
+      connector: (_) async {
+        connects++;
+        return connection;
+      },
+    );
+    addTearDown(socket.dispose);
+    await socket.connect();
+    final rejected = socket.errors.first;
+    await connection.close();
+    expect((await rejected).code, 'USER_SUSPENDED');
+    await _flush();
+    expect(await tokens.read(), isNull);
+    expect(socket.state, DollarSocketState.disconnected);
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    expect(connects, 1);
+  });
+
   test('builds the USD room WebSocket URL', () {
     dotenv.loadFromString(envString: 'API_BASE_URL=https://api.example.test');
 
@@ -276,8 +337,10 @@ void main() {
       connection.add({'type': 'AUTH_OK'});
       await _flush();
 
+      final failed = socket.failedMessageIds.first;
       final clientMessageId = await socket.sendMessage('ACK 없는 메시지');
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await failed.timeout(const Duration(seconds: 2));
+      await _flush();
 
       expect(failures, [clientMessageId]);
       expect(
@@ -645,4 +708,9 @@ class _FakeConnection implements SocketConnection {
 
   @override
   void send(String value) => sent.add(value);
+}
+
+class _SuspendedConnection extends _FakeConnection implements SocketCloseInfo {
+  @override
+  int? get closeCode => 4003;
 }

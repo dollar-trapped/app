@@ -8,10 +8,16 @@ import 'package:dollar_trapped/features/profile/screens/my_page.dart';
 import 'package:dollar_trapped/features/chat/screens/usd_room_page.dart';
 
 class UsdKrwPage extends StatefulWidget {
-  const UsdKrwPage({super.key, this.repository, this.initialPage = 1});
+  const UsdKrwPage({
+    super.key,
+    this.repository,
+    this.initialPage = 1,
+    this.acknowledgedNotices = const {},
+  });
 
   final DollarRepository? repository;
   final int initialPage;
+  final Set<String> acknowledgedNotices;
 
   @override
   State<UsdKrwPage> createState() => _UsdKrwPageState();
@@ -58,6 +64,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         UsdKrwDetailPage(repository: repository),
         UsdRoomPage(
           isActive: _activePage == 2,
+          acknowledgedNotices: widget.acknowledgedNotices,
           repository: repository,
           onRateBarTap: () => _pageController.animateToPage(
             1,

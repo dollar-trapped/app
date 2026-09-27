@@ -246,6 +246,14 @@ class DollarApi implements DollarRepository {
         )).data!,
       );
   @override
+  Future<ChipExchange> exchangeChips(String operationId) async =>
+      ChipExchange.fromJson(
+        (await _client.post<Map<String, dynamic>>(
+          '/gacha/chip-exchanges',
+          data: {'operationId': operationId},
+        )).data!,
+      );
+  @override
   Future<CosmeticDraw> drawCosmetic(String requestId) async =>
       CosmeticDraw.fromJson(
         (await _client.post<Map<String, dynamic>>(

@@ -34,3 +34,13 @@ Google 참고: https://developers.google.com/admob/flutter/ssv
 5. 장착 후 새 메시지의 닉네임만 꾸며지는지, 작은 화면·큰 글꼴에서도 주요 버튼에 접근 가능한지 확인한다.
 
 실제 인증된 쓰기 요청/메일 전송/보상 지급은 자동 검증에서 수행하지 않았다. 공개 명세·카탈로그 GET 조회 및 모의 API/플랫폼 기반 테스트로 검증했다.
+
+## 제재 안내·달러칩 교환 (2026-09-27)
+
+- `User.moderation`의 `warnings`는 사유를 모달로 보여주되 입력을 막지 않는다. 채팅방 진입·앱 복귀·활성 상태 30초 간격으로 상태를 확인한다. 동일 화면에서 이미 안내한 경고는 반복하지 않는다.
+- `chatBanExpiresAt`이 미래이면 채팅 입력·전송을 막고 해제 시각을 안내한다. 해제 시각 도달 또는 서버에서 해제를 확인하면 상태를 다시 반영한다. 재조회가 실패하면 알고 있는 제한을 유지한다.
+- WebSocket `CHAT_BANNED`는 `details.userMessage`, `details.expiresAt`을 안내하고 대기 중 메시지 재전송을 중단한다. `USER_SUSPENDED`/`ACCOUNT_DISABLED`, 정지 종료 코드 4003은 연결·인증 상태를 정리하고 안내 후 인증 화면으로 보낸다.
+- 로그인 `ACCOUNT_DISABLED`는 별도 모달로 안내한다. 현재 서버는 정지를 무기한으로 처리하며 시작·해제 시각을 로그인 응답에 제공하지 않는다. 앱은 날짜가 없으면 미제공이라고 표시한다. 상세 기간을 표시하려면 로그인 오류 details에 `userMessage`, `startsAt`, `expiresAt`이 필요하다. 계정 상태 조회에는 선택 필드 `suspensionStartsAt`, `suspensionExpiresAt`, `chatBanStartsAt`, `chatBanUserMessage`를 추가할 수 있도록 파서를 준비했다. 이 선택 필드들은 현재 서버 계약에 보장되지 않는다.
+- `POST /gacha/chip-exchanges`에 UUID v4 `operationId`를 전송한다. 한 요청에 1장 교환하며 비용은 `drawPolicy.chipExchangeCost`를 사용한다(구버전 응답에는 10). 성공 응답 `dollarChipBalanceAfter`, `drawEntitlementBalance`를 표시하고 보유 현황을 재조회한다.
+- 교환 ID는 사용자별 `pending_chip_exchange_` 키로 요청 전에 영구 저장한다. 타임아웃·앱 재실행 시 같은 ID를 재사용하고, 성공 확인 또는 `INSUFFICIENT_DOLLAR_CHIP`에서만 정리한다. 뽑기 ID와 저장 키를 분리한다. 클라이언트가 임의로 칩을 차감하거나 뽑기권을 지급하지 않는다.
+- 과거 자동 전환 문구는 제거했다. 보유 칩이 충분해도 사용자가 교환 버튼을 누르기 전에는 교환하지 않는다.

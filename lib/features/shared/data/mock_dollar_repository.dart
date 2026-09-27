@@ -215,6 +215,9 @@ class MockDollarRepository implements DollarRepository {
   Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment) async =>
       equipment;
   @override
+  Future<ChipExchange> exchangeChips(String operationId) async =>
+      throw StateError('달러칩이 부족합니다.');
+  @override
   Future<CosmeticDraw> drawCosmetic(String requestId) async =>
       throw StateError('뽑기권이 없습니다.');
   @override

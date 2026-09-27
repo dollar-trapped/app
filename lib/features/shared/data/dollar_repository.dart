@@ -19,6 +19,7 @@ abstract interface class DollarRepository {
   Future<CosmeticCatalog> getCosmeticCatalog();
   Future<CosmeticInventory> getMyCosmetics();
   Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment);
+  Future<ChipExchange> exchangeChips(String operationId);
   Future<CosmeticDraw> drawCosmetic(String requestId);
   Future<AdRewardSession> createAdRewardSession(String requestId);
   Future<AdRewardSession> getAdRewardSession(String sessionId);

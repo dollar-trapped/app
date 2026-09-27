@@ -25,6 +25,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: LiveGachaPage(
+              pendingExchangeStore: _MemoryPending(),
               repository: repo,
               nickname: '닉네임',
               pendingDrawStore: pending,
@@ -74,6 +75,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: LiveGachaPage(
+            pendingExchangeStore: _MemoryPending(),
             repository: repo,
             nickname: '닉네임',
             pendingDrawStore: _MemoryPending(),
@@ -107,6 +109,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: LiveGachaPage(
+          pendingExchangeStore: _MemoryPending(),
           repository: repo,
           nickname: '닉네임',
           pendingDrawStore: pending,
@@ -184,6 +187,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: LiveGachaPage(
+            pendingExchangeStore: _MemoryPending(),
             repository: repo,
             nickname: '닉네임',
             pendingDrawStore: pending,
@@ -207,6 +211,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: LiveGachaPage(
+            pendingExchangeStore: _MemoryPending(),
             repository: repo,
             nickname: '닉네임',
             pendingDrawStore: _MemoryPending(),
@@ -263,6 +268,7 @@ void main() {
     final repo = _Repo();
     for (final page in <Widget>[
       LiveGachaPage(
+        pendingExchangeStore: _MemoryPending(),
         repository: repo,
         nickname: '아주긴닉네임을사용해요',
         pendingDrawStore: _MemoryPending(),

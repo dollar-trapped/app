@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../auth/token_store.dart';
+import '../network/api_exception.dart';
 import '../network/api_client.dart';
 
 /// Transport CONNECT is followed by server CONNECTED, then client AUTH.
@@ -35,17 +36,23 @@ class SocketError {
     required this.message,
     this.scope,
     this.retryAfter,
+    this.details = const [],
   });
   final String code;
   final String message;
   final String? scope;
   final Duration? retryAfter;
+  final List<ApiErrorDetail> details;
 }
 
 abstract interface class SocketConnection {
   Stream<dynamic> get stream;
   void send(String value);
   Future<void> close();
+}
+
+abstract interface class SocketCloseInfo {
+  int? get closeCode;
 }
 
 typedef SocketConnector = Future<SocketConnection> Function(Uri url);
@@ -257,6 +264,7 @@ class DollarSocket {
     final socketError = SocketError(
       code: code,
       message: message,
+      details: ApiException.fromResponse(statusCode: null, data: error).details,
       scope: error['scope'] as String?,
       retryAfter: retrySeconds is num
           ? Duration(seconds: retrySeconds.ceil())
@@ -266,6 +274,16 @@ class DollarSocket {
       final recovered = await _refreshAndAuthenticate();
       if (!recovered) _errors.add(socketError);
       return;
+    }
+    if (['CHAT_BANNED', 'USER_SUSPENDED', 'ACCOUNT_DISABLED'].contains(code)) {
+      for (final pending in List<_PendingMessage>.of(_pending.values)) {
+        _discardPending(pending);
+      }
+      if (code != 'CHAT_BANNED') {
+        await tokenStore.clear();
+        await disconnect();
+        _setState(DollarSocketState.disconnected);
+      }
     }
     if (socketError.scope == 'SEND_MESSAGE' &&
         (code == 'BAD_REQUEST' || code == 'VALIDATION_ERROR')) {
@@ -324,6 +342,20 @@ class DollarSocket {
 
   void _onTransportClosed([Object? _]) {
     if (_disposed) return;
+    final connection = _connection;
+    if (connection is SocketCloseInfo &&
+        (connection as SocketCloseInfo).closeCode == 4003) {
+      for (final pending in List<_PendingMessage>.of(_pending.values)) {
+        _discardPending(pending);
+      }
+      unawaited(tokenStore.clear());
+      unawaited(disconnect());
+      _setState(DollarSocketState.disconnected);
+      _errors.add(
+        const SocketError(code: 'USER_SUSPENDED', message: '계정 이용이 정지되었습니다.'),
+      );
+      return;
+    }
     final previousSubscription = _subscription;
     final previousConnection = _connection;
     _subscription = null;
@@ -422,9 +454,11 @@ class _PendingMessage {
   Timer? timer;
 }
 
-class _WebSocketChannelConnection implements SocketConnection {
+class _WebSocketChannelConnection implements SocketConnection, SocketCloseInfo {
   _WebSocketChannelConnection(this._channel);
   final WebSocketChannel _channel;
+  @override
+  int? get closeCode => _channel.closeCode;
   @override
   Stream<dynamic> get stream => _channel.stream;
   @override

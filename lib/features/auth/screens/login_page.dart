@@ -1,3 +1,5 @@
+import '../../../core/moderation/moderation_dialog.dart';
+import '../../../core/moderation/moderation_status.dart';
 import 'password_reset_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -49,19 +51,38 @@ class _LoginPageState extends State<LoginPage> {
       if (tokenStore is RememberingTokenStore) {
         tokenStore.setRememberSession(_rememberLogin);
       }
-      await widget.repository.logIn(
+      final session = await widget.repository.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
       if (!mounted) return;
+      final acknowledged = <String>{};
+      for (final notice in session.user.moderation.notices) {
+        if (!notice.active) continue;
+        if (!mounted) return;
+        await showModerationDialog(context, notice);
+        acknowledged.add(notice.id);
+        if (notice.suspended) {
+          await tokenStore?.clear();
+          return;
+        }
+      }
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(
-          builder: (_) => UsdKrwPage(repository: widget.repository),
+          builder: (_) => UsdKrwPage(
+            repository: widget.repository,
+            acknowledgedNotices: acknowledged,
+          ),
         ),
         (route) => false,
       );
     } on ApiException catch (error) {
-      if (mounted) setState(() => _errorMessage = error.userMessage);
+      if (mounted) {
+        setState(() => _errorMessage = error.userMessage);
+        final notice = ModerationNotice.fromError(error);
+        if (notice != null) await showModerationDialog(context, notice);
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _errorMessage = '로그인 요청을 처리하지 못했어요. 다시 시도해 주세요.');

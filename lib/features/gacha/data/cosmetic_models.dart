@@ -72,13 +72,20 @@ class CosmeticInventory {
 }
 
 class CosmeticCatalog {
-  const CosmeticCatalog({required this.items, required this.probabilities});
+  const CosmeticCatalog({
+    required this.items,
+    required this.probabilities,
+    this.chipExchangeCost = 10,
+  });
+  final int chipExchangeCost;
   final List<CosmeticItem> items;
   final Map<String, int> probabilities;
   factory CosmeticCatalog.fromJson(JsonMap j) => CosmeticCatalog(
     items: (j['items'] as List)
         .map((e) => CosmeticItem.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
+    chipExchangeCost:
+        (j['drawPolicy']['chipExchangeCost'] as num?)?.toInt() ?? 10,
     probabilities: (j['drawPolicy']['rarityProbabilityBps'] as Map).map(
       (k, v) => MapEntry(k as String, (v as num).toInt()),
     ),
@@ -146,4 +153,13 @@ class MessageCosmetics {
       background: slot('nameBackground', 'NAME_BACKGROUND', 'background'),
     );
   }
+}
+
+class ChipExchange {
+  const ChipExchange({required this.chipsAfter, required this.ticketsAfter});
+  final int chipsAfter, ticketsAfter;
+  factory ChipExchange.fromJson(JsonMap j) => ChipExchange(
+    chipsAfter: (j['dollarChipBalanceAfter'] as num).toInt(),
+    ticketsAfter: (j['drawEntitlementBalance'] as num).toInt(),
+  );
 }

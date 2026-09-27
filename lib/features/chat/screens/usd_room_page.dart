@@ -1,3 +1,5 @@
+import '../../../core/moderation/moderation_status.dart';
+import '../../../core/moderation/moderation_dialog.dart';
 import '../widgets/report_message_dialog.dart';
 import '../widgets/message_actions_sheet.dart';
 import 'package:dollar_trapped/features/chat/widgets/message_list.dart';
@@ -22,8 +24,10 @@ class UsdRoomPage extends StatefulWidget {
     required this.onRateBarTap,
     required this.repository,
     this.isActive = true,
+    this.acknowledgedNotices = const {},
   });
 
+  final Set<String> acknowledgedNotices;
   final bool isActive;
   final VoidCallback onRateBarTap;
   final DollarRepository repository;
@@ -33,7 +37,7 @@ class UsdRoomPage extends StatefulWidget {
 }
 
 class _UsdRoomPageState extends State<UsdRoomPage>
-    with AutomaticKeepAliveClientMixin<UsdRoomPage> {
+    with AutomaticKeepAliveClientMixin<UsdRoomPage>, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
 
@@ -58,10 +62,83 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   var _socketState = DollarSocketState.disconnected;
   var _ownsSocket = false;
   String? _currentUserId;
+  ModerationNotice? _restriction;
+  final _shownNotices = <String>{};
+  Timer? _moderationPoll, _banExpiry;
+  bool _checkingModeration = false;
+  bool get _chatRestricted => _restriction?.blocksChat == true;
+
+  Future<void> _applyNotice(ModerationNotice notice) async {
+    if (!mounted || !notice.active) return;
+    if (notice.blocksChat) {
+      setState(() => _restriction = notice);
+      FocusManager.instance.primaryFocus?.unfocus();
+      _banExpiry?.cancel();
+      if (notice.expiresAt != null) {
+        _banExpiry = Timer(
+          notice.expiresAt!.difference(DateTime.now()),
+          () async {
+            await _refreshModeration();
+          },
+        );
+      }
+    }
+    if (!_shownNotices.add(notice.id)) return;
+    if (notice.suspended) {
+      _moderationPoll?.cancel();
+      final tokens = context.read<TokenStore?>();
+      await _socket?.disconnect();
+      await tokens?.clear();
+      if (!mounted) return;
+    }
+    await showModerationDialog(context, notice);
+    if (mounted && notice.suspended) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const AuthPage()),
+        (_) => false,
+      );
+    }
+  }
+
+  Future<void> _refreshModeration() async {
+    if (_checkingModeration) return;
+    _checkingModeration = true;
+    try {
+      final user = await widget.repository.getMe();
+      if (!mounted) return;
+      setState(() {
+        _currentUserId = user.id;
+        _restriction = null;
+      });
+      for (final notice in user.moderation.notices) {
+        await _applyNotice(notice);
+      }
+    } on ApiException catch (error) {
+      final notice = ModerationNotice.fromError(error);
+      if (notice != null) await _applyNotice(notice);
+    } catch (_) {
+      // Keep any known restriction until the server confirms its removal.
+    } finally {
+      _checkingModeration = false;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.isActive) {
+      _refreshModeration();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _shownNotices.addAll(widget.acknowledgedNotices);
+    WidgetsBinding.instance.addObserver(this);
+    _refreshModeration();
+    _moderationPoll = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (widget.isActive) _refreshModeration();
+    });
     _messagesFuture = widget.repository.getMessages();
     _loadModerationContext();
     _socket = context.read<DollarSocket?>();
@@ -93,6 +170,18 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     });
     _errorSubscription = socket.errors.listen((error) {
       if (!mounted) return;
+      final notice = ModerationNotice.fromError(
+        ApiException(
+          statusCode: 403,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        ),
+      );
+      if (notice != null) {
+        unawaited(_applyNotice(notice));
+        return;
+      }
       if (error.code == 'TOKEN_EXPIRED') {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute<void>(builder: (_) => const AuthPage()),
@@ -156,6 +245,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
       _loadModerationContext();
+      _refreshModeration();
     }
   }
 
@@ -254,6 +344,9 @@ class _UsdRoomPageState extends State<UsdRoomPage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _moderationPoll?.cancel();
+    _banExpiry?.cancel();
     _messageSubscription?.cancel();
     _stateSubscription?.cancel();
     _deletionSubscription?.cancel();
@@ -267,7 +360,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
 
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
-    if (content.isEmpty) return;
+    if (content.isEmpty || _chatRestricted) return;
     final socket = _socket;
     if (socket == null || socket.state != DollarSocketState.authenticated) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -353,6 +446,19 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                 onModerate: _moderateMessage,
               ),
             ),
+            if (_restriction != null)
+              MaterialBanner(
+                content: Text(
+                  '${_restriction!.title}\n${_restriction!.period}',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        showModerationDialog(context, _restriction!),
+                    child: const Text('자세히'),
+                  ),
+                ],
+              ),
             InkWell(onTap: widget.onRateBarTap, child: const RateBar()),
             Container(
               height: 76,
@@ -362,6 +468,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                   Expanded(
                     child: TextField(
                       controller: _messageController,
+                      enabled: !_chatRestricted,
                       onChanged: (_) => setState(() {}),
                       style: const TextStyle(
                         color: _ink,
@@ -369,7 +476,9 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                         height: 1.6,
                       ),
                       decoration: InputDecoration(
-                        hintText: '메시지를 입력하세요',
+                        hintText: _chatRestricted
+                            ? '채팅 이용이 제한되었습니다'
+                            : '메시지를 입력하세요',
                         hintStyle: const TextStyle(
                           color: _muted,
                           fontSize: 15,
@@ -402,7 +511,9 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                     height: 44,
                     child: ElevatedButton(
                       key: const Key('chat-send'),
-                      onPressed: _messageController.text.trim().isEmpty
+                      onPressed:
+                          _chatRestricted ||
+                              _messageController.text.trim().isEmpty
                           ? null
                           : _sendMessage,
                       style: ElevatedButton.styleFrom(

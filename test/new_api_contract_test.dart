@@ -22,6 +22,19 @@ const equipmentJson = {
   'version': 7,
 };
 void main() {
+  test('chip exchange uses operationId and server balances', () async {
+    final adapter = _Adapter();
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+      ..httpClientAdapter = adapter;
+    final tokens = _Tokens();
+    final api = DollarApi.withDependencies(ApiClient(tokens, dio: dio), tokens);
+    final result = await api.exchangeChips('operation-1');
+    expect(adapter.requests.single.path, '/gacha/chip-exchanges');
+    expect(adapter.requests.single.method, 'POST');
+    expect(adapter.requests.single.data, {'operationId': 'operation-1'});
+    expect(result.chipsAfter, 22);
+    expect(result.ticketsAfter, 1);
+  });
   for (final reason in ['SPAM', 'ABUSE', 'OTHER']) {
     test('report $reason sends detail under the description field', () async {
       final adapter = _Adapter();
@@ -171,6 +184,10 @@ class _Adapter implements HttpClientAdapter {
         'settingToken': 3,
       },
       '/users/me/cosmetic-equipment' => equipmentJson,
+      '/gacha/chip-exchanges' => {
+        'dollarChipBalanceAfter': 22,
+        'drawEntitlementBalance': 1,
+      },
       '/gacha/draws' => {
         'cosmetic': itemJson,
         'outcome': 'DUPLICATE',

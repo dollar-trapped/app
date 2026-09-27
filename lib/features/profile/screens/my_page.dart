@@ -135,7 +135,7 @@ class _MyPageState extends State<MyPage> {
               'COMMON 중복 → 달러칩 1개\n'
               'RARE 중복 → 달러칩 3개\n'
               'SPECIAL 중복 → 달러칩 5개\n\n'
-              '10개가 모이면 자동으로 뽑기권 1개가 됩니다.',
+              '닉네임 뽑기에서 달러칩을 뽑기권으로 교환할 수 있어요.',
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: BoxDecoration(

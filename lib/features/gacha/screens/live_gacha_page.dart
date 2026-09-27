@@ -18,8 +18,11 @@ class LiveGachaPage extends StatefulWidget {
     required this.repository,
     required this.nickname,
     this.pendingDrawStore = const SecurePendingDrawStore(),
+    this.pendingExchangeStore = const SecurePendingDrawStore(
+      prefix: 'pending_chip_exchange_',
+    ),
   });
-  final PendingDrawStore pendingDrawStore;
+  final PendingDrawStore pendingDrawStore, pendingExchangeStore;
   final DollarRepository repository;
   final String nickname;
   @override
@@ -27,6 +30,8 @@ class LiveGachaPage extends StatefulWidget {
 }
 
 class _LiveGachaPageState extends State<LiveGachaPage> {
+  bool _exchanging = false;
+  String? _exchangeId;
   CosmeticInventory? _inventory;
   CosmeticCatalog? _catalog;
   String? _error, _drawRequestId, _userId;
@@ -57,6 +62,14 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
         /* Drawing itself requires a successful durable write. */
       }
       if (!mounted) return;
+      String? pendingExchange;
+      try {
+        pendingExchange = await widget.pendingExchangeStore.read(user.id);
+      } catch (_) {
+        /* A successful write is required before exchange. */
+      }
+      if (!mounted) return;
+      _exchangeId ??= pendingExchange;
       _userId = user.id;
       _drawRequestId ??= pending;
       setState(() {
@@ -75,8 +88,57 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     }
   }
 
+  Future<void> _exchangeChips() async {
+    if (_exchanging || _drawing || _loading || _userId == null) return;
+    setState(() {
+      _exchanging = true;
+      _error = null;
+    });
+    try {
+      _exchangeId ??=
+          await widget.pendingExchangeStore.read(_userId!) ?? newRequestId();
+      await widget.pendingExchangeStore.write(_userId!, _exchangeId!);
+      final result = await widget.repository.exchangeChips(_exchangeId!);
+      await widget.pendingExchangeStore.clear(_userId!);
+      _exchangeId = null;
+      if (!mounted) return;
+      final inventory = _inventory!;
+      setState(
+        () => _inventory = CosmeticInventory(
+          items: inventory.items,
+          equipment: inventory.equipment,
+          tickets: result.ticketsAfter,
+          dollarChips: result.chipsAfter,
+        ),
+      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('달러칩을 뽑기권 1개로 교환했어요.')));
+      await _load();
+    } catch (error) {
+      // Keep the operation ID on ambiguous failures, including app restarts.
+      if (error is ApiException && error.code == 'INSUFFICIENT_DOLLAR_CHIP') {
+        try {
+          await widget.pendingExchangeStore.clear(_userId!);
+          _exchangeId = null;
+        } catch (_) {
+          /* Retry the same operation if clearing failed. */
+        }
+      }
+      if (mounted) {
+        setState(
+          () => _error = error is ApiException
+              ? error.userMessage
+              : '교환 결과를 확인하지 못했어요. 같은 요청으로 다시 확인해 주세요.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exchanging = false);
+    }
+  }
+
   Future<void> _draw() async {
-    if (_drawing) return;
+    if (_drawing || _exchanging) return;
     setState(() {
       _drawing = true;
       _error = null;
@@ -149,8 +211,8 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
             const SizedBox(height: 16),
             for (final entry in _catalog!.probabilities.entries)
               Text('${entry.key}: ${(entry.value / 100).toStringAsFixed(2)}%'),
-            const Text(
-              '같은 희귀도 안에서는 균등 확률이에요.\n중복 보상: 일반 1개 · 희귀 3개 · 특별 5개 달러칩\n달러칩 10개마다 뽑기권 1장으로 자동 전환돼요.',
+            Text(
+              '같은 희귀도 안에서는 균등 확률이에요.\n중복 보상: 일반 1개 · 희귀 3개 · 특별 5개 달러칩\n달러칩 ${_catalog!.chipExchangeCost}개를 교환 버튼으로 뽑기권 1장으로 바꿀 수 있어요.',
             ),
             const SizedBox(height: 16),
             for (final item in _catalog!.items.where((e) => e.drawable))
@@ -165,7 +227,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   );
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_drawing,
+    canPop: !_drawing && !_exchanging,
     child: _awaitingDraw
         ? const GachaReveal(
             key: Key('gacha-draw-pending'),
@@ -204,9 +266,32 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  OutlinedButton(
+                    key: const Key('exchange-dollar-chips'),
+                    onPressed:
+                        !_loading &&
+                            !_drawing &&
+                            !_exchanging &&
+                            _inventory != null &&
+                            (_exchangeId != null ||
+                                (_catalog != null &&
+                                    _catalog!.chipExchangeCost > 0 &&
+                                    _inventory!.dollarChips >=
+                                        _catalog!.chipExchangeCost))
+                        ? _exchangeChips
+                        : null,
+                    child: Text(
+                      _exchanging
+                          ? '교환 중…'
+                          : _exchangeId != null
+                          ? '교환 결과 다시 확인'
+                          : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개 → 뽑기권 1개로 바꾸기',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   RewardedTestButton(
                     repository: widget.repository,
-                    enabled: !_drawing && !_loading,
+                    enabled: !_drawing && !_loading && !_exchanging,
                     onVerified: _load,
                   ),
                   const SizedBox(height: 16),
@@ -223,7 +308,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     child: const Text('획득 목록 · 확률 안내  ›'),
                   ),
                   TextButton(
-                    onPressed: _drawing
+                    onPressed: _drawing || _exchanging
                         ? null
                         : () async {
                             await Navigator.of(context).push(
@@ -243,7 +328,9 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                   if (_error != null) ...[
                     Text(_error!, style: const TextStyle(color: Colors.red)),
                     TextButton(
-                      onPressed: _loading || _drawing ? null : _load,
+                      onPressed: _loading || _drawing || _exchanging
+                          ? null
+                          : _load,
                       child: const Text('정보 다시 불러오기'),
                     ),
                   ],
@@ -262,6 +349,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     : '광고 보상은 서버 검증 후 반영돼요.',
                 onPressed:
                     !_loading &&
+                        !_exchanging &&
                         !_drawing &&
                         (_drawRequestId != null ||
                             (_inventory?.tickets ?? 0) > 0)
