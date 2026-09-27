@@ -35,12 +35,28 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _verificationMessage;
   String? _errorMessage;
 
-  bool get _canSubmit =>
-      _emailController.text.isNotEmpty &&
-      _passwordController.text.length >= _minimumPasswordLength &&
-      _nicknameController.text.isNotEmpty &&
-      _agreedToTerms &&
-      _agreedToPrivacy;
+  bool _showValidation = false;
+  bool _showPassword = false;
+
+  String? get _emailError =>
+      RegExp(
+        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+      ).hasMatch(_emailController.text.trim())
+      ? null
+      : '올바른 이메일 주소를 입력해 주세요.';
+  String? get _passwordError =>
+      _passwordController.text.length >= _minimumPasswordLength
+      ? null
+      : '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요. (현재 ${_passwordController.text.length}자)';
+  String? get _nicknameError =>
+      _nicknameController.text.trim().isEmpty ? '닉네임을 입력해 주세요.' : null;
+
+  void _showError(String message) {
+    setState(() => _errorMessage = message);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   void dispose() {
@@ -52,10 +68,16 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _signUp() async {
-    if (!_canSubmit || _isSubmitting || _verificationToken == null) {
-      if (_verificationToken == null) {
-        setState(() => _errorMessage = '이메일 인증을 완료해 주세요.');
-      }
+    if (_isSubmitting) return;
+    setState(() => _showValidation = true);
+    final error =
+        _emailError ??
+        _passwordError ??
+        _nicknameError ??
+        (_verificationToken == null ? '이메일 인증을 완료해 주세요.' : null) ??
+        (!_agreedToTerms || !_agreedToPrivacy ? '필수 약관에 모두 동의해 주세요.' : null);
+    if (error != null) {
+      _showError(error);
       return;
     }
     setState(() {
@@ -78,11 +100,11 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     } on ApiException catch (error) {
       if (mounted) {
-        setState(() => _errorMessage = _signUpErrorMessage(error));
+        _showError(_signUpErrorMessage(error));
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _errorMessage = '가입 요청을 처리하지 못했어요. 다시 시도해 주세요.');
+        _showError('가입 요청을 처리하지 못했어요. 다시 시도해 주세요.');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -91,7 +113,11 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _requestVerification() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || _isRequestingVerification) return;
+    if (_isRequestingVerification) return;
+    if (_emailError != null) {
+      _showError(_emailError!);
+      return;
+    }
     setState(() {
       _isRequestingVerification = true;
       _errorMessage = null;
@@ -100,7 +126,9 @@ class _SignUpPageState extends State<SignUpPage> {
     });
     try {
       await widget.repository.requestEmailVerification(email: email);
-      if (mounted) setState(() => _verificationMessage = '인증 코드를 이메일로 보냈어요.');
+      if (mounted && _emailController.text.trim() == email) {
+        setState(() => _verificationMessage = '인증 코드를 이메일로 보냈어요.');
+      }
     } on ApiException catch (error) {
       if (mounted) {
         setState(
@@ -117,19 +145,22 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _verifyEmail() async {
-    if (_verificationCodeController.text.trim().isEmpty || _isVerifyingEmail) {
+    if (_isVerifyingEmail) return;
+    if (_verificationCodeController.text.trim().isEmpty) {
+      _showError('메일로 받은 인증 코드를 입력해 주세요.');
       return;
     }
+    final email = _emailController.text.trim();
     setState(() {
       _isVerifyingEmail = true;
       _errorMessage = null;
     });
     try {
       final token = await widget.repository.verifyEmail(
-        email: _emailController.text.trim(),
+        email: email,
         code: _verificationCodeController.text.trim(),
       );
-      if (mounted) {
+      if (mounted && _emailController.text.trim() == email) {
         setState(() {
           _verificationToken = token;
           _verificationMessage = '이메일 인증이 완료되었습니다.';
@@ -260,6 +291,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               label: '이메일',
                               hintText: '이메일 주소 입력',
                               helperText: '로그인과 계정 복구에 사용해요.',
+                              errorText: _showValidation ? _emailError : null,
                               keyboardType: TextInputType.emailAddress,
                               onChanged: (_) => setState(() {
                                 _verificationToken = null;
@@ -332,7 +364,23 @@ class _SignUpPageState extends State<SignUpPage> {
                               hintText: '비밀번호 입력',
                               helperText:
                                   '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
-                              obscureText: true,
+                              obscureText: !_showPassword,
+                              errorText:
+                                  _showValidation ||
+                                      _passwordController.text.isNotEmpty
+                                  ? _passwordError
+                                  : null,
+                              suffixIcon: IconButton(
+                                tooltip: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
+                                onPressed: () => setState(
+                                  () => _showPassword = !_showPassword,
+                                ),
+                                icon: Icon(
+                                  _showPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
+                              ),
                               onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
@@ -341,6 +389,9 @@ class _SignUpPageState extends State<SignUpPage> {
                               label: '닉네임',
                               hintText: '닉네임 입력',
                               helperText: '채팅에 표시되는 이름이에요.',
+                              errorText: _showValidation
+                                  ? _nicknameError
+                                  : null,
                               onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 20),
@@ -363,9 +414,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton(
-                                onPressed: _canSubmit && !_isSubmitting
-                                    ? _signUp
-                                    : null,
+                                onPressed: _isSubmitting ? null : _signUp,
                                 style: ElevatedButton.styleFrom(
                                   elevation: 0,
                                   backgroundColor: _action,

@@ -59,11 +59,43 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     }
   }
 
+  String? _decimalValue(String text) {
+    var value = text.replaceAll(',', '').trim();
+    if (value.isEmpty) return null;
+    if (value.startsWith('.')) value = '0$value';
+    if (value.endsWith('.')) value = '${value}0';
+    return value;
+  }
+
+  void _insertDecimal(TextEditingController controller) {
+    if (controller.text.contains('.')) return;
+    final selection = controller.selection;
+    final start = selection.isValid ? selection.start : controller.text.length;
+    final end = selection.isValid ? selection.end : start;
+    controller.value = TextEditingValue(
+      text: controller.text.replaceRange(start, end, '.'),
+      selection: TextSelection.collapsed(offset: start + 1),
+    );
+    setState(() {});
+  }
+
   Future<void> _saveProfile() async {
     if (_user == null || _isSaving) return;
     if (_nicknameController.text.trim().isEmpty) {
       setState(() => _errorMessage = '닉네임을 입력해 주세요.');
       return;
+    }
+    for (final entry in {
+      '보유량': _holdingController.text,
+      '평균 매수가': _averagePriceController.text,
+    }.entries) {
+      final value = _decimalValue(entry.value);
+      if (value != null && !RegExp(r'^\d+(\.\d+)?$').hasMatch(value)) {
+        setState(
+          () => _errorMessage = '${entry.key}에 올바른 금액을 입력해 주세요. 예: 1234.56',
+        );
+        return;
+      }
     }
     setState(() {
       _isSaving = true;
@@ -72,13 +104,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
     try {
       final user = await widget.repository.updateMe(
         nickname: _nicknameController.text.trim(),
-        usdAmount: _holdingController.text.replaceAll(',', '').trim().isEmpty
-            ? null
-            : _holdingController.text.replaceAll(',', '').trim(),
-        averageExchangeRate:
-            _averagePriceController.text.replaceAll(',', '').trim().isEmpty
-            ? null
-            : _averagePriceController.text.replaceAll(',', '').trim(),
+        usdAmount: _decimalValue(_holdingController.text),
+        averageExchangeRate: _decimalValue(_averagePriceController.text),
       );
       if (!mounted) return;
       setState(() => _user = user);
@@ -156,7 +183,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               InfoField(
                 label: '보유량 (USD)',
                 controller: _holdingController,
-                helper: '보유한 달러 금액',
+                helper: '센트까지 입력할 수 있어요. 예: 1234.56',
+                onInsertDecimal: () => _insertDecimal(_holdingController),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -166,7 +194,8 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               InfoField(
                 label: '평균 매수가 (원)',
                 controller: _averagePriceController,
-                helper: '1달러당 매수 가격',
+                helper: '1달러당 매수 가격. 예: 1346.09',
+                onInsertDecimal: () => _insertDecimal(_averagePriceController),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),

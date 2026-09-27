@@ -22,16 +22,31 @@ void main() {
     await tester.ensureVisible(find.text('내 달러 포지션'));
     await tester.tap(find.text('내 달러 포지션'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(0), '3,000');
-    await tester.enterText(find.byType(TextField).at(1), '1,300');
+    await tester.enterText(find.byType(TextField).at(0), '3000');
+    await tester.tap(find.byTooltip('소수점 입력').first);
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
+      '3000.',
+    );
+    await tester.enterText(find.byType(TextField).at(0), '3,000.25');
+    await tester.enterText(find.byType(TextField).at(1), '1,300.50');
     await tester.ensureVisible(find.text('변경사항 저장'));
     await tester.tap(find.text('변경사항 저장'));
     await tester.pumpAndSettle();
     final user = await repository.getMe();
-    expect(user.usdAmount, '3000');
-    expect(user.averageExchangeRate, '1300');
+    expect(user.usdAmount, '3000.25');
+    expect(user.averageExchangeRate, '1300.50');
     expect(user.nickname, '초록달러');
     expect(find.text('초록달러'), findsOneWidget);
+    await tester.ensureVisible(find.text('내 달러 포지션'));
+    await tester.tap(find.text('내 달러 포지션'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
+      '3000.25',
+    );
+    expect(find.textContaining(r'$3000.25'), findsOneWidget);
   });
 
   testWidgets('narrow enlarged-text profile and settings remain scrollable', (

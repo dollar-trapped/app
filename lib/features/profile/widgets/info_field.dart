@@ -8,6 +8,7 @@ class InfoField extends StatelessWidget {
     required this.helper,
     required this.onChanged,
     this.keyboardType,
+    this.onInsertDecimal,
   });
 
   final String label;
@@ -15,6 +16,7 @@ class InfoField extends StatelessWidget {
   final String helper;
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
+  final VoidCallback? onInsertDecimal;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,13 @@ class InfoField extends StatelessWidget {
               height: 24 / 15,
             ),
             decoration: InputDecoration(
+              suffixIcon: onInsertDecimal == null
+                  ? null
+                  : IconButton(
+                      tooltip: '소수점 입력',
+                      onPressed: onInsertDecimal,
+                      icon: const Text('.', style: TextStyle(fontSize: 24)),
+                    ),
               filled: true,
               fillColor: Colors.white,
               constraints: const BoxConstraints.tightFor(height: 52),

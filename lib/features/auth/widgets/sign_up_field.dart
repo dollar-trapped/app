@@ -9,6 +9,8 @@ class SignUpField extends StatelessWidget {
     required this.helperText,
     required this.onChanged,
     this.keyboardType,
+    this.errorText,
+    this.suffixIcon,
     this.obscureText = false,
   });
 
@@ -19,6 +21,8 @@ class SignUpField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
   final bool obscureText;
+  final String? errorText;
+  final Widget? suffixIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +48,7 @@ class SignUpField extends StatelessWidget {
             style: const TextStyle(fontSize: 15, height: 1.6),
             decoration: InputDecoration(
               hintText: hintText,
+              suffixIcon: suffixIcon,
               hintStyle: const TextStyle(
                 color: Color(0xFF667069),
                 fontSize: 15,
@@ -66,9 +71,11 @@ class SignUpField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          helperText,
-          style: const TextStyle(
-            color: Color(0xFF667069),
+          errorText ?? helperText,
+          style: TextStyle(
+            color: errorText == null
+                ? const Color(0xFF667069)
+                : const Color(0xFFB3261E),
             fontSize: 12,
             height: 1.5,
           ),

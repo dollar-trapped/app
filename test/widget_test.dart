@@ -43,6 +43,18 @@ void main() {
     expect(find.text('비밀번호는 10자 이상 입력해 주세요.'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'dollar@example.com');
+    await tester.enterText(find.byType(TextField).at(2), '12345678');
+    await tester.ensureVisible(find.text('가입하기'));
+    expect(
+      tester
+          .widget<ElevatedButton>(find.widgetWithText(ElevatedButton, '가입하기'))
+          .onPressed,
+      isNotNull,
+    );
+    await tester.tap(find.text('가입하기'));
+    await tester.pump();
+    expect(find.text('비밀번호는 10자 이상 입력해 주세요. (현재 8자)'), findsWidgets);
+    await tester.pump(const Duration(seconds: 5));
     await tester.enterText(find.byType(TextField).at(2), 'password123');
     await tester.enterText(find.byType(TextField).at(3), '달러물림');
     await tester.ensureVisible(find.text('인증 메일 받기'));
