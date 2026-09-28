@@ -5,6 +5,52 @@ import 'package:dollar_trapped/features/chat/widgets/message_list.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 
 void main() {
+  for (final failed in [false, true]) {
+    testWidgets('pull refresh works with empty or failed history: $failed', (
+      tester,
+    ) async {
+      final scroll = ScrollController();
+      addTearDown(scroll.dispose);
+      var refreshes = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: RefreshIndicator(
+              onRefresh: () async {
+                refreshes++;
+              },
+              child: MessageList(
+                future: failed
+                    ? Future<MessagePage>.delayed(
+                        const Duration(milliseconds: 1),
+                        () => throw Exception('offline'),
+                      )
+                    : Future.value(
+                        const MessagePage(
+                          items: [],
+                          hasMore: false,
+                          nextCursor: null,
+                          latestCursor: '',
+                        ),
+                      ),
+                realtimeMessages: const [],
+                blockedUserIds: const {},
+                currentUserId: null,
+                scrollController: scroll,
+                onRetry: () {},
+                onModerate: ({required messageId, required authorId}) async {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 350));
+      await tester.pumpAndSettle();
+      expect(refreshes, 1);
+    });
+  }
+
   testWidgets(
     'hidden realtime messages retain a placeholder; later blocked messages stay absent',
     (tester) async {

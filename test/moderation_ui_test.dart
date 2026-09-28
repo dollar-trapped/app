@@ -1,3 +1,4 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/core/moderation/moderation_status.dart';
@@ -44,6 +45,7 @@ class _SuspendedRepo extends MockDollarRepository {
 }
 
 void main() {
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
   testWidgets('chat ban blocks input and reactivation refresh removes it', (
     tester,
   ) async {

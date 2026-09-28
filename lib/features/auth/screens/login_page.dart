@@ -60,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
       for (final notice in session.user.moderation.notices) {
         if (!notice.active) continue;
         if (!mounted) return;
-        await showModerationDialog(context, notice);
+        await showModerationDialog(context, notice, userId: session.user.id);
         acknowledged.add(notice.id);
         if (notice.suspended) {
           await tokenStore?.clear();

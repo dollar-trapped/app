@@ -15,6 +15,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  test(
+    'manual retry bypasses backoff without duplicating a live connection',
+    () async {
+      var connects = 0;
+      final connection = _FakeConnection();
+      final socket = DollarSocket(
+        url: 'wss://example.test/ws',
+        tokenStore: _MemoryTokenStore(_tokens()),
+        connector: (_) async {
+          connects++;
+          if (connects == 1) throw Exception('offline');
+          return connection;
+        },
+      );
+      addTearDown(socket.dispose);
+      await socket.connect();
+      await socket.retryConnection();
+      expect(connects, 2);
+      await socket.retryConnection();
+      expect(connects, 2);
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      expect(connects, 2);
+    },
+  );
+
   test('chat ban preserves details and cancels all pending retries', () async {
     final connection = _FakeConnection();
     final socket = DollarSocket(

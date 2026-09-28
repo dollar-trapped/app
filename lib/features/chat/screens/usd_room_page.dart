@@ -91,7 +91,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       await tokens?.clear();
       if (!mounted) return;
     }
-    await showModerationDialog(context, notice);
+    await showModerationDialog(context, notice, userId: _currentUserId);
     if (mounted && notice.suspended) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const AuthPage()),
@@ -127,6 +127,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && widget.isActive) {
       _refreshModeration();
+      _socket?.retryConnection();
     }
   }
 
@@ -152,6 +153,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       _ownsSocket = true;
     }
     final socket = _socket!;
+    _socketState = socket.state;
     _messageSubscription = socket.messages.listen((message) {
       if (!mounted) return;
       setState(() => _realtimeMessages.add(message));
@@ -216,9 +218,19 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     socket.connect();
   }
 
-  void _reloadMessages() {
-    setState(() => _messagesFuture = widget.repository.getMessages());
+  Future<void> _refreshRoom() async {
+    final messages = widget.repository.getMessages();
+    setState(() => _messagesFuture = messages);
+    await Future.wait([
+      // FutureBuilder displays failures and keeps the retry action available.
+      messages.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
+      _socket?.retryConnection() ?? Future<void>.value(),
+      _refreshModeration(),
+      _loadModerationContext(),
+    ]);
   }
+
+  void _reloadMessages() => unawaited(_refreshRoom());
 
   Future<void> _loadModerationContext() async {
     try {
@@ -390,7 +402,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       case DollarSocketState.reconnecting:
         return '● 채팅 연결 중';
       case DollarSocketState.disconnected:
-        return '● 채팅 오프라인';
+        return '● 채팅 서버 연결 끊김';
     }
   }
 
@@ -443,15 +455,18 @@ class _UsdRoomPageState extends State<UsdRoomPage>
               ),
             ),
             Expanded(
-              child: MessageList(
-                future: _messagesFuture,
-                realtimeMessages: _realtimeMessages,
-                blockedUserIds: _blockedUserIds,
-                hiddenMessageIds: _hiddenMessageIds,
-                currentUserId: _currentUserId,
-                scrollController: _messageScrollController,
-                onRetry: _reloadMessages,
-                onModerate: _moderateMessage,
+              child: RefreshIndicator(
+                onRefresh: _refreshRoom,
+                child: MessageList(
+                  future: _messagesFuture,
+                  realtimeMessages: _realtimeMessages,
+                  blockedUserIds: _blockedUserIds,
+                  hiddenMessageIds: _hiddenMessageIds,
+                  currentUserId: _currentUserId,
+                  scrollController: _messageScrollController,
+                  onRetry: _reloadMessages,
+                  onModerate: _moderateMessage,
+                ),
               ),
             ),
             if (_restriction != null)

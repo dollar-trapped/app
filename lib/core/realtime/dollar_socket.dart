@@ -110,6 +110,19 @@ class DollarSocket {
   Stream<String> get failedMessageIds => _failedMessageIds.stream;
   DollarSocketState get state => _state;
 
+  /// Immediately retries a lost connection without interrupting a live one.
+  Future<void> retryConnection() async {
+    if (_disposed ||
+        (_state != DollarSocketState.disconnected &&
+            _state != DollarSocketState.reconnecting)) {
+      return;
+    }
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _setState(DollarSocketState.disconnected);
+    await connect();
+  }
+
   Future<void> connect() async {
     if (_state != DollarSocketState.disconnected) return;
     _setState(DollarSocketState.connecting);

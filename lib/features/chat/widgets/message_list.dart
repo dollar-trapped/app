@@ -37,14 +37,11 @@ class MessageList extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
             realtimeMessages.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return _scrollableStatus(const CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(
-            child: TextButton(
-              onPressed: onRetry,
-              child: const Text('메시지를 다시 불러오기'),
-            ),
+          return _scrollableStatus(
+            TextButton(onPressed: onRetry, child: const Text('메시지를 다시 불러오기')),
           );
         }
         final messages = (snapshot.data?.items ?? const <ChatMessage>[])
@@ -58,14 +55,16 @@ class MessageList extends StatelessWidget {
           (first, second) => first.createdAt.compareTo(second.createdAt),
         );
         // Filter data now, but construct bubbles only for the visible viewport.
+        final historyIds = messages.map((message) => message.id).toSet();
         final visibleRealtime = realtimeMessages.where((message) {
+          if (historyIds.contains(message.id)) return false;
           final author = message.data['author'];
           final authorId = author is Map ? author['id'] as String? : null;
           return authorId == null || !blockedUserIds.contains(authorId);
         }).toList();
         if (messages.isEmpty && visibleRealtime.isEmpty) {
-          return const Center(
-            child: Text(
+          return _scrollableStatus(
+            const Text(
               '아직 메시지가 없어요.',
               style: TextStyle(color: Color(0xFF667069)),
             ),
@@ -78,6 +77,7 @@ class MessageList extends StatelessWidget {
         });
         return ListView.separated(
           controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           itemCount: headerCount + messages.length + visibleRealtime.length,
           separatorBuilder: (_, _) => const SizedBox(height: 24),
@@ -111,6 +111,14 @@ class MessageList extends StatelessWidget {
       },
     );
   }
+
+  Widget _scrollableStatus(Widget child) => CustomScrollView(
+    controller: scrollController,
+    physics: const AlwaysScrollableScrollPhysics(),
+    slivers: [
+      SliverFillRemaining(hasScrollBody: false, child: Center(child: child)),
+    ],
+  );
 
   static String _formatTime(DateTime time) {
     final local = time.toLocal();
