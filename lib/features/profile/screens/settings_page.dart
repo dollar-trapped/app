@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/realtime/dollar_socket.dart';
 import '../../auth/screens/auth_page.dart';
@@ -23,6 +24,30 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDeleting = false;
   String? _errorMessage;
+  Future<void> _openPrivacyPolicy() async {
+    // 웹 정책을 단일 원본으로 사용하고, 앱에는 배포 시 확정한 URL만 주입합니다.
+    const configuredUrl = String.fromEnvironment(
+      'PRIVACY_POLICY_URL',
+      defaultValue: 'https://dollarmullim.vercel.app/privacy',
+    );
+    final uri = Uri.tryParse(configuredUrl);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      setState(() => _errorMessage = '개인정보처리방침 공개를 준비 중입니다.');
+      return;
+    }
+    setState(() => _errorMessage = null);
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        setState(() => _errorMessage = '개인정보처리방침을 열지 못했습니다. 다시 시도해 주세요.');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = '개인정보처리방침을 열지 못했습니다. 다시 시도해 주세요.');
+      }
+    }
+  }
+
   Future<void> _logOut() async {
     await widget.repository.logOut();
     if (!mounted) return;
@@ -156,7 +181,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 4),
                     AccountMenuRow(
                       label: '개인정보 처리방침',
-                      onTap: () => showProfileComingSoon(context, '개인정보 처리방침'),
+                      onTap: _openPrivacyPolicy,
                     ),
                     if (_errorMessage?.isNotEmpty == true)
                       Text(

@@ -63,3 +63,18 @@ USD/KRW 환율이 크게 움직였을 때 사람들이 이곳에 모여 대화�
 Project Status
 Currently in development.
 v0.1 — MVP
+
+
+## 개인정보처리방침 연결
+
+마이페이지 → 설정 → 개인정보 처리방침은 외부 브라우저로 웹 정책을 엽니다.
+출시 정책이 확정되고 웹에 배포된 뒤, 앱 빌드에 HTTPS URL을 지정하세요:
+
+```sh
+flutter build appbundle --dart-define=PRIVACY_POLICY_URL=https://dollarmullim.vercel.app/privacy
+```
+
+기본 주소는 `https://dollarmullim.vercel.app/privacy`입니다.
+다른 환경에서는 `PRIVACY_POLICY_URL`로 변경할 수 있습니다. 잘못된 URL은 준비 중 안내를 표시합니다. 초안 URL을 출시 정책으로 등록하지 마세요.
+Google Play 스토어 개인정보처리방침 항목에도 같은 URL을 등록하고,
+IP·측정 이벤트 보관기간, 메일 업체, 광고 SDK 처리 정보, 시행일·문의처를 확정하세요.
