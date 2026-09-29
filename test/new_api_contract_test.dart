@@ -22,6 +22,47 @@ const equipmentJson = {
   'version': 7,
 };
 void main() {
+  test(
+    'signup sends explicit bundled consent versions without client timestamps',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      RequestOptions? captured;
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            captured = options;
+            handler.reject(DioException(requestOptions: options));
+          },
+        ),
+      );
+      final tokens = _Tokens();
+      final api = DollarApi.withDependencies(
+        ApiClient(tokens, dio: dio),
+        tokens,
+      );
+      await expectLater(
+        api.signUp(
+          email: 'test@example.com',
+          password: 'password1234',
+          nickname: 'test',
+          verificationToken: 'verified',
+          termsVersion: '2026-09-29',
+          privacyVersion: '2026-09-29',
+        ),
+        throwsException,
+      );
+      expect(captured!.path, '/auth/signup');
+      expect(captured!.data, {
+        'email': 'test@example.com',
+        'password': 'password1234',
+        'nickname': 'test',
+        'verificationToken': 'verified',
+        'termsVersion': '2026-09-29',
+        'privacyVersion': '2026-09-29',
+      });
+    },
+  );
+
   test('chip exchange uses operationId and server balances', () async {
     final adapter = _Adapter();
     final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))

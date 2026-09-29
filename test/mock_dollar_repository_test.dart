@@ -13,6 +13,8 @@ void main() {
       password: 'password123',
       nickname: '새달러',
       verificationToken: 'verification-token',
+      termsVersion: '2026-09-29',
+      privacyVersion: '2026-09-29',
     );
     final user = await repository.updateMe(nickname: '파란달러');
     await repository.blockUser('user-2');

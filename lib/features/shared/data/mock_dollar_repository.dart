@@ -1,3 +1,4 @@
+import '../../legal/consent_versions.dart';
 import '../../gacha/data/cosmetic_models.dart';
 import 'api_models.dart';
 import 'dollar_repository.dart';
@@ -32,11 +33,26 @@ class MockDollarRepository implements DollarRepository {
   );
 
   @override
+  Future<Map<String, dynamic>> getTermsVersions() async => {
+    'termsVersion': bundledTermsVersion,
+    'privacyVersion': bundledPrivacyVersion,
+  };
+  @override
+  Future<Map<String, dynamic>> getTermsAgreements() async => {
+    'terms': {'reagreementRequired': false},
+    'privacy': {'reagreementRequired': false},
+  };
+  @override
+  Future<void> agreeToDocument(String document, String version) async {}
+
+  @override
   Future<AuthSession> signUp({
     required String email,
     required String password,
     required String nickname,
     required String verificationToken,
+    required String termsVersion,
+    required String privacyVersion,
   }) async {
     _user = _userFor(email: email, nickname: nickname);
     return _session();

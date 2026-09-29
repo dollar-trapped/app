@@ -1,3 +1,4 @@
+import '../../legal/consent_gate.dart';
 import 'package:dollar_trapped/features/exchange/screens/usd_krw_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -12,11 +13,13 @@ class UsdKrwPage extends StatefulWidget {
     super.key,
     this.repository,
     this.initialPage = 1,
+    this.checkConsent = false,
     this.acknowledgedNotices = const {},
   });
 
   final DollarRepository? repository;
   final int initialPage;
+  final bool checkConsent;
   final Set<String> acknowledgedNotices;
 
   @override
@@ -46,7 +49,7 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         widget.repository ??
         context.read<DollarRepository?>() ??
         MockDollarRepository();
-    return PageView(
+    final pages = PageView(
       controller: _pageController,
       onPageChanged: (page) {
         FocusManager.instance.primaryFocus?.unfocus();
@@ -74,5 +77,8 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
         ),
       ],
     );
+    return widget.checkConsent
+        ? ConsentGate(repository: repository, child: pages)
+        : pages;
   }
 }

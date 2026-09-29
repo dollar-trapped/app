@@ -3,11 +3,16 @@ import 'api_models.dart';
 
 /// Contract used by presentation code, independent of the HTTP implementation.
 abstract interface class DollarRepository {
+  Future<Map<String, dynamic>> getTermsVersions();
+  Future<Map<String, dynamic>> getTermsAgreements();
+  Future<void> agreeToDocument(String document, String version);
   Future<AuthSession> signUp({
     required String email,
     required String password,
     required String nickname,
     required String verificationToken,
+    required String termsVersion,
+    required String privacyVersion,
   });
   Future<void> requestEmailVerification({required String email});
   Future<String> verifyEmail({required String email, required String code});

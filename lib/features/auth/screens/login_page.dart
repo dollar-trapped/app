@@ -71,6 +71,7 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(
           builder: (_) => UsdKrwPage(
+            checkConsent: true,
             repository: widget.repository,
             acknowledgedNotices: acknowledged,
           ),

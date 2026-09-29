@@ -1,3 +1,4 @@
+import '../../legal/consent_versions.dart';
 import '../../legal/legal_documents.dart';
 import 'package:dollar_trapped/features/auth/widgets/sign_up_field.dart';
 import 'package:dollar_trapped/features/auth/widgets/agreement_row.dart';
@@ -86,16 +87,25 @@ class _SignUpPageState extends State<SignUpPage> {
       _errorMessage = null;
     });
     try {
+      final versions = await widget.repository.getTermsVersions();
+      if (versions['termsVersion'] != bundledTermsVersion ||
+          versions['privacyVersion'] != bundledPrivacyVersion) {
+        if (mounted) _showError('약관이 변경되었습니다. 앱을 최신 버전으로 업데이트해 주세요.');
+        return;
+      }
       await widget.repository.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         nickname: _nicknameController.text.trim(),
         verificationToken: _verificationToken!,
+        termsVersion: bundledTermsVersion,
+        privacyVersion: bundledPrivacyVersion,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(
-          builder: (_) => UsdKrwPage(repository: widget.repository),
+          builder: (_) =>
+              UsdKrwPage(repository: widget.repository, checkConsent: true),
         ),
         (route) => false,
       );
@@ -190,6 +200,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   String _signUpErrorMessage(ApiException error) {
+    if (error.details.any(
+      (detail) => detail.reason == 'TERMS_VERSION_MISMATCH',
+    )) {
+      return '약관이 변경되었습니다. 앱을 최신 버전으로 업데이트해 주세요.';
+    }
     if (error.statusCode == 409) {
       return '이미 가입된 이메일입니다. 로그인해 주세요.';
     }

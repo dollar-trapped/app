@@ -19,7 +19,7 @@ class DollarTrappedApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: initiallyAuthenticated
-          ? const UsdKrwPage(initialPage: 2)
+          ? const UsdKrwPage(initialPage: 2, checkConsent: true)
           : const AuthPage(),
     );
   }

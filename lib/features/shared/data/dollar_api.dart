@@ -19,16 +19,36 @@ class DollarApi implements DollarRepository {
   final TokenStore _tokens;
 
   @override
+  Future<Map<String, dynamic>> getTermsVersions() async =>
+      (await _client.get<Map<String, dynamic>>('/terms')).data!;
+  @override
+  Future<Map<String, dynamic>> getTermsAgreements() async =>
+      (await _client.get<Map<String, dynamic>>(
+        '/users/me/terms-agreements',
+      )).data!;
+  @override
+  Future<void> agreeToDocument(String document, String version) async {
+    await _client.post<void>(
+      '/users/me/terms-agreements',
+      data: {'document': document, 'version': version},
+    );
+  }
+
+  @override
   Future<AuthSession> signUp({
     required String email,
     required String password,
     required String nickname,
     required String verificationToken,
+    required String termsVersion,
+    required String privacyVersion,
   }) => _auth('/auth/signup', {
     'email': email,
     'password': password,
     'nickname': nickname,
     'verificationToken': verificationToken,
+    'termsVersion': termsVersion,
+    'privacyVersion': privacyVersion,
   });
   @override
   Future<void> requestEmailVerification({required String email}) async {

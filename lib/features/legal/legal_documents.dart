@@ -1,3 +1,4 @@
+import 'consent_versions.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -66,10 +67,11 @@ Future<void> _openPolicyLink(BuildContext context, String url) async {
   ).showSnackBar(const SnackBar(content: Text('문서를 열지 못했습니다. 다시 시도해 주세요.')));
 }
 
-const termsText = """달러물림 이용약관
+const termsText =
+    """달러물림 이용약관
 
 시행일: 2026년 9월 28일
-버전: 1.0
+버전: $bundledTermsVersion
 
 본 약관은 달러물림(이하 "서비스")의 이용과 관련하여 서비스 운영자와 이용자 사이의 권리, 의무 및 이용조건을 정합니다.
 
@@ -172,7 +174,10 @@ const termsText = """달러물림 이용약관
 서비스명: 달러물림
 문의: support@dkarjsk.store""";
 
-const privacyText = """달러물림 개인정보처리방침
+const privacyText =
+    """달러물림 개인정보처리방침
+
+버전: $bundledPrivacyVersion
 
 시행일: 2026년 9월 28일
 
