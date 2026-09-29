@@ -6,8 +6,10 @@ class AgreementRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.onChanged,
+    required this.onView,
   });
 
+  final VoidCallback onView;
   final String label;
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -44,7 +46,7 @@ class AgreementRow extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: onView,
             style: TextButton.styleFrom(
               minimumSize: const Size(44, 44),
               padding: EdgeInsets.zero,

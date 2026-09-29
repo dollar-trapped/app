@@ -1,3 +1,4 @@
+import '../../legal/legal_documents.dart';
 import 'package:dollar_trapped/features/auth/widgets/sign_up_field.dart';
 import 'package:dollar_trapped/features/auth/widgets/agreement_row.dart';
 import 'package:flutter/material.dart';
@@ -397,6 +398,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             const SizedBox(height: 20),
                             AgreementRow(
                               label: '[필수] 이용약관 동의',
+                              onView: () => openTerms(context),
                               value: _agreedToTerms,
                               onChanged: (value) =>
                                   setState(() => _agreedToTerms = value),
@@ -404,6 +406,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             const SizedBox(height: 4),
                             AgreementRow(
                               label: '[필수] 개인정보 수집·이용 동의',
+                              onView: () => openPrivacyPolicy(context),
                               value: _agreedToPrivacy,
                               onChanged: (value) =>
                                   setState(() => _agreedToPrivacy = value),
