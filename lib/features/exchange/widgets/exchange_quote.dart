@@ -60,7 +60,7 @@ class ExchangeQuote extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${_formatDate(rate.asOf)} UTC 기준 · ${rate.source}',
+                '${_formatDate(rate.asOf)} 한국 시간 기준 · ${rate.source}',
                 style: const TextStyle(
                   color: Color(0xFF667069),
                   fontSize: 12,
@@ -89,7 +89,7 @@ class ExchangeQuote extends StatelessWidget {
   }
 
   static String _formatDate(DateTime date) {
-    final utc = date.toUtc();
+    final utc = date.toUtc().add(const Duration(hours: 9));
     return '${utc.month}월 ${utc.day}일 ${utc.hour.toString().padLeft(2, '0')}:${utc.minute.toString().padLeft(2, '0')}';
   }
 }

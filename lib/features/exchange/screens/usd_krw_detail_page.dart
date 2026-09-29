@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dollar_trapped/features/ads/widgets/adaptive_banner.dart';
 import 'package:dollar_trapped/features/exchange/widgets/exchange_quote.dart';
 import 'package:dollar_trapped/features/exchange/widgets/period_tab.dart';
@@ -15,7 +16,9 @@ class UsdKrwDetailPage extends StatefulWidget {
   State<UsdKrwDetailPage> createState() => _UsdKrwDetailPageState();
 }
 
-class _UsdKrwDetailPageState extends State<UsdKrwDetailPage> {
+class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
+    with WidgetsBindingObserver {
+  Timer? _refreshTimer;
   static const _ink = Color(0xFF151916);
   static const _muted = Color(0xFF667069);
   static const _periods = {'1일': '1D', '1주': '1W', '1개월': '1M'};
@@ -26,8 +29,33 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refreshTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => _refreshQuoteAndHistory(),
+    );
     _rateFuture = widget.repository.getUsdKrwRate();
     _historyFuture = widget.repository.getUsdKrwHistory(_selectedRange);
+  }
+
+  void _refreshQuoteAndHistory() {
+    if (!mounted) return;
+    setState(() {
+      _rateFuture = widget.repository.getUsdKrwRate();
+      _historyFuture = widget.repository.getUsdKrwHistory(_selectedRange);
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshQuoteAndHistory();
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _reloadRate() {

@@ -1,3 +1,5 @@
+import java.util.Properties
+import java.io.FileInputStream
 import groovy.json.JsonSlurper
 
 plugins {
@@ -29,6 +31,12 @@ tasks.configureEach {
     if (name == "preReleaseBuild") dependsOn(verifyAdmobReleaseConfiguration)
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
+}
+
 android {
     namespace = "com.dollarmullim.app"
     compileSdk = flutter.compileSdkVersion
@@ -51,6 +59,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
             proguardFiles(
@@ -58,9 +75,7 @@ android {
                 "proguard-rules.pro",
             )
             manifestPlaceholders["admobAppId"] = admobProduction["androidAppId"] as String
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

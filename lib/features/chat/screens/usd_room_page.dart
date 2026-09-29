@@ -50,6 +50,8 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   final _messageController = TextEditingController();
   final _messageScrollController = ScrollController();
   late Future<MessagePage> _messagesFuture;
+  late Future<ExchangeRate> _rateFuture;
+  Timer? _rateTimer;
   final _realtimeMessages = <RealtimeMessage>[];
   final _blockedUserIds = <String>{};
   final _hiddenMessageIds = <String>{};
@@ -128,12 +130,17 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     if (state == AppLifecycleState.resumed && widget.isActive) {
       _refreshModeration();
       _socket?.retryConnection();
+      _reloadRate();
     }
   }
 
   @override
   void initState() {
     super.initState();
+    _rateFuture = widget.repository.getUsdKrwRate();
+    _rateTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (widget.isActive) _reloadRate();
+    });
     _shownNotices.addAll(widget.acknowledgedNotices);
     WidgetsBinding.instance.addObserver(this);
     _refreshModeration();
@@ -218,9 +225,18 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     socket.connect();
   }
 
+  void _reloadRate() {
+    setState(() {
+      _rateFuture = widget.repository.getUsdKrwRate();
+    });
+  }
+
   Future<void> _refreshRoom() async {
+    _reloadRate();
     final messages = widget.repository.getMessages();
-    setState(() => _messagesFuture = messages);
+    setState(() {
+      _messagesFuture = messages;
+    });
     await Future.wait([
       // FutureBuilder displays failures and keeps the retry action available.
       messages.then<void>((_) {}, onError: (Object _, StackTrace _) {}),
@@ -263,6 +279,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   void didUpdateWidget(covariant UsdRoomPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
+      _reloadRate();
       _loadModerationContext();
       _refreshModeration();
     }
@@ -366,6 +383,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _moderationPoll?.cancel();
+    _rateTimer?.cancel();
     _banExpiry?.cancel();
     _messageSubscription?.cancel();
     _stateSubscription?.cancel();
@@ -482,7 +500,10 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                   ),
                 ],
               ),
-            InkWell(onTap: widget.onRateBarTap, child: const RateBar()),
+            InkWell(
+              onTap: widget.onRateBarTap,
+              child: RateBar(rateFuture: _rateFuture),
+            ),
             Container(
               height: 76,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
