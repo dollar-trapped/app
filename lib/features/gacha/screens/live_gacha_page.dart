@@ -1,3 +1,4 @@
+import '../widgets/ticket_reward_dialog.dart';
 import '../../../core/ads/ad_config.dart';
 import '../services/pending_draw_store.dart';
 import 'package:flutter/material.dart';
@@ -118,9 +119,8 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
           dollarChips: result.chipsAfter,
         ),
       );
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('달러칩을 뽑기권 1개로 교환했어요.')));
+      await showTicketReward(context, chipCost: _catalog!.chipExchangeCost);
+      if (!mounted) return;
       await _load();
     } catch (error) {
       // Keep the operation ID on ambiguous failures, including app restarts.

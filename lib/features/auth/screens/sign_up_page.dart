@@ -1,3 +1,5 @@
+import '../widgets/auth_scaffold.dart';
+import '../widgets/auth_button.dart';
 import '../../legal/consent_versions.dart';
 import '../../legal/legal_documents.dart';
 import 'package:dollar_trapped/features/auth/widgets/sign_up_field.dart';
@@ -18,7 +20,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  static const _ink = Color(0xFF151916);
   static const _muted = Color(0xFF667069);
   static const _surface = Color(0xFFF5F7F5);
   static const _action = Color(0xFF008A29);
@@ -37,6 +38,7 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _verificationMessage;
   String? _errorMessage;
 
+  bool _verificationStep = false;
   bool _showValidation = false;
   bool _showPassword = false;
 
@@ -218,261 +220,280 @@ class _SignUpPageState extends State<SignUpPage> {
         : error.userMessage;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 44,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 56,
-                    height: 44,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        foregroundColor: _ink,
-                      ),
-                      child: const Text(
-                        '‹',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    '회원가입',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 24),
-                            const Text(
-                              '달러방에서 만나요.',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                                height: 32 / 24,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              '계정 정보와 채팅 이름만 입력해주세요.',
-                              style: TextStyle(
-                                color: _muted,
-                                fontSize: 15,
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            if (_errorMessage != null) ...[
-                              Text(
-                                _errorMessage!,
-                                style: const TextStyle(
-                                  color: Color(0xFFB3261E),
-                                  fontSize: 13,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            SignUpField(
-                              controller: _emailController,
-                              label: '이메일',
-                              hintText: '이메일 주소 입력',
-                              helperText: '로그인과 계정 복구에 사용해요.',
-                              errorText: _showValidation ? _emailError : null,
-                              keyboardType: TextInputType.emailAddress,
-                              onChanged: (_) => setState(() {
-                                _verificationToken = null;
-                                _verificationMessage = null;
-                              }),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed:
-                                    _emailController.text.trim().isEmpty ||
-                                        _isRequestingVerification
-                                    ? null
-                                    : _requestVerification,
-                                child: Text(
-                                  _isRequestingVerification
-                                      ? '인증 메일 보내는 중...'
-                                      : '인증 메일 받기',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _verificationCodeController,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (_) => setState(() {
-                                      _verificationToken = null;
-                                    }),
-                                    decoration: const InputDecoration(
-                                      labelText: '인증 코드',
-                                      hintText: '메일로 받은 인증 코드 입력',
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  height: 48,
-                                  child: OutlinedButton(
-                                    onPressed: _isVerifyingEmail
-                                        ? null
-                                        : _verifyEmail,
-                                    child: Text(
-                                      _isVerifyingEmail ? '확인 중...' : '인증 확인',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_verificationMessage != null) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                _verificationMessage!,
-                                style: TextStyle(
-                                  color: _verificationToken == null
-                                      ? _muted
-                                      : _action,
-                                  fontSize: 12,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            SignUpField(
-                              controller: _passwordController,
-                              label: '비밀번호',
-                              hintText: '비밀번호 입력',
-                              helperText:
-                                  '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
-                              obscureText: !_showPassword,
-                              errorText:
-                                  _showValidation ||
-                                      _passwordController.text.isNotEmpty
-                                  ? _passwordError
-                                  : null,
-                              suffixIcon: IconButton(
-                                tooltip: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
-                                onPressed: () => setState(
-                                  () => _showPassword = !_showPassword,
-                                ),
-                                icon: Icon(
-                                  _showPassword
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                              ),
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 16),
-                            SignUpField(
-                              controller: _nicknameController,
-                              label: '닉네임',
-                              hintText: '닉네임 입력',
-                              helperText: '채팅에 표시되는 이름이에요.',
-                              errorText: _showValidation
-                                  ? _nicknameError
-                                  : null,
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 20),
-                            AgreementRow(
-                              label: '[필수] 이용약관 동의',
-                              onView: () => openTerms(context),
-                              value: _agreedToTerms,
-                              onChanged: (value) =>
-                                  setState(() => _agreedToTerms = value),
-                            ),
-                            const SizedBox(height: 4),
-                            AgreementRow(
-                              label: '[필수] 개인정보 수집·이용 동의',
-                              onView: () => openPrivacyPolicy(context),
-                              value: _agreedToPrivacy,
-                              onChanged: (value) =>
-                                  setState(() => _agreedToPrivacy = value),
-                            ),
-                            const Spacer(),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _isSubmitting ? null : _signUp,
-                                style: ElevatedButton.styleFrom(
-                                  elevation: 0,
-                                  backgroundColor: _action,
-                                  disabledBackgroundColor: _surface,
-                                  foregroundColor: Colors.white,
-                                  disabledForegroundColor: _muted,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.5,
-                                  ),
-                                ),
-                                child: Text(_isSubmitting ? '가입 중...' : '가입하기'),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              '가입이 완료되면 바로 USD방을 이용할 수 있어요.',
-                              style: TextStyle(
-                                color: _muted,
-                                fontSize: 12,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 34),
-          ],
+  bool get _busy =>
+      _isSubmitting || _isRequestingVerification || _isVerifyingEmail;
+
+  void _backToDetails() {
+    if (_busy) return;
+    setState(() {
+      _verificationStep = false;
+      _errorMessage = null;
+    });
+  }
+
+  Future<void> _continueToVerification() async {
+    if (_busy) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _showValidation = true);
+    final error =
+        _emailError ??
+        _passwordError ??
+        _nicknameError ??
+        (!_agreedToTerms || !_agreedToPrivacy ? '필수 약관에 모두 동의해 주세요.' : null);
+    if (error != null) {
+      _showError(error);
+      return;
+    }
+    setState(() {
+      _verificationStep = true;
+      _errorMessage = null;
+    });
+    if (_verificationToken == null) await _requestVerification();
+  }
+
+  Future<void> _completeVerification() async {
+    if (_busy) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (_verificationToken == null) await _verifyEmail();
+    if (!mounted || _verificationToken == null) return;
+    await _signUp();
+  }
+
+  Widget _actionButton(String label, VoidCallback action) => AuthButton(
+    label: label,
+    color: _action,
+    foreground: Colors.white,
+    onPressed:
+        _busy ||
+            (!_verificationStep &&
+                _emailController.text.isEmpty &&
+                _passwordController.text.isEmpty &&
+                _nicknameController.text.isEmpty)
+        ? null
+        : action,
+  );
+
+  List<Widget> get _errors => [
+    if (_errorMessage != null) ...[
+      Text(
+        _errorMessage!,
+        style: const TextStyle(
+          color: Color(0xFFB3261E),
+          fontSize: 13,
+          height: 1.5,
         ),
       ),
-    );
-  }
+      const SizedBox(height: 12),
+    ],
+  ];
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: !_verificationStep && !_busy,
+    onPopInvokedWithResult: (didPop, result) {
+      if (!didPop && _verificationStep) _backToDetails();
+    },
+    child: AuthScaffold(
+      title: _verificationStep ? '이메일 인증' : '회원가입',
+      onBack: _busy
+          ? null
+          : () {
+              if (_verificationStep) {
+                _backToDetails();
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
+      children: _verificationStep ? _verificationContent : _detailsContent,
+    ),
+  );
+
+  List<Widget> get _detailsContent => [
+    const SizedBox(height: 24),
+    const Text(
+      '달러방에서 만나요.',
+      style: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        height: 32 / 24,
+      ),
+    ),
+    const SizedBox(height: 8),
+    const Text(
+      '계정 정보와 채팅 이름만 입력해주세요.',
+      style: TextStyle(color: _muted, fontSize: 15, height: 1.6),
+    ),
+    const SizedBox(height: 20),
+    ..._errors,
+    SignUpField(
+      controller: _emailController,
+      label: '이메일',
+      hintText: '이메일 주소 입력',
+      helperText: '로그인과 계정 복구에 사용해요.',
+      errorText: _showValidation ? _emailError : null,
+      keyboardType: TextInputType.emailAddress,
+      onChanged: (_) => setState(() {
+        _verificationToken = null;
+        _verificationMessage = null;
+        _verificationCodeController.clear();
+      }),
+    ),
+    const SizedBox(height: 16),
+    SignUpField(
+      controller: _passwordController,
+      label: '비밀번호',
+      hintText: '비밀번호 입력',
+      helperText: '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
+      obscureText: !_showPassword,
+      errorText: _showValidation || _passwordController.text.isNotEmpty
+          ? _passwordError
+          : null,
+      suffixIcon: TextButton(
+        onPressed: () => setState(() => _showPassword = !_showPassword),
+        style: TextButton.styleFrom(
+          foregroundColor: _muted,
+          minimumSize: const Size(44, 44),
+        ),
+        child: Text(
+          _showPassword ? '숨기기' : '보기',
+          semanticsLabel: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
+          style: const TextStyle(fontSize: 13, height: 20 / 13),
+        ),
+      ),
+      onChanged: (_) => setState(() {}),
+    ),
+    const SizedBox(height: 16),
+    SignUpField(
+      controller: _nicknameController,
+      label: '닉네임',
+      hintText: '닉네임 입력',
+      helperText: '채팅에 표시되는 이름이에요.',
+      errorText: _showValidation ? _nicknameError : null,
+      onChanged: (_) => setState(() {}),
+    ),
+    const SizedBox(height: 20),
+    AgreementRow(
+      label: '[필수] 이용약관 동의',
+      onView: () => openTerms(context),
+      value: _agreedToTerms,
+      onChanged: (value) => setState(() => _agreedToTerms = value),
+    ),
+    const SizedBox(height: 4),
+    AgreementRow(
+      label: '[필수] 개인정보 수집·이용 동의',
+      onView: () => openPrivacyPolicy(context),
+      value: _agreedToPrivacy,
+      onChanged: (value) => setState(() => _agreedToPrivacy = value),
+    ),
+    const SizedBox(height: 24),
+    const Spacer(),
+    _actionButton('가입하고 이메일 인증', _continueToVerification),
+    const SizedBox(height: 8),
+    const Text(
+      '이메일 인증 후 채팅에 참여할 수 있어요.',
+      style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
+    ),
+    const SizedBox(height: 24),
+  ];
+
+  List<Widget> get _verificationContent => [
+    const SizedBox(height: 48),
+    Container(
+      width: 64,
+      height: 64,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7EE),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Text(
+        '@',
+        style: TextStyle(
+          color: _action,
+          fontSize: 36,
+          fontWeight: FontWeight.w700,
+          height: 46 / 36,
+        ),
+      ),
+    ),
+    const SizedBox(height: 24),
+    const Text(
+      '메일함을 확인해주세요.',
+      style: TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        height: 32 / 24,
+      ),
+    ),
+    const SizedBox(height: 24),
+    const Text(
+      '아래 주소로 받은 인증 코드를 입력해주세요.\n인증이 완료되면 회원가입을 마무리합니다.',
+      style: TextStyle(color: _muted, fontSize: 15, height: 1.6),
+    ),
+    const SizedBox(height: 24),
+    Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _emailController.text.trim(),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '메일이 없다면 스팸함도 확인해주세요.',
+            style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
+          ),
+        ],
+      ),
+    ),
+    const SizedBox(height: 24),
+    SignUpField(
+      controller: _verificationCodeController,
+      label: '인증 코드',
+      hintText: '메일로 받은 인증 코드 입력',
+      helperText: _verificationMessage ?? '인증 메일의 코드를 입력해주세요.',
+      keyboardType: TextInputType.number,
+      onChanged: (_) => setState(() => _verificationToken = null),
+    ),
+    TextButton(
+      onPressed: _busy ? null : _requestVerification,
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        foregroundColor: _action,
+        minimumSize: const Size(0, 44),
+        alignment: Alignment.centerLeft,
+      ),
+      child: Text(
+        _isRequestingVerification ? '인증 메일 보내는 중...' : '인증 메일 다시 보내기',
+      ),
+    ),
+    ..._errors,
+    const SizedBox(height: 24),
+    const Spacer(),
+    _actionButton(
+      _isSubmitting
+          ? '가입 중...'
+          : _isVerifyingEmail
+          ? '확인 중...'
+          : '인증하고 가입 완료',
+      _completeVerification,
+    ),
+    const SizedBox(height: 12),
+    const Text(
+      '인증 확인 후 USD방으로 이동해요.',
+      style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
+    ),
+    const SizedBox(height: 24),
+  ];
 }

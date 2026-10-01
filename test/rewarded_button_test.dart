@@ -53,7 +53,7 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 20)),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('시청해도 실제 뽑기권은 지급되지'), findsOneWidget);
+      expect(find.text('▷  테스트 광고 보기 · 보상 없음'), findsOneWidget);
       await tester.tap(find.text('▷  테스트 광고 보기 · 보상 없음'));
       await tester.pumpAndSettle();
       final ad = loaded!;

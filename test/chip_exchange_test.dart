@@ -71,6 +71,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(repo.chips, 22);
       expect(store.values, isNotEmpty);
+      expect(find.text('뽑기권 1장 획득!'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
@@ -79,6 +80,9 @@ void main() {
         find.byKey(const Key('exchange-dollar-chips')),
       );
       await tester.tap(find.byKey(const Key('exchange-dollar-chips')));
+      await tester.pumpAndSettle();
+      expect(find.text('뽑기권 1장 획득!'), findsOneWidget);
+      await tester.tap(find.text('확인'));
       await tester.pumpAndSettle();
       expect(repo.keys[0], repo.keys[1]);
       expect(repo.chips, 22);

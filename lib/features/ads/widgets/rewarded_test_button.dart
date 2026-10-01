@@ -1,3 +1,4 @@
+import '../../gacha/widgets/ticket_reward_dialog.dart';
 import '../../shared/data/dollar_repository.dart';
 import '../../gacha/services/ad_reward_session_service.dart';
 import '../../../core/network/api_exception.dart';
@@ -51,12 +52,15 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
       if (!mounted) return;
       setState(
         () => _message = granted
-            ? '보상이 확인됐어요. 뽑기권을 갱신합니다.'
+            ? null
             : _rewards!.session == null
             ? '보상 확인 기간이 만료됐어요. 다시 시도해 주세요.'
             : '광고 시청은 완료됐어요. 서버에서 보상을 확인 중입니다. 잠시 후 다시 확인해 주세요.',
       );
-      if (granted) widget.onVerified?.call();
+      if (granted) {
+        await showTicketReward(context);
+        if (mounted) widget.onVerified?.call();
+      }
     } catch (e) {
       if (mounted) {
         setState(
@@ -197,6 +201,30 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
                     },
             ),
           ),
+          if (const bool.fromEnvironment('AD_REWARD_DIAGNOSTICS'))
+            if (_rewards != null)
+              ListenableBuilder(
+                listenable: _rewards!,
+                builder: (context, _) => ExpansionTile(
+                  title: const Text('광고 보상 진단'),
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text(
+                        '앱이 받은 세션 응답의 주요 필드입니다. Google → 서버 SSV 콜백 원문은 서버 로그에서 확인해야 합니다.',
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: SelectableText(_rewards!.diagnosticText),
+                    ),
+                  ],
+                ),
+              )
+            else
+              const Text(
+                '광고 보상 진단: 테스트 광고 모드에서는 서버 보상 세션을 만들지 않습니다. 릴리스 모드로 실행해 주세요.',
+              ),
           if (_message?.isNotEmpty == true)
             Padding(
               padding: const EdgeInsets.only(top: 8),

@@ -27,6 +27,8 @@ class AuthButton extends StatelessWidget {
           elevation: 0,
           backgroundColor: color,
           foregroundColor: foreground,
+          disabledBackgroundColor: const Color(0xFFF5F7F5),
+          disabledForegroundColor: const Color(0xFF667069),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: borderColor == null
@@ -34,6 +36,7 @@ class AuthButton extends StatelessWidget {
                 : BorderSide(color: borderColor!),
           ),
           textStyle: const TextStyle(
+            fontFamily: 'Noto Sans KR',
             fontSize: 16,
             fontWeight: FontWeight.w700,
             height: 1.5,

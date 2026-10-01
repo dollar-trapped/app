@@ -39,39 +39,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('달러방에서 만나요.'), findsOneWidget);
-    expect(find.text('가입하기'), findsOneWidget);
-    expect(find.text('비밀번호는 10자 이상 입력해 주세요.'), findsOneWidget);
-
+    expect(find.text('가입하고 이메일 인증'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(3));
     await tester.enterText(find.byType(TextField).at(0), 'dollar@example.com');
-    await tester.enterText(find.byType(TextField).at(2), '12345678');
-    await tester.ensureVisible(find.text('가입하기'));
-    expect(
-      tester
-          .widget<ElevatedButton>(find.widgetWithText(ElevatedButton, '가입하기'))
-          .onPressed,
-      isNotNull,
-    );
-    await tester.tap(find.text('가입하기'));
+    await tester.enterText(find.byType(TextField).at(1), '12345678');
+    await tester.ensureVisible(find.text('가입하고 이메일 인증'));
+    await tester.tap(find.text('가입하고 이메일 인증'));
     await tester.pump();
     expect(find.text('비밀번호는 10자 이상 입력해 주세요. (현재 8자)'), findsWidgets);
     await tester.pump(const Duration(seconds: 5));
-    await tester.enterText(find.byType(TextField).at(2), 'password123');
-    await tester.enterText(find.byType(TextField).at(3), '달러물림');
-    await tester.ensureVisible(find.text('인증 메일 받기'));
-    await tester.tap(find.text('인증 메일 받기'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(1), '123456');
-    await tester.tap(find.text('인증 확인'));
-    await tester.pumpAndSettle();
-    expect(find.text('이메일 인증이 완료되었습니다.'), findsOneWidget);
-    await tester.ensureVisible(find.byType(Checkbox).at(0));
-    await tester.tap(find.byType(Checkbox).at(0));
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.enterText(find.byType(TextField).at(2), '달러물림');
+    await tester.ensureVisible(find.text('[필수] 이용약관 동의'));
+    await tester.tap(find.text('[필수] 이용약관 동의'));
     await tester.pump();
-    await tester.ensureVisible(find.byType(Checkbox).at(1));
-    await tester.tap(find.byType(Checkbox).at(1));
+    await tester.ensureVisible(find.text('[필수] 개인정보 수집·이용 동의'));
+    await tester.tap(find.text('[필수] 개인정보 수집·이용 동의'));
     await tester.pump();
-    await tester.ensureVisible(find.text('가입하기'));
-    await tester.tap(find.text('가입하기'));
+    await tester.ensureVisible(find.text('가입하고 이메일 인증'));
+    await tester.tap(find.text('가입하고 이메일 인증'));
+    await tester.pumpAndSettle();
+    expect(find.text('메일함을 확인해주세요.'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.ensureVisible(find.text('인증하고 가입 완료'));
+    await tester.tap(find.text('인증하고 가입 완료'));
     await tester.pumpAndSettle();
 
     expect(find.text('1,346.09원'), findsOneWidget);
@@ -81,7 +73,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('USD방'), findsOneWidget);
-    expect(find.text('● 채팅 오프라인'), findsOneWidget);
+    expect(find.text('● 채팅 서버 연결 끊김'), findsOneWidget);
 
     await tester.fling(find.text('USD방'), const Offset(400, 0), 1000);
     await tester.pumpAndSettle();
