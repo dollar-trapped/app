@@ -88,7 +88,6 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        bottom: false,
         child: Column(
           children: [
             SizedBox(

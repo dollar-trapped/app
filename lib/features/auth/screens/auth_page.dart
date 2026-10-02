@@ -23,94 +23,95 @@ class AuthPage extends StatelessWidget {
     final repository =
         context.read<DollarRepository?>() ?? MockDollarRepository();
     return Scaffold(
-      body: SizedBox.expand(
-        child: Column(
-          children: [
-            const SizedBox(height: 64),
-            Padding(
-              padding: const EdgeInsets.only(top: 96),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: 235,
-                    height: 89,
-                    child: SvgPicture.asset(
-                      'assets/images/dollar_wordmark.svg',
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(width: 32, height: 4, color: _brand),
-                  const SizedBox(height: 24),
-                  const Text(
-                    '물려도, 혼자는 아니니까.',
-                    style: TextStyle(
-                      color: _muted,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  AuthButton(
-                    label: '로그인',
-                    color: _action,
-                    foreground: Colors.white,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => LoginPage(repository: repository),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  AuthButton(
-                    label: '회원가입',
-                    color: Colors.white,
-                    foreground: _ink,
-                    borderColor: _line,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => SignUpPage(repository: repository),
-                        ),
-                      );
-                    },
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => UsdKrwPage(repository: repository),
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      foregroundColor: _muted,
-                      shape: const RoundedRectangleBorder(),
-                    ),
-                    child: const Text(
-                      '비회원으로 둘러보기',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        height: 20 / 13,
+      body: SafeArea(
+        child: SizedBox.expand(
+          child: Column(
+            children: [
+              const SizedBox(height: 64),
+              Padding(
+                padding: const EdgeInsets.only(top: 96),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 235,
+                      height: 89,
+                      child: SvgPicture.asset(
+                        'assets/images/dollar_wordmark.svg',
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    Container(width: 32, height: 4, color: _brand),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '물려도, 혼자는 아니니까.',
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 34),
-          ],
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    AuthButton(
+                      label: '로그인',
+                      color: _action,
+                      foreground: Colors.white,
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => LoginPage(repository: repository),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    AuthButton(
+                      label: '회원가입',
+                      color: Colors.white,
+                      foreground: _ink,
+                      borderColor: _line,
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SignUpPage(repository: repository),
+                          ),
+                        );
+                      },
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => UsdKrwPage(repository: repository),
+                          ),
+                        );
+                      },
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size.fromHeight(44),
+                        foregroundColor: _muted,
+                        shape: const RoundedRectangleBorder(),
+                      ),
+                      child: const Text(
+                        '비회원으로 둘러보기',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          height: 20 / 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

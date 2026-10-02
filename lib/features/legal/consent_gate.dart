@@ -112,56 +112,59 @@ class _ConsentGateState extends State<ConsentGate> with WidgetsBindingObserver {
     }
     return Scaffold(
       appBar: AppBar(title: const Text('약관 동의 확인')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_busy) const LinearProgressIndicator(),
-            if (_status != null && _outdated)
-              const Text('약관이 변경되었습니다. 앱을 최신 버전으로 업데이트해 주세요.')
-            else if (_status != null) ...[
-              const Text('서비스 이용을 계속하려면 변경된 필수 문서를 확인하고 동의해 주세요.'),
-              if (_required('terms')) ...[
-                TextButton(
-                  onPressed: () => openTerms(context),
-                  child: const Text('이용약관 보기'),
-                ),
-                CheckboxListTile(
-                  title: const Text('[필수] 이용약관 동의'),
-                  value: _terms,
-                  onChanged: _busy
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_busy) const LinearProgressIndicator(),
+              if (_status != null && _outdated)
+                const Text('약관이 변경되었습니다. 앱을 최신 버전으로 업데이트해 주세요.')
+              else if (_status != null) ...[
+                const Text('서비스 이용을 계속하려면 변경된 필수 문서를 확인하고 동의해 주세요.'),
+                if (_required('terms')) ...[
+                  TextButton(
+                    onPressed: () => openTerms(context),
+                    child: const Text('이용약관 보기'),
+                  ),
+                  CheckboxListTile(
+                    title: const Text('[필수] 이용약관 동의'),
+                    value: _terms,
+                    onChanged: _busy
+                        ? null
+                        : (value) => setState(() => _terms = value ?? false),
+                  ),
+                ],
+                if (_required('privacy')) ...[
+                  TextButton(
+                    onPressed: () => openPrivacyPolicy(context),
+                    child: const Text('개인정보처리방침 보기'),
+                  ),
+                  CheckboxListTile(
+                    title: const Text('[필수] 개인정보 수집·이용 동의'),
+                    value: _privacy,
+                    onChanged: _busy
+                        ? null
+                        : (value) => setState(() => _privacy = value ?? false),
+                  ),
+                ],
+                FilledButton(
+                  onPressed:
+                      _busy ||
+                          (_required('terms') && !_terms) ||
+                          (_required('privacy') && !_privacy)
                       ? null
-                      : (value) => setState(() => _terms = value ?? false),
+                      : _agree,
+                  child: const Text('동의하고 계속하기'),
                 ),
               ],
-              if (_required('privacy')) ...[
-                TextButton(
-                  onPressed: () => openPrivacyPolicy(context),
-                  child: const Text('개인정보처리방침 보기'),
-                ),
-                CheckboxListTile(
-                  title: const Text('[필수] 개인정보 수집·이용 동의'),
-                  value: _privacy,
-                  onChanged: _busy
-                      ? null
-                      : (value) => setState(() => _privacy = value ?? false),
-                ),
-              ],
-              FilledButton(
-                onPressed:
-                    _busy ||
-                        (_required('terms') && !_terms) ||
-                        (_required('privacy') && !_privacy)
-                    ? null
-                    : _agree,
-                child: const Text('동의하고 계속하기'),
-              ),
+              if (_error != null) Text(_error!),
+              if (!_busy)
+                TextButton(onPressed: _load, child: const Text('다시 확인')),
             ],
-            if (_error != null) Text(_error!),
-            if (!_busy)
-              TextButton(onPressed: _load, child: const Text('다시 확인')),
-          ],
+          ),
         ),
       ),
     );

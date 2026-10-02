@@ -16,7 +16,6 @@ class EmailVerificationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        bottom: false,
         child: Column(
           children: [
             SizedBox(
@@ -187,7 +186,6 @@ class EmailVerificationPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 34),
           ],
         ),
       ),

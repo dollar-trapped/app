@@ -429,7 +429,6 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     super.build(context);
     return Scaffold(
       body: SafeArea(
-        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -584,7 +583,6 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                 ],
               ),
             ),
-            const SizedBox(height: 34),
           ],
         ),
       ),

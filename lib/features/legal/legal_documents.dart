@@ -7,11 +7,14 @@ void openTerms(BuildContext context) {
     MaterialPageRoute<void>(
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('이용약관')),
-        body: const SingleChildScrollView(
-          padding: EdgeInsets.all(24),
-          child: SelectableText(
-            termsText,
-            style: TextStyle(fontSize: 15, height: 1.7),
+        body: const SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(24),
+            child: SelectableText(
+              termsText,
+              style: TextStyle(fontSize: 15, height: 1.7),
+            ),
           ),
         ),
       ),
@@ -24,30 +27,33 @@ void openPrivacyPolicy(BuildContext context) {
     MaterialPageRoute<void>(
       builder: (_) => Scaffold(
         appBar: AppBar(title: const Text('개인정보처리방침')),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SelectableText(
-                privacyText,
-                style: TextStyle(fontSize: 15, height: 1.7),
-              ),
-              TextButton(
-                onPressed: () => _openPolicyLink(
-                  context,
-                  'https://policies.google.com/privacy',
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SelectableText(
+                  privacyText,
+                  style: TextStyle(fontSize: 15, height: 1.7),
                 ),
-                child: const Text('Google 개인정보처리방침'),
-              ),
-              TextButton(
-                onPressed: () => _openPolicyLink(
-                  context,
-                  'https://developers.google.com/admob/android/privacy/play-data-disclosure',
+                TextButton(
+                  onPressed: () => _openPolicyLink(
+                    context,
+                    'https://policies.google.com/privacy',
+                  ),
+                  child: const Text('Google 개인정보처리방침'),
                 ),
-                child: const Text('AdMob 데이터 공개 안내'),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => _openPolicyLink(
+                    context,
+                    'https://developers.google.com/admob/android/privacy/play-data-disclosure',
+                  ),
+                  child: const Text('AdMob 데이터 공개 안내'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
