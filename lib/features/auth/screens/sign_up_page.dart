@@ -38,7 +38,8 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _verificationMessage;
   String? _errorMessage;
 
-  bool _verificationStep = false;
+  int _step = 0;
+  bool _verificationRequested = false;
   bool _showValidation = false;
   bool _showPassword = false;
 
@@ -140,7 +141,10 @@ class _SignUpPageState extends State<SignUpPage> {
     try {
       await widget.repository.requestEmailVerification(email: email);
       if (mounted && _emailController.text.trim() == email) {
-        setState(() => _verificationMessage = '인증 코드를 이메일로 보냈어요.');
+        setState(() {
+          _verificationRequested = true;
+          _verificationMessage = '인증 코드를 이메일로 보냈어요.';
+        });
       }
     } on ApiException catch (error) {
       if (mounted) {
@@ -223,32 +227,38 @@ class _SignUpPageState extends State<SignUpPage> {
   bool get _busy =>
       _isSubmitting || _isRequestingVerification || _isVerifyingEmail;
 
-  void _backToDetails() {
-    if (_busy) return;
+  void _previousStep() {
+    if (_busy || _step == 0) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     setState(() {
-      _verificationStep = false;
+      _step--;
+      _showValidation = false;
       _errorMessage = null;
     });
   }
 
-  Future<void> _continueToVerification() async {
+  Future<void> _nextStep() async {
     if (_busy) return;
-    FocusManager.instance.primaryFocus?.unfocus();
-    setState(() => _showValidation = true);
-    final error =
-        _emailError ??
-        _passwordError ??
-        _nicknameError ??
-        (!_agreedToTerms || !_agreedToPrivacy ? '필수 약관에 모두 동의해 주세요.' : null);
+    final error = switch (_step) {
+      0 => _emailError,
+      1 => _passwordError,
+      2 => _nicknameError,
+      3 => !_agreedToTerms || !_agreedToPrivacy ? '필수 약관에 모두 동의해 주세요.' : null,
+      _ => null,
+    };
     if (error != null) {
-      _showError(error);
+      setState(() => _showValidation = true);
+      if (_step == 3) setState(() => _errorMessage = error);
       return;
     }
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
-      _verificationStep = true;
+      _step++;
+      _showValidation = false;
       _errorMessage = null;
     });
-    if (_verificationToken == null) await _requestVerification();
+    if (_step == 4 && !_verificationRequested) await _requestVerification();
   }
 
   Future<void> _completeVerification() async {
@@ -263,14 +273,7 @@ class _SignUpPageState extends State<SignUpPage> {
     label: label,
     color: _action,
     foreground: Colors.white,
-    onPressed:
-        _busy ||
-            (!_verificationStep &&
-                _emailController.text.isEmpty &&
-                _passwordController.text.isEmpty &&
-                _nicknameController.text.isEmpty)
-        ? null
-        : action,
+    onPressed: _busy ? null : action,
   );
 
   List<Widget> get _errors => [
@@ -287,117 +290,157 @@ class _SignUpPageState extends State<SignUpPage> {
     ],
   ];
 
+  static const _stepLabels = ['이메일', '비밀번호', '닉네임', '약관 동의', '이메일 인증'];
+
   @override
   Widget build(BuildContext context) => PopScope(
-    canPop: !_verificationStep && !_busy,
+    canPop: _step == 0 && !_busy,
     onPopInvokedWithResult: (didPop, result) {
-      if (!didPop && _verificationStep) _backToDetails();
+      if (!didPop) _previousStep();
     },
     child: AuthScaffold(
-      title: _verificationStep ? '이메일 인증' : '회원가입',
+      key: ValueKey(_step),
+      title: '회원가입',
       onBack: _busy
           ? null
           : () {
-              if (_verificationStep) {
-                _backToDetails();
+              if (_step > 0) {
+                _previousStep();
               } else {
                 Navigator.of(context).maybePop();
               }
             },
-      children: _verificationStep ? _verificationContent : _detailsContent,
+      children: [
+        const SizedBox(height: 24),
+        Text(
+          '${_step + 1} / 5 · ${_stepLabels[_step]}',
+          style: const TextStyle(color: _muted, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        Semantics(
+          label: '회원가입 5단계 중 ${_step + 1}단계',
+          child: LinearProgressIndicator(
+            value: (_step + 1) / 5,
+            color: _action,
+            backgroundColor: _surface,
+            borderRadius: BorderRadius.circular(4),
+            minHeight: 4,
+          ),
+        ),
+        ...(_step == 4 ? _verificationContent : _detailsContent),
+      ],
     ),
   );
 
+  void _inputChanged(String _) => setState(() => _errorMessage = null);
+
   List<Widget> get _detailsContent => [
-    const SizedBox(height: 24),
-    const Text(
-      '달러방에서 만나요.',
-      style: TextStyle(
+    const SizedBox(height: 32),
+    Text(
+      switch (_step) {
+        0 => '이메일 주소를 알려주세요.',
+        1 => '비밀번호를 만들어주세요.',
+        2 => '채팅에서 사용할\n이름을 정해주세요.',
+        _ => '가입 전 약관을 확인해주세요.',
+      },
+      style: const TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w700,
         height: 32 / 24,
       ),
     ),
-    const SizedBox(height: 8),
-    const Text(
-      '계정 정보와 채팅 이름만 입력해주세요.',
-      style: TextStyle(color: _muted, fontSize: 15, height: 1.6),
-    ),
-    const SizedBox(height: 20),
-    ..._errors,
-    SignUpField(
-      controller: _emailController,
-      label: '이메일',
-      hintText: '이메일 주소 입력',
-      helperText: '로그인과 계정 복구에 사용해요.',
-      errorText: _showValidation ? _emailError : null,
-      keyboardType: TextInputType.emailAddress,
-      onChanged: (_) => setState(() {
-        _verificationToken = null;
-        _verificationMessage = null;
-        _verificationCodeController.clear();
-      }),
-    ),
-    const SizedBox(height: 16),
-    SignUpField(
-      controller: _passwordController,
-      label: '비밀번호',
-      hintText: '비밀번호 입력',
-      helperText: '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
-      obscureText: !_showPassword,
-      errorText: _showValidation || _passwordController.text.isNotEmpty
-          ? _passwordError
-          : null,
-      suffixIcon: TextButton(
-        onPressed: () => setState(() => _showPassword = !_showPassword),
-        style: TextButton.styleFrom(
-          foregroundColor: _muted,
-          minimumSize: const Size(44, 44),
-        ),
-        child: Text(
-          _showPassword ? '숨기기' : '보기',
-          semanticsLabel: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
-          style: const TextStyle(fontSize: 13, height: 20 / 13),
-        ),
+    const SizedBox(height: 12),
+    Text(switch (_step) {
+      0 => '로그인과 이메일 인증에 사용할 주소예요.',
+      1 => '계정을 안전하게 보호할 비밀번호를 입력해주세요.',
+      2 => '다른 이용자에게 표시되는 이름이에요.',
+      _ => '내용을 읽고 필수 항목에 동의해주세요.',
+    }, style: const TextStyle(color: _muted, fontSize: 15, height: 1.6)),
+    const SizedBox(height: 32),
+    if (_step == 0)
+      SignUpField(
+        controller: _emailController,
+        label: '이메일',
+        hintText: 'example@email.com',
+        helperText: '마지막 단계에서 이메일 인증을 진행해요.',
+        errorText: _showValidation ? _emailError : null,
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.next,
+        onSubmitted: (_) => _nextStep(),
+        onChanged: (_) => setState(() {
+          _verificationToken = null;
+          _verificationRequested = false;
+          _verificationMessage = null;
+          _verificationCodeController.clear();
+          _errorMessage = null;
+        }),
       ),
-      onChanged: (_) => setState(() {}),
-    ),
+    if (_step == 1)
+      SignUpField(
+        controller: _passwordController,
+        label: '비밀번호',
+        hintText: '10자 이상 입력',
+        helperText: '비밀번호는 $_minimumPasswordLength자 이상 입력해 주세요.',
+        obscureText: !_showPassword,
+        errorText: _showValidation ? _passwordError : null,
+        textInputAction: TextInputAction.next,
+        onSubmitted: (_) => _nextStep(),
+        suffixIcon: TextButton(
+          onPressed: () => setState(() => _showPassword = !_showPassword),
+          style: TextButton.styleFrom(
+            foregroundColor: _muted,
+            minimumSize: const Size(44, 44),
+          ),
+          child: Text(
+            _showPassword ? '숨기기' : '보기',
+            semanticsLabel: _showPassword ? '비밀번호 숨기기' : '비밀번호 보기',
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
+        onChanged: _inputChanged,
+      ),
+    if (_step == 2)
+      SignUpField(
+        controller: _nicknameController,
+        label: '닉네임',
+        hintText: '닉네임 입력',
+        helperText: '채팅에 표시되는 이름이에요.',
+        errorText: _showValidation ? _nicknameError : null,
+        textInputAction: TextInputAction.next,
+        onSubmitted: (_) => _nextStep(),
+        onChanged: _inputChanged,
+      ),
+    if (_step == 3) ...[
+      AgreementRow(
+        label: '[필수] 이용약관 동의',
+        onView: () => openTerms(context),
+        value: _agreedToTerms,
+        onChanged: (value) => setState(() {
+          _agreedToTerms = value;
+          _errorMessage = null;
+        }),
+      ),
+      const SizedBox(height: 8),
+      AgreementRow(
+        label: '[필수] 개인정보 수집·이용 동의',
+        onView: () => openPrivacyPolicy(context),
+        value: _agreedToPrivacy,
+        onChanged: (value) => setState(() {
+          _agreedToPrivacy = value;
+          _errorMessage = null;
+        }),
+      ),
+    ],
     const SizedBox(height: 16),
-    SignUpField(
-      controller: _nicknameController,
-      label: '닉네임',
-      hintText: '닉네임 입력',
-      helperText: '채팅에 표시되는 이름이에요.',
-      errorText: _showValidation ? _nicknameError : null,
-      onChanged: (_) => setState(() {}),
-    ),
-    const SizedBox(height: 20),
-    AgreementRow(
-      label: '[필수] 이용약관 동의',
-      onView: () => openTerms(context),
-      value: _agreedToTerms,
-      onChanged: (value) => setState(() => _agreedToTerms = value),
-    ),
-    const SizedBox(height: 4),
-    AgreementRow(
-      label: '[필수] 개인정보 수집·이용 동의',
-      onView: () => openPrivacyPolicy(context),
-      value: _agreedToPrivacy,
-      onChanged: (value) => setState(() => _agreedToPrivacy = value),
-    ),
-    const SizedBox(height: 24),
+    ..._errors,
     const Spacer(),
-    _actionButton('가입하고 이메일 인증', _continueToVerification),
-    const SizedBox(height: 8),
-    const Text(
-      '이메일 인증 후 채팅에 참여할 수 있어요.',
-      style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
-    ),
+    const SizedBox(height: 24),
+    _actionButton(_step == 3 ? '동의하고 이메일 인증' : '다음', _nextStep),
     const SizedBox(height: 24),
   ];
 
   List<Widget> get _verificationContent => [
-    const SizedBox(height: 48),
+    const SizedBox(height: 24),
     Container(
       width: 64,
       height: 64,
@@ -464,6 +507,8 @@ class _SignUpPageState extends State<SignUpPage> {
       hintText: '메일로 받은 인증 코드 입력',
       helperText: _verificationMessage ?? '인증 메일의 코드를 입력해주세요.',
       keyboardType: TextInputType.number,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _completeVerification(),
       onChanged: (_) => setState(() => _verificationToken = null),
     ),
     TextButton(

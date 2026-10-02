@@ -9,6 +9,8 @@ class SignUpField extends StatelessWidget {
     required this.helperText,
     required this.onChanged,
     this.keyboardType,
+    this.textInputAction,
+    this.onSubmitted,
     this.errorText,
     this.suffixIcon,
     this.obscureText = false,
@@ -20,6 +22,8 @@ class SignUpField extends StatelessWidget {
   final String helperText;
   final ValueChanged<String> onChanged;
   final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
   final bool obscureText;
   final String? errorText;
   final Widget? suffixIcon;
@@ -44,6 +48,8 @@ class SignUpField extends StatelessWidget {
             controller: controller,
             onChanged: onChanged,
             keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            onSubmitted: onSubmitted,
             obscureText: obscureText,
             style: const TextStyle(fontSize: 15, height: 1.6),
             decoration: InputDecoration(

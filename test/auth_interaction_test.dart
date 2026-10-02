@@ -48,27 +48,66 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(home: SignUpPage(repository: MockDollarRepository())),
     );
-    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
-    await tester.enterText(find.byType(TextField).at(1), 'password123');
-    await tester.enterText(find.byType(TextField).at(2), '달러');
+    for (final value in ['user@example.com', 'password123', '달러']) {
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.enterText(find.byType(TextField), value);
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('동의하고 이메일 인증'));
+    await tester.pump();
+    expect(find.text('필수 약관에 모두 동의해 주세요.'), findsOneWidget);
     for (final label in ['[필수] 이용약관 동의', '[필수] 개인정보 수집·이용 동의']) {
       await tester.ensureVisible(find.text(label));
       await tester.tap(find.text(label));
       await tester.pump();
     }
-    await tester.ensureVisible(find.text('가입하고 이메일 인증'));
-    await tester.tap(find.text('가입하고 이메일 인증'));
+    await tester.ensureVisible(find.text('동의하고 이메일 인증'));
+    await tester.tap(find.text('동의하고 이메일 인증'));
     await tester.pumpAndSettle();
     expect(find.text('메일함을 확인해주세요.'), findsOneWidget);
     await tester.tap(find.text('‹'));
     await tester.pumpAndSettle();
-    expect(find.byType(TextField), findsNWidgets(3));
-    expect(
-      tester.widget<TextField>(find.byType(TextField).first).controller!.text,
-      'user@example.com',
-    );
     expect(tester.widget<Checkbox>(find.byType(Checkbox).first).value, isTrue);
+    for (final value in ['달러', 'password123', 'user@example.com']) {
+      await tester.tap(find.text('‹'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        value,
+      );
+    }
   });
+
+  testWidgets(
+    'invalid email and password stay on their step with an explanation',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(home: SignUpPage(repository: MockDollarRepository())),
+      );
+      await tester.enterText(find.byType(TextField), 'invalid');
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.text('올바른 이메일 주소를 입력해 주세요.'), findsOneWidget);
+      expect(find.text('1 / 5 · 이메일'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'user@example.com');
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '12345678');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+      expect(find.text('비밀번호는 10자 이상 입력해 주세요. (현재 8자)'), findsOneWidget);
+      expect(find.text('2 / 5 · 비밀번호'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'password123');
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('다음'));
+      await tester.pumpAndSettle();
+      expect(find.text('닉네임을 입력해 주세요.'), findsOneWidget);
+      expect(find.text('3 / 5 · 닉네임'), findsOneWidget);
+    },
+  );
 
   for (final login in [false, true]) {
     testWidgets(
@@ -87,9 +126,27 @@ void main() {
         );
         await tester.pumpAndSettle();
         await tester.ensureVisible(
-          find.widgetWithText(ElevatedButton, login ? '로그인' : '가입하고 이메일 인증'),
+          find.widgetWithText(ElevatedButton, login ? '로그인' : '다음'),
         );
         expect(tester.takeException(), isNull);
+        if (!login) {
+          for (final value in ['user@example.com', 'password123', '달러']) {
+            await tester.enterText(find.byType(TextField), value);
+            await tester.testTextInput.receiveAction(TextInputAction.next);
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+          }
+          for (final label in ['[필수] 이용약관 동의', '[필수] 개인정보 수집·이용 동의']) {
+            await tester.ensureVisible(find.text(label));
+            await tester.tap(find.text(label));
+            await tester.pump();
+          }
+          await tester.ensureVisible(find.text('동의하고 이메일 인증'));
+          await tester.tap(find.text('동의하고 이메일 인증'));
+          await tester.pumpAndSettle();
+          await tester.ensureVisible(find.text('인증하고 가입 완료'));
+          expect(tester.takeException(), isNull);
+        }
       },
     );
   }
