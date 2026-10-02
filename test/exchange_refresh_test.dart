@@ -24,7 +24,7 @@ class _Repo extends MockDollarRepository {
 
 void main() {
   for (final room in [false, true]) {
-    testWidgets('Korean date and five minute refresh: room=$room', (
+    testWidgets('quote status and five minute refresh: room=$room', (
       tester,
     ) async {
       final repo = _Repo();
@@ -38,7 +38,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('1,359.14'), findsOneWidget);
       expect(
-        find.textContaining(room ? '9/29 08:41' : '9월 29일 08:41'),
+        find.textContaining(room ? '마지막 확인값' : '9월 29일 08:41'),
         findsOneWidget,
       );
       await tester.pump(const Duration(minutes: 5));

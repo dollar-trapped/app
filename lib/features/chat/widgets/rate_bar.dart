@@ -5,11 +5,12 @@ class RateBar extends StatelessWidget {
   const RateBar({super.key, required this.rateFuture});
 
   final Future<ExchangeRate> rateFuture;
+  static const _muted = Color(0xFF667069);
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 80,
-    padding: const EdgeInsets.symmetric(horizontal: 24),
+    constraints: const BoxConstraints(minHeight: 88),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     decoration: const BoxDecoration(
       border: Border(top: BorderSide(color: Color(0xFFE1E6E2))),
     ),
@@ -17,48 +18,92 @@ class RateBar extends StatelessWidget {
       future: rateFuture,
       builder: (context, snapshot) {
         final rate = snapshot.data;
-        final time = rate?.asOf.toUtc().add(const Duration(hours: 9));
-        final value = rate == null ? null : double.tryParse(rate.rate);
-        final formatted = value
-            ?.toStringAsFixed(2)
-            .replaceFirstMapped(RegExp(r'(?<!^)(?=(\d{3})+\.)'), (_) => ',');
+        final value = double.tryParse(rate?.rate ?? '');
+        final previous = double.tryParse(rate?.previousCloseRate ?? '');
+        final canCompare =
+            value != null &&
+            value.isFinite &&
+            previous != null &&
+            previous.isFinite &&
+            previous > 0 &&
+            rate?.marketStatus != 'UNAVAILABLE' &&
+            rate?.isStale == false;
+        final difference = canCompare ? value - previous : null;
+        final percent = canCompare ? difference! / previous * 100 : null;
+        final falling = difference != null && difference < 0;
+        final rising = difference != null && difference > 0;
+        final comparisonColor = falling
+            ? const Color(0xFF2464C4)
+            : rising
+            ? const Color(0xFFD63B3B)
+            : _muted;
+        final subtitle = snapshot.hasError
+            ? '환율을 불러오지 못했어요'
+            : rate == null
+            ? '환율 불러오는 중…'
+            : rate.isStale || rate.marketStatus == 'UNAVAILABLE'
+            ? '마지막 확인값 · 전일 대비 정보 없음'
+            : difference == null
+            ? '전일 대비 정보 없음'
+            : '${falling
+                  ? '▼'
+                  : rising
+                  ? '▲'
+                  : '—'} ${difference.abs().toStringAsFixed(2)} (${percent! > 0 ? '+' : ''}${percent.toStringAsFixed(2)}%) · 전일 대비';
         return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'USD/KRW  ${formatted == null ? '—' : '$formatted원'}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Wrap(
+                    spacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'USD/KRW',
+                        style: TextStyle(
+                          color: _muted,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        value == null || !value.isFinite
+                            ? '—'
+                            : '${_format(value)}원',
+                        style: const TextStyle(
+                          color: Color(0xFF151916),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
-                    snapshot.hasError
-                        ? '환율을 불러오지 못했어요'
-                        : time == null
-                        ? '환율 불러오는 중…'
-                        : '${time.month}/${time.day} ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} 한국 시간 · ${rate!.isStale ? '마지막 확인값' : '5분마다 갱신'}',
-                    style: const TextStyle(
-                      color: Color(0xFF667069),
-                      fontSize: 12,
+                    subtitle,
+                    style: TextStyle(
+                      color: comparisonColor,
+                      fontSize: 14,
+                      height: 1.5,
                     ),
                   ),
                 ],
               ),
             ),
-            const Text(
-              '›',
-              style: TextStyle(color: Color(0xFF667069), fontSize: 32),
-            ),
+            const SizedBox(width: 12),
+            const Text('›', style: TextStyle(color: _muted, fontSize: 32)),
           ],
         );
       },
     ),
   );
+
+  static String _format(double value) => value
+      .toStringAsFixed(2)
+      .replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+\.)'),
+        (match) => '${match[1]},',
+      );
 }

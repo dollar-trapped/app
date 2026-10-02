@@ -9,10 +9,14 @@ class ExchangeRate {
     required this.source,
     required this.marketStatus,
     required this.isStale,
+    this.previousCloseRate,
   });
   final String pair, rate, source, marketStatus;
   final DateTime asOf, fetchedAt;
   final bool isStale;
+
+  /// Previous trading session close, supplied by the server for day comparison.
+  final String? previousCloseRate;
   factory ExchangeRate.fromJson(Json json) => ExchangeRate(
     pair: json['pair'] as String,
     rate: json['rate'] as String,
@@ -21,5 +25,6 @@ class ExchangeRate {
     source: json['source'] as String,
     marketStatus: json['marketStatus'] as String,
     isStale: json['isStale'] as bool,
+    previousCloseRate: json['previousCloseRate']?.toString(),
   );
 }
