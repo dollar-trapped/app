@@ -26,7 +26,8 @@ class RateBar extends StatelessWidget {
             previous != null &&
             previous.isFinite &&
             previous > 0 &&
-            rate?.marketStatus != 'UNAVAILABLE' &&
+            rate?.previousCloseAsOf != null &&
+            (rate?.marketStatus == 'OPEN' || rate?.marketStatus == 'CLOSED') &&
             rate?.isStale == false;
         final difference = canCompare ? value - previous : null;
         final percent = canCompare ? difference! / previous * 100 : null;
@@ -42,9 +43,9 @@ class RateBar extends StatelessWidget {
             : rate == null
             ? '환율 불러오는 중…'
             : rate.isStale || rate.marketStatus == 'UNAVAILABLE'
-            ? '마지막 확인값 · 전일 대비 정보 없음'
+            ? '마지막 확인값'
             : difference == null
-            ? '전일 대비 정보 없음'
+            ? null
             : '${falling
                   ? '▼'
                   : rising
@@ -80,15 +81,17 @@ class RateBar extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: comparisonColor,
-                      fontSize: 14,
-                      height: 1.5,
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: comparisonColor,
+                        fontSize: 14,
+                        height: 1.5,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
