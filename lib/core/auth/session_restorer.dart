@@ -1,3 +1,4 @@
+import 'reward_event_claim.dart';
 import '../network/api_client.dart';
 import 'token_store.dart';
 
@@ -12,7 +13,10 @@ class SessionRestorer {
     if (await _tokenStore.read() == null) return false;
     try {
       final refreshed = await _apiClient.refreshAccessToken();
-      if (refreshed != null) return true;
+      if (refreshed != null) {
+        await claimRewardEvents(_apiClient);
+        return true;
+      }
     } catch (_) {
       // Startup refresh failure always returns the app to signed-out state.
     }

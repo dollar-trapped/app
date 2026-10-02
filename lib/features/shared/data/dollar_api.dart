@@ -1,3 +1,4 @@
+import '../../../core/auth/reward_event_claim.dart';
 import '../../gacha/data/cosmetic_models.dart';
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
@@ -93,6 +94,7 @@ class DollarApi implements DollarRepository {
         refreshExpiresAt: session.refreshExpiresAt,
       ),
     );
+    await claimRewardEvents(_client);
     return session;
   }
 
