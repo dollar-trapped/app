@@ -65,7 +65,7 @@ void main() {
         jsonDecode(await rootBundle.loadString('config/admob_production.json'))
             as Map<String, dynamic>;
     final config = AdConfig.fromJson(json, production: true);
-    expect(config.bannerId, 'ca-app-pub-8613152611947698/5428058208');
+    expect(config.bannerId, 'ca-app-pub-8613152611947698/5836287128');
     expect(config.rewardedId, 'ca-app-pub-8613152611947698/2766235844');
     expect(json['androidAppId'], 'ca-app-pub-8613152611947698~7427088470');
     expect(
@@ -206,6 +206,34 @@ void main() {
       expect(service.ad, isNull);
       expect(calls.where((c) => c.method == 'disposeAd'), hasLength(1));
       service.dispose();
+    },
+  );
+
+  test(
+    'banner retries a failed load and cancels pending retry on disposal',
+    () async {
+      final service = AdaptiveBannerService(
+        retryDelay: const Duration(milliseconds: 20),
+      );
+      await service.load(360);
+      var call = calls.lastWhere((c) => c.method == 'loadBannerAd');
+      var ad = instanceManager.adFor(call.arguments['adId'])! as BannerAd;
+      ad.listener.onAdFailedToLoad!(
+        ad,
+        LoadAdError(3, 'test', 'no fill', null),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await flush();
+      expect(calls.where((c) => c.method == 'loadBannerAd'), hasLength(2));
+      call = calls.lastWhere((c) => c.method == 'loadBannerAd');
+      ad = instanceManager.adFor(call.arguments['adId'])! as BannerAd;
+      ad.listener.onAdFailedToLoad!(
+        ad,
+        LoadAdError(3, 'test', 'no fill', null),
+      );
+      service.dispose();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      expect(calls.where((c) => c.method == 'loadBannerAd'), hasLength(2));
     },
   );
 
