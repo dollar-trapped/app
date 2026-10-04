@@ -1,5 +1,6 @@
+import '../../gacha/data/gacha_models.dart';
 import '../../legal/consent_versions.dart';
-import '../../gacha/data/cosmetic_models.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
 import 'api_models.dart';
 import 'dollar_repository.dart';
 

@@ -1,6 +1,6 @@
 import 'package:dollar_trapped/features/gacha/screens/cosmetic_gacha_page.dart';
 import 'package:dollar_trapped/features/gacha/screens/cosmetic_items_page.dart';
-import 'package:dollar_trapped/features/gacha/widgets/nickname_appearance.dart';
+import 'package:dollar_trapped/features/cosmetics/preview/nickname_appearance.dart';
 import 'package:dollar_trapped/features/profile/screens/my_page.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 import 'package:dollar_trapped/features/gacha/widgets/cosmetic_preview.dart';

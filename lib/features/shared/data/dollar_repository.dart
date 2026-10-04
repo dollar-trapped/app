@@ -1,8 +1,10 @@
-import '../../gacha/data/cosmetic_models.dart';
+import '../../inventory/data/cosmetic_inventory_repository.dart';
+import '../../gacha/data/gacha_models.dart';
 import 'api_models.dart';
 
 /// Contract used by presentation code, independent of the HTTP implementation.
-abstract interface class DollarRepository {
+abstract interface class DollarRepository
+    implements CosmeticInventoryRepository {
   Future<Map<String, dynamic>> getTermsVersions();
   Future<Map<String, dynamic>> getTermsAgreements();
   Future<void> agreeToDocument(String document, String version);
@@ -22,8 +24,6 @@ abstract interface class DollarRepository {
   Future<String> verifyPasswordReset(String email, String code);
   Future<void> resetPassword(String token, String password);
   Future<CosmeticCatalog> getCosmeticCatalog();
-  Future<CosmeticInventory> getMyCosmetics();
-  Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment);
   Future<ChipExchange> exchangeChips(String operationId);
   Future<CosmeticDraw> drawCosmetic(String requestId);
   Future<AdRewardSession> createAdRewardSession(String requestId);

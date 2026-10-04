@@ -1,5 +1,6 @@
+import '../../gacha/data/gacha_models.dart';
 import '../../../core/auth/reward_event_claim.dart';
-import '../../gacha/data/cosmetic_models.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
 import 'api_models.dart';

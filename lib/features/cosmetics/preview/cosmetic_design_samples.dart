@@ -1,7 +1,9 @@
-import 'cosmetic_models.dart';
+import '../models/cosmetic_models.dart';
 
 // Design samples only; never part of inventory or the draw probability pool.
 const _designs = <(String, String, String, String)>[
+  ('금박 · 광택 시안', 'NAME_BACKGROUND', 'gold_foil_shimmer', 'SPECIAL'),
+  ('진홍 · 맥동 시안', 'NAME_COLOR', 'crimson_pulse', 'SPECIAL'),
   ('흩날리는 벚꽃', 'NAME_BACKGROUND', 'sakura_drift', 'SPECIAL'),
   ('반짝이는 별밤', 'NAME_BACKGROUND', 'starry_night', 'SPECIAL'),
   ('버블 파티', 'NAME_BACKGROUND', 'bubble_party', 'SPECIAL'),
@@ -22,15 +24,15 @@ final cosmeticDesignSamples = _designs
         type: sample.$2,
         name: sample.$1,
         rarity: sample.$4,
-        appearance: {
-          sample.$2 == 'NAME_BACKGROUND' ? 'nameBackground' : 'nameColor':
-              sample.$3,
-        },
+        appearance: {'styleToken': sample.$3},
       ),
     )
     .toList(growable: false);
 
 bool sameCosmeticDesign(CosmeticItem a, CosmeticItem b) {
+  if (a.type != b.type) return false;
+  final token = a.appearance['styleToken'];
+  if (token is String) return token == b.appearance['styleToken'];
   final key = a.type == 'NAME_BACKGROUND' ? 'nameBackground' : 'nameColor';
-  return a.type == b.type && a.appearance[key] == b.appearance[key];
+  return a.appearance[key] != null && a.appearance[key] == b.appearance[key];
 }

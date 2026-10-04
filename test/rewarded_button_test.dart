@@ -1,6 +1,6 @@
+import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'package:dollar_trapped/core/ads/mobile_ads_service.dart';
 import 'package:dollar_trapped/features/ads/widgets/rewarded_test_button.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

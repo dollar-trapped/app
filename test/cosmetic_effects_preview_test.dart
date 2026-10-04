@@ -1,9 +1,9 @@
+import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dollar_trapped/features/gacha/screens/live_gacha_page.dart';
 import 'package:dollar_trapped/features/gacha/widgets/cosmetic_catalog_sheet.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 
 void main() {
@@ -34,12 +34,12 @@ void main() {
         isFalse,
       );
       await tester.scrollUntilVisible(
-        find.text('흩날리는 벚꽃'),
+        find.text('금박 · 광택 시안'),
         200,
         scrollable: find.byType(Scrollable).last,
       );
-      expect(find.text('추가 예정 디자인'), findsOneWidget);
-      expect(find.textContaining('특별 예정'), findsWidgets);
+      expect(find.text('디자인 후보'), findsOneWidget);
+      expect(find.textContaining('특별 후보'), findsWidgets);
       expect(find.text('개별 확률 0.0000%'), findsNothing);
     },
   );

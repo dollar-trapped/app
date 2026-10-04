@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/ads/ad_config.dart';
 import '../../ads/widgets/rewarded_test_button.dart';
 import '../../profile/widgets/profile_layout.dart';
-import '../widgets/cosmetic_layout.dart';
+import '../../shared/widgets/cosmetic_layout.dart';
 import 'cosmetic_items_page.dart';
 import 'cosmetic_result_page.dart';
 

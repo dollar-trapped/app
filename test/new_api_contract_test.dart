@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/core/auth/token_store.dart';
 import 'package:dollar_trapped/core/network/api_client.dart';
 import 'package:dollar_trapped/features/shared/data/dollar_api.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
+import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 
 const itemJson = {
   'id': 'color-1',

@@ -1,5 +1,5 @@
-import '../../gacha/data/cosmetic_models.dart';
-import '../../gacha/widgets/server_cosmetic_preview.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,7 +7,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/realtime/dollar_socket.dart';
 import '../../gacha/screens/cosmetic_gacha_page.dart';
 import '../../gacha/screens/cosmetic_items_page.dart';
-import '../../gacha/widgets/nickname_appearance.dart';
+import '../../cosmetics/preview/nickname_appearance.dart';
 import '../../shared/data/api_models.dart';
 import '../../shared/data/dollar_repository.dart';
 import '../widgets/profile_layout.dart';

@@ -1,9 +1,10 @@
-import 'package:dollar_trapped/features/gacha/widgets/cosmetic_scene_painter.dart';
+import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
+import 'package:dollar_trapped/features/cosmetics/rendering/effects/cosmetic_scene_painter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
+import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/gacha/widgets/cosmetic_catalog_sheet.dart';
-import 'package:dollar_trapped/features/gacha/widgets/server_cosmetic_preview.dart';
+import 'package:dollar_trapped/features/cosmetics/widgets/server_cosmetic_preview.dart';
 
 CosmeticItem item(
   String id,
@@ -16,7 +17,9 @@ CosmeticItem item(
   type: type,
   rarity: 'RARE',
   drawable: drawable,
-  appearance: {type == 'NAME_COLOR' ? 'nameColor' : 'nameBackground': style},
+  appearance: style.startsWith('#')
+      ? {'nameColor': style}
+      : {'styleToken': style},
 );
 void main() {
   testWidgets(

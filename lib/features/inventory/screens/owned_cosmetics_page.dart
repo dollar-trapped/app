@@ -1,20 +1,21 @@
-import 'cosmetic_gacha_page.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
-import '../../shared/data/dollar_repository.dart';
+import '../data/cosmetic_inventory_repository.dart';
 import '../../profile/widgets/profile_layout.dart';
 import '../../exchange/widgets/period_tab.dart';
-import '../data/cosmetic_models.dart';
-import '../widgets/cosmetic_layout.dart';
-import '../widgets/server_cosmetic_preview.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
+import '../../shared/widgets/cosmetic_layout.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 
 class OwnedCosmeticsPage extends StatefulWidget {
   const OwnedCosmeticsPage({
     super.key,
     required this.repository,
     required this.nickname,
+    required this.onOpenGacha,
   });
-  final DollarRepository repository;
+  final CosmeticInventoryRepository repository;
+  final Future<void> Function(BuildContext) onOpenGacha;
   final String nickname;
   @override
   State<OwnedCosmeticsPage> createState() => _OwnedCosmeticsPageState();
@@ -189,14 +190,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
                 onPressed: _busy
                     ? null
                     : () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CosmeticGachaPage(
-                              repository: widget.repository,
-                              nickname: widget.nickname,
-                            ),
-                          ),
-                        );
+                        await widget.onOpenGacha(context);
                         if (mounted) await _load();
                       },
                 child: const Text('닉네임 뽑기'),

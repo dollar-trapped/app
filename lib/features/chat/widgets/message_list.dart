@@ -1,4 +1,4 @@
-import '../../gacha/data/cosmetic_models.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/chat/widgets/chat_message_bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';

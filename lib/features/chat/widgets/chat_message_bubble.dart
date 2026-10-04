@@ -1,5 +1,5 @@
-import '../../gacha/data/cosmetic_models.dart';
-import '../../gacha/widgets/server_cosmetic_preview.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
 
 class ChatMessageBubble extends StatelessWidget {

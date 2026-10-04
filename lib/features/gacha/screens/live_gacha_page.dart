@@ -1,3 +1,5 @@
+import 'cosmetic_gacha_page.dart';
+import '../data/gacha_models.dart';
 import '../widgets/cosmetic_catalog_sheet.dart';
 import '../widgets/ticket_reward_dialog.dart';
 import '../../../core/ads/ad_config.dart';
@@ -7,11 +9,11 @@ import '../../../core/network/api_exception.dart';
 import '../../shared/data/dollar_repository.dart';
 import '../../profile/widgets/profile_layout.dart';
 import '../../ads/widgets/rewarded_test_button.dart';
-import '../data/cosmetic_models.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
 import '../services/request_id.dart';
-import '../widgets/cosmetic_layout.dart';
-import '../widgets/server_cosmetic_preview.dart';
-import 'owned_cosmetics_page.dart';
+import '../../shared/widgets/cosmetic_layout.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
+import '../../inventory/screens/owned_cosmetics_page.dart';
 import '../widgets/gacha_reveal.dart';
 
 class LiveGachaPage extends StatefulWidget {
@@ -325,6 +327,15 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                                 builder: (_) => OwnedCosmeticsPage(
                                   repository: widget.repository,
                                   nickname: widget.nickname,
+                                  onOpenGacha: (context) =>
+                                      Navigator.of(context).push<void>(
+                                        MaterialPageRoute(
+                                          builder: (_) => CosmeticGachaPage(
+                                            repository: widget.repository,
+                                            nickname: widget.nickname,
+                                          ),
+                                        ),
+                                      ),
                                 ),
                               ),
                             );

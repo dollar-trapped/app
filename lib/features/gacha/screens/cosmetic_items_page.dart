@@ -1,10 +1,10 @@
 import '../../shared/data/dollar_repository.dart';
-import 'owned_cosmetics_page.dart';
+import '../../inventory/screens/owned_cosmetics_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../exchange/widgets/period_tab.dart';
 import '../../profile/widgets/profile_layout.dart';
-import '../widgets/cosmetic_layout.dart';
+import '../../shared/widgets/cosmetic_layout.dart';
 import '../widgets/cosmetic_preview.dart';
 import 'cosmetic_gacha_page.dart';
 
@@ -54,6 +54,14 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
       ? OwnedCosmeticsPage(
           repository: widget.repository!,
           nickname: widget.nickname,
+          onOpenGacha: (context) => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => CosmeticGachaPage(
+                repository: widget.repository!,
+                nickname: widget.nickname,
+              ),
+            ),
+          ),
         )
       : ProfileLayout(
           title: '내 아이템',

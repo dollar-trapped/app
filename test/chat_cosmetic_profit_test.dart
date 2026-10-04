@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/features/chat/widgets/chat_message_bubble.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
+import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 
 void main() {
   final cosmetics = MessageCosmetics.fromJson({

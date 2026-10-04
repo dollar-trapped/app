@@ -1,10 +1,11 @@
+import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'dart:async';
 import 'package:dollar_trapped/features/gacha/services/pending_draw_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:dollar_trapped/features/gacha/data/cosmetic_models.dart';
+import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/gacha/screens/live_gacha_page.dart';
-import 'package:dollar_trapped/features/gacha/screens/owned_cosmetics_page.dart';
+import 'package:dollar_trapped/features/inventory/screens/owned_cosmetics_page.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
 import 'package:dollar_trapped/core/network/api_exception.dart';
 
@@ -243,7 +244,11 @@ void main() {
       final repo = _Repo()..conflict = true;
       await tester.pumpWidget(
         MaterialApp(
-          home: OwnedCosmeticsPage(repository: repo, nickname: '닉네임'),
+          home: OwnedCosmeticsPage(
+            repository: repo,
+            nickname: '닉네임',
+            onOpenGacha: (_) async {},
+          ),
         ),
       );
       await _settleAndOpenCard(tester);
@@ -273,7 +278,11 @@ void main() {
         nickname: '아주긴닉네임을사용해요',
         pendingDrawStore: _MemoryPending(),
       ),
-      OwnedCosmeticsPage(repository: repo, nickname: '아주긴닉네임을사용해요'),
+      OwnedCosmeticsPage(
+        repository: repo,
+        nickname: '아주긴닉네임을사용해요',
+        onOpenGacha: (_) async {},
+      ),
     ]) {
       await tester.pumpWidget(
         MaterialApp(

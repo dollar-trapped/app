@@ -1,4 +1,4 @@
-import '../../gacha/data/cosmetic_models.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/shared/data/json_helpers.dart';
 
 class MessageAuthor {

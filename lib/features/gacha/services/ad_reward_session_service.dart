@@ -1,8 +1,8 @@
+import '../data/gacha_models.dart';
 import 'dart:convert';
 import '../../../core/network/api_exception.dart';
 import 'package:flutter/foundation.dart';
 import '../../shared/data/dollar_repository.dart';
-import '../data/cosmetic_models.dart';
 import 'request_id.dart';
 
 /// No client-side grant. Poll only a known session, with a bounded lifetime.

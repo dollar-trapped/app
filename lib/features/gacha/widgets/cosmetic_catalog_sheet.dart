@@ -1,7 +1,8 @@
+import '../data/gacha_models.dart';
 import 'package:flutter/material.dart';
-import '../data/cosmetic_models.dart';
-import '../data/cosmetic_design_samples.dart';
-import 'server_cosmetic_preview.dart';
+import '../../cosmetics/models/cosmetic_models.dart';
+import '../../cosmetics/preview/cosmetic_design_samples.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 
 String cosmeticRarityLabel(String value) => switch (value) {
   'COMMON' => '일반',
@@ -225,7 +226,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                   if (pending.isNotEmpty) ...[
                     const Divider(height: 32),
                     const Text(
-                      '추가 예정 디자인',
+                      '디자인 후보',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
@@ -233,7 +234,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '외형과 예정 등급을 미리 보는 샘플이에요.\n아직 뽑기 대상이 아니며 위 확률·아이템 수에는 포함되지 않아요.',
+                      '외형과 신규 등급 기준을 검토하는 샘플이에요. 출시 구성은 아직 확정되지 않았어요.\n아직 뽑기 대상이 아니며 위 확률·아이템 수에는 포함되지 않아요.',
                       style: TextStyle(
                         color: Color(0xFF667069),
                         fontSize: 13,
@@ -276,7 +277,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
   Widget _itemCard(CosmeticItem item, int count, {bool draft = false}) {
     final bps = widget.catalog.probabilities[item.rarity];
     final probability = draft
-        ? '추가 예정 · 획득 불가'
+        ? '미리보기 · 획득 불가'
         : bps == null || count == 0
         ? '확률 정보 없음'
         : '개별 확률 ${(bps / 100 / count).toStringAsFixed(4)}%';
@@ -302,7 +303,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                 ),
               ),
               Text(
-                '${cosmeticRarityLabel(item.rarity)}${draft ? ' 예정' : ''} · ${cosmeticTypeLabel(item.type)}',
+                '${cosmeticRarityLabel(item.rarity)}${draft ? ' 후보' : ''} · ${cosmeticTypeLabel(item.type)}',
                 style: TextStyle(
                   color: cosmeticRarityColor(item.rarity),
                   fontSize: 12,

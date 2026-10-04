@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../profile/widgets/profile_layout.dart';
-import '../widgets/cosmetic_layout.dart';
+import '../../shared/widgets/cosmetic_layout.dart';
 import '../widgets/cosmetic_preview.dart';
 import '../widgets/gacha_reveal.dart';
 
