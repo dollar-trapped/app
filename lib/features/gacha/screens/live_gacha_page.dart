@@ -1,3 +1,4 @@
+import '../widgets/cosmetic_catalog_sheet.dart';
 import '../widgets/ticket_reward_dialog.dart';
 import '../../../core/ads/ad_config.dart';
 import '../services/pending_draw_store.dart';
@@ -208,27 +209,13 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   void _showCatalog() => showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.white,
     builder: (context) => SafeArea(
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * .7,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const Text('획득 목록 · 확률 안내', style: ProfileStyle.title),
-            const SizedBox(height: 16),
-            for (final entry in _catalog!.probabilities.entries)
-              Text('${entry.key}: ${(entry.value / 100).toStringAsFixed(2)}%'),
-            Text(
-              '같은 희귀도 안에서는 균등 확률이에요.\n중복 보상: 일반 1개 · 희귀 3개 · 특별 5개 달러칩\n달러칩 ${_catalog!.chipExchangeCost}개를 교환 버튼으로 뽑기권 1장으로 바꿀 수 있어요.',
-            ),
-            const SizedBox(height: 16),
-            for (final item in _catalog!.items.where((e) => e.drawable))
-              ListTile(
-                title: Text(item.name),
-                subtitle: Text('${item.type} · ${item.rarity}'),
-              ),
-          ],
-        ),
+      top: false,
+      child: CosmeticCatalogSheet(
+        catalog: _catalog!,
+        nickname: widget.nickname,
       ),
     ),
   );
