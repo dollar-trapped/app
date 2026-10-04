@@ -1,4 +1,5 @@
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
+import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -8,15 +9,13 @@ import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart'
 
 void main() {
   testWidgets(
-    'effects are previewed inside the probability sheet, without a second destination',
+    'opening probability sheet refreshes catalog and shows only server items',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues({});
+      final repository = _CatalogRepo();
       await tester.pumpWidget(
         MaterialApp(
-          home: LiveGachaPage(
-            repository: MockDollarRepository(),
-            nickname: '테스트달러',
-          ),
+          home: LiveGachaPage(repository: repository, nickname: '테스트달러'),
         ),
       );
       await tester.pumpAndSettle();
@@ -33,13 +32,22 @@ void main() {
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
         isFalse,
       );
+      expect(repository.catalogCalls, 2);
       await tester.scrollUntilVisible(
-        find.text('금박 · 광택 시안'),
+        find.text('진홍'),
         200,
         scrollable: find.byType(Scrollable).last,
       );
-      expect(find.text('디자인 후보'), findsOneWidget);
-      expect(find.textContaining('특별 후보'), findsWidgets);
+      expect(find.text('진홍'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('중복 아이템을 뽑으면'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('디자인 후보'), findsNothing);
+      expect(find.textContaining('시안'), findsNothing);
+      expect(find.textContaining('획득 불가'), findsNothing);
+      expect(find.text('흩날리는 벚꽃'), findsNothing);
       expect(find.text('개별 확률 0.0000%'), findsNothing);
     },
   );
@@ -59,11 +67,8 @@ void main() {
           ),
           child: child!,
         ),
-        home: const Scaffold(
-          body: CosmeticCatalogSheet(
-            catalog: CosmeticCatalog(items: [], probabilities: {}),
-            nickname: '아주긴이름의달러물림',
-          ),
+        home: Scaffold(
+          body: CosmeticCatalogSheet(catalog: _catalog, nickname: '아주긴이름의달러물림'),
         ),
       ),
     );
@@ -72,8 +77,42 @@ void main() {
     final toggle = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
     expect(toggle.value, isFalse);
     expect(toggle.onChanged, isNull);
-    await tester.scrollUntilVisible(find.text('오로라 잉크'), 250);
-    expect(find.text('오로라 잉크'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('진홍'), 250);
+    expect(find.text('진홍'), findsOneWidget);
+    expect(find.text('디자인 후보'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+}
+
+final _catalog = CosmeticCatalog(
+  items: const [
+    CosmeticItem(
+      id: 'cos_color_special_01',
+      type: 'NAME_COLOR',
+      name: '황금빛',
+      rarity: 'SPECIAL',
+      drawable: true,
+      appearance: {'nameColor': '#C9971C', 'styleToken': null},
+    ),
+    CosmeticItem(
+      id: 'cos_color_special_02',
+      type: 'NAME_COLOR',
+      name: '진홍',
+      rarity: 'SPECIAL',
+      drawable: true,
+      appearance: {'nameColor': null, 'styleToken': 'crimson_pulse'},
+    ),
+  ],
+  probabilities: const {'COMMON': 7000, 'RARE': 2500, 'SPECIAL': 500},
+);
+
+class _CatalogRepo extends MockDollarRepository {
+  int catalogCalls = 0;
+  @override
+  Future<CosmeticCatalog> getCosmeticCatalog() async {
+    catalogCalls++;
+    return catalogCalls == 1
+        ? const CosmeticCatalog(items: [], probabilities: {})
+        : _catalog;
+  }
 }

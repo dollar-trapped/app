@@ -61,15 +61,22 @@ class ServerCosmeticNickname extends StatelessWidget {
     final bgColors = backgroundEffect.colors;
     final textColors = textEffect.colors;
     final darkBackground = backgroundEffect.dark;
-    LinearGradient gradient(List<Color> colors, CosmeticEffect effect) {
+    LinearGradient gradient(
+      List<Color> colors,
+      CosmeticEffect effect, {
+      bool forText = false,
+    }) {
       if (effect.pulse) {
-        final glow = (1 - math.cos(phase * math.pi * 2)) / 2 * .12;
+        final glow = (1 - math.cos(phase * math.pi * 2)) / 2 * .32;
         return GradientEffect.gradient(
           colors
               .map((color) => Color.lerp(color, const Color(0xFFCD5975), glow)!)
               .toList(),
           phase: 0,
         );
+      }
+      if (effect.shimmer && forText) {
+        return GradientEffect.shimmer(colors, phase: phase);
       }
       return GradientEffect.gradient(
         colors,
@@ -97,8 +104,11 @@ class ServerCosmeticNickname extends StatelessWidget {
         ? text
         : ShaderMask(
             blendMode: BlendMode.srcIn,
-            shaderCallback: (bounds) =>
-                gradient(textColors, textEffect).createShader(bounds),
+            shaderCallback: (bounds) => gradient(
+              textColors,
+              textEffect,
+              forText: true,
+            ).createShader(bounds),
             child: text,
           );
     if (backgroundEffect.scene != null) {

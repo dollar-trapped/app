@@ -1,5 +1,4 @@
 import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
-import 'package:dollar_trapped/features/cosmetics/preview/cosmetic_design_samples.dart';
 import 'package:dollar_trapped/features/cosmetics/widgets/server_cosmetic_preview.dart';
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'package:flutter/material.dart';
@@ -119,43 +118,6 @@ void main() {
     expect(snapshot.background!.rarity, 'SPECIAL');
     expect(snapshot.background!.appearance['nameBackground'], 'gold_foil');
   });
-
-  test(
-    'candidate deduplication compares token and slot, not nullable legacy color',
-    () {
-      final candidate = cosmeticDesignSamples.firstWhere(
-        (e) => e.id == 'preview_sunset_gradient',
-      );
-      CosmeticItem registered(String token, String type) => CosmeticItem(
-        id: 'server_id',
-        type: type,
-        name: '새 이름',
-        rarity: 'RARE',
-        appearance: {'nameColor': null, 'styleToken': token},
-      );
-      expect(
-        sameCosmeticDesign(
-          candidate,
-          registered('sunset_gradient', 'NAME_COLOR'),
-        ),
-        isTrue,
-      );
-      expect(
-        sameCosmeticDesign(
-          candidate,
-          registered('ocean_gradient', 'NAME_COLOR'),
-        ),
-        isFalse,
-      );
-      expect(
-        sameCosmeticDesign(
-          candidate,
-          registered('sunset_gradient', 'NAME_BACKGROUND'),
-        ),
-        isFalse,
-      );
-    },
-  );
 
   testWidgets('separate effect token renders while legacy color is null', (
     tester,

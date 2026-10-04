@@ -44,6 +44,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   String? _exchangeId;
   CosmeticInventory? _inventory;
   CosmeticCatalog? _catalog;
+  bool _loadingCatalog = false;
   String? _error, _drawRequestId, _userId;
   bool _loading = true, _drawing = false, _awaitingDraw = false;
   @override
@@ -208,19 +209,43 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     }
   }
 
-  void _showCatalog() => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.white,
-    builder: (context) => SafeArea(
-      top: false,
-      child: CosmeticCatalogSheet(
-        catalog: _catalog!,
-        nickname: widget.nickname,
-      ),
-    ),
-  );
+  Future<void> _showCatalog() async {
+    if (_loadingCatalog) return;
+    setState(() => _loadingCatalog = true);
+    try {
+      final catalog = await widget.repository.getCosmeticCatalog();
+      if (!mounted) return;
+      setState(() => _catalog = catalog);
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.white,
+        builder: (context) => SafeArea(
+          top: false,
+          child: CosmeticCatalogSheet(
+            catalog: catalog,
+            nickname: widget.nickname,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException
+                  ? e.actionableUserMessage
+                  : '아이템 목록을 불러오지 못했어요. 다시 시도해 주세요.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingCatalog = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !_drawing && !_exchanging,

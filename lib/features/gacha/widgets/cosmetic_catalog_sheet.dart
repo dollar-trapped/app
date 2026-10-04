@@ -1,7 +1,6 @@
 import '../data/gacha_models.dart';
 import 'package:flutter/material.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
-import '../../cosmetics/preview/cosmetic_design_samples.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 
 String cosmeticRarityLabel(String value) => switch (value) {
@@ -50,20 +49,6 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
           key,
       ...widget.catalog.probabilities.keys,
       ...drawable.map((item) => item.rarity),
-    };
-    final pending = cosmeticDesignSamples
-        .where(
-          (sample) =>
-              !widget.catalog.items.any(
-                (item) => sameCosmeticDesign(sample, item),
-              ) &&
-              (_type == null || sample.type == _type) &&
-              (_rarity == null || sample.rarity == _rarity),
-        )
-        .toList();
-    final filterRarities = {
-      ...rarities,
-      ...cosmeticDesignSamples.map((sample) => sample.rarity),
     };
     final visible = drawable
         .where(
@@ -200,7 +185,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                         selected: _rarity == null,
                         onSelected: (_) => setState(() => _rarity = null),
                       ),
-                      for (final rarity in filterRarities)
+                      for (final rarity in rarities)
                         ChoiceChip(
                           label: Text(cosmeticRarityLabel(rarity)),
                           selected: _rarity == rarity,
@@ -222,30 +207,6 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                           .length,
                     ),
                     const SizedBox(height: 12),
-                  ],
-                  if (pending.isNotEmpty) ...[
-                    const Divider(height: 32),
-                    const Text(
-                      '디자인 후보',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '외형과 신규 등급 기준을 검토하는 샘플이에요. 출시 구성은 아직 확정되지 않았어요.\n아직 뽑기 대상이 아니며 위 확률·아이템 수에는 포함되지 않아요.',
-                      style: TextStyle(
-                        color: Color(0xFF667069),
-                        fontSize: 13,
-                        height: 1.6,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final item in pending) ...[
-                      _itemCard(item, 0, draft: true),
-                      const SizedBox(height: 12),
-                    ],
                   ],
                   const Divider(height: 32),
                   const Text(
@@ -274,11 +235,9 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
     );
   }
 
-  Widget _itemCard(CosmeticItem item, int count, {bool draft = false}) {
+  Widget _itemCard(CosmeticItem item, int count) {
     final bps = widget.catalog.probabilities[item.rarity];
-    final probability = draft
-        ? '미리보기 · 획득 불가'
-        : bps == null || count == 0
+    final probability = bps == null || count == 0
         ? '확률 정보 없음'
         : '개별 확률 ${(bps / 100 / count).toStringAsFixed(4)}%';
     return Container(
@@ -303,7 +262,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                 ),
               ),
               Text(
-                '${cosmeticRarityLabel(item.rarity)}${draft ? ' 후보' : ''} · ${cosmeticTypeLabel(item.type)}',
+                '${cosmeticRarityLabel(item.rarity)} · ${cosmeticTypeLabel(item.type)}',
                 style: TextStyle(
                   color: cosmeticRarityColor(item.rarity),
                   fontSize: 12,

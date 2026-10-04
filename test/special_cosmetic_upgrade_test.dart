@@ -66,7 +66,11 @@ void main() {
     expect(find.byType(CosmeticMotion), findsNothing);
   });
 
-  for (final token in ['gold_foil_shimmer', 'crimson_pulse']) {
+  for (final token in [
+    'gold_foil_shimmer',
+    'golden_shimmer',
+    'crimson_pulse',
+  ]) {
     final isGold = token == 'gold_foil_shimmer';
     final item = special(isGold ? 'NAME_BACKGROUND' : 'NAME_COLOR', {
       if (isGold) 'nameBackground': null else 'nameColor': null,

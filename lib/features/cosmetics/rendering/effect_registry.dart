@@ -30,6 +30,11 @@ class CosmeticEffect {
 abstract final class CosmeticEffectRegistry {
   static const _basic = CosmeticEffect();
   static const textEffects = <String, CosmeticEffect>{
+    'golden_shimmer': CosmeticEffect(
+      animated: true,
+      shimmer: true,
+      colors: [Color(0xFF8F5F10), Color(0xFFC08A1D), Color(0xFF9C6611)],
+    ),
     'crimson_pulse': CosmeticEffect(
       animated: true,
       pulse: true,
