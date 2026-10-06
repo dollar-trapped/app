@@ -19,11 +19,12 @@ class CosmeticEffect {
     this.scene,
     this.shimmer = false,
     this.pulse = false,
+    this.lattice = false,
   });
   final List<Color>? colors;
   final Color? solid;
   final bool animated, dark;
-  final bool shimmer, pulse;
+  final bool shimmer, pulse, lattice;
   final CosmeticScene? scene;
 }
 
@@ -72,6 +73,7 @@ abstract final class CosmeticEffectRegistry {
     'sky_gradient': CosmeticEffect(
       colors: [Color(0xFFE4F4FF), Color(0xFFC8DFFF)],
     ),
+    'mint_lattice': CosmeticEffect(solid: Color(0xFFE5F3EB), lattice: true),
     'pastel_cloud': CosmeticEffect(
       colors: [Color(0xFFFFE6EF), Color(0xFFE7E5FF), Color(0xFFDFF5F0)],
     ),

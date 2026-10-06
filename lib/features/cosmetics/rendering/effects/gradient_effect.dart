@@ -5,7 +5,7 @@ abstract final class GradientEffect {
   static LinearGradient shimmer(List<Color> colors, {required double phase}) {
     final sweeping = phase > 0 && phase < .45;
     final center = -.35 + (phase / .45) * 1.7;
-    final strength = sweeping ? math.sin(phase / .45 * math.pi) * .45 : 0.0;
+    final strength = sweeping ? math.sin(phase / .45 * math.pi) * .7 : 0.0;
     return LinearGradient(
       colors: List.generate(17, (i) {
         final position = i / 16;
@@ -17,8 +17,8 @@ abstract final class GradientEffect {
           palettePosition - left,
         )!;
         final highlight =
-            math.max(0.0, 1 - (position - center).abs() / .24) * strength;
-        return Color.lerp(base, const Color(0xFFFFE9A6), highlight)!;
+            math.max(0.0, 1 - (position - center).abs() / .18) * strength;
+        return Color.lerp(base, const Color(0xFFE2B742), highlight)!;
       }),
     );
   }

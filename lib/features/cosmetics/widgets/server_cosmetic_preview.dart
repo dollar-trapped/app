@@ -3,6 +3,7 @@ import '../rendering/cosmetic_motion.dart';
 import '../rendering/effects/gradient_effect.dart';
 import '../rendering/effects/cosmetic_scene_painter.dart';
 import '../rendering/effects/shimmer_effect.dart';
+import '../rendering/effects/lattice_effect.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/cosmetic_models.dart';
@@ -67,10 +68,10 @@ class ServerCosmeticNickname extends StatelessWidget {
       bool forText = false,
     }) {
       if (effect.pulse) {
-        final glow = (1 - math.cos(phase * math.pi * 2)) / 2 * .32;
+        final glow = (1 - math.cos(phase * math.pi * 2)) / 2 * .55;
         return GradientEffect.gradient(
           colors
-              .map((color) => Color.lerp(color, const Color(0xFFCD5975), glow)!)
+              .map((color) => Color.lerp(color, const Color(0xFFC63C63), glow)!)
               .toList(),
           phase: 0,
         );
@@ -111,6 +112,15 @@ class ServerCosmeticNickname extends StatelessWidget {
             ).createShader(bounds),
             child: text,
           );
+    if (backgroundEffect.lattice) {
+      content = CustomPaint(
+        painter: const LatticeEffect(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          child: content,
+        ),
+      );
+    }
     if (backgroundEffect.scene != null) {
       content = ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -150,7 +160,10 @@ class ServerCosmeticNickname extends StatelessWidget {
       );
     }
     return Container(
-      padding: backgroundEffect.scene != null || backgroundEffect.shimmer
+      padding:
+          backgroundEffect.scene != null ||
+              backgroundEffect.shimmer ||
+              backgroundEffect.lattice
           ? EdgeInsets.zero
           : background == null || basic
           ? EdgeInsets.zero

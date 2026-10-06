@@ -39,9 +39,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
   String? _rarity;
   @override
   Widget build(BuildContext context) {
-    final drawable = widget.catalog.items
-        .where((item) => item.drawable)
-        .toList();
+    final drawable = widget.catalog.drawableItems;
     final rarities = <String>{
       for (final key in ['COMMON', 'RARE', 'SPECIAL'])
         if (widget.catalog.probabilities.containsKey(key) ||
@@ -135,12 +133,23 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                     const SizedBox(height: 8),
                   ],
                   const SizedBox(height: 8),
-                  const Text(
-                    '등급 안에서는 각 아이템의 확률이 같아요.\n아이템별 확률은 등급 확률을 해당 등급의 전체 아이템 수로 나눈 값이에요.',
+                  Text(
+                    widget.catalog.withinRaritySelection == 'UNIFORM'
+                        ? '등급 안에서는 각 아이템의 확률이 같아요.\n개별 확률 = 등급 확률 ÷ 해당 등급의 추첨 대상 수. 비활성 아이템은 제외하며, 소수점 다섯째 자리에서 반올림해 표시해요.'
+                        : '현재 추첨 방식의 개별 확률 정보가 필요해요.',
                     style: TextStyle(
                       color: Color(0xFF667069),
                       fontSize: 13,
                       height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '일반 · 단색 등 단순 정적 표현\n희귀 · 그라데이션·패턴·특수 글꼴 등 복합 정적 표현\n특별 · 광택·입자·움직이는 색상 등 동적 표현',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.6,
+                      color: Color(0xFF667069),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -200,12 +209,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                       child: Text('해당 조건의 획득 가능한 아이템이 없어요.'),
                     ),
                   for (final item in visible) ...[
-                    _itemCard(
-                      item,
-                      drawable
-                          .where((other) => other.rarity == item.rarity)
-                          .length,
-                    ),
+                    _itemCard(item),
                     const SizedBox(height: 12),
                   ],
                   const Divider(height: 32),
@@ -214,8 +218,13 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '일반: 달러칩 1개 · 희귀: 3개 · 특별: 5개',
+                  Text(
+                    ['COMMON', 'RARE', 'SPECIAL']
+                        .map(
+                          (rarity) =>
+                              '${cosmeticRarityLabel(rarity)}: ${widget.catalog.duplicateChipRewards[rarity] == null ? "정보 없음" : "달러칩 ${widget.catalog.duplicateChipRewards[rarity]}개"}',
+                        )
+                        .join(' · '),
                     style: TextStyle(fontSize: 13, height: 1.6),
                   ),
                   Text(
@@ -235,11 +244,11 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
     );
   }
 
-  Widget _itemCard(CosmeticItem item, int count) {
-    final bps = widget.catalog.probabilities[item.rarity];
-    final probability = bps == null || count == 0
+  Widget _itemCard(CosmeticItem item) {
+    final percent = widget.catalog.itemProbabilityPercent(item);
+    final probability = percent == null
         ? '확률 정보 없음'
-        : '개별 확률 ${(bps / 100 / count).toStringAsFixed(4)}%';
+        : '개별 확률 ${percent.toStringAsFixed(4)}%';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

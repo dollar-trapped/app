@@ -5,14 +5,49 @@ class CosmeticCatalog {
     required this.items,
     required this.probabilities,
     this.chipExchangeCost = 10,
+    this.withinRaritySelection = 'UNIFORM',
+    this.duplicateChipRewards = const {'COMMON': 1, 'RARE': 3, 'SPECIAL': 5},
   });
   final int chipExchangeCost;
+  final String withinRaritySelection;
+  final Map<String, int> duplicateChipRewards;
+  // These are the server's currently enabled cosmetic slots, not UI filters.
+  List<CosmeticItem> get drawableItems => items
+      .where(
+        (item) =>
+            item.drawable &&
+            const {
+              'NAME_COLOR',
+              'NAME_FONT',
+              'NAME_BACKGROUND',
+            }.contains(item.type),
+      )
+      .toList();
+
+  double? itemProbabilityPercent(CosmeticItem item) {
+    if (withinRaritySelection != 'UNIFORM' ||
+        !drawableItems.any((i) => i.id == item.id)) {
+      return null;
+    }
+    final count = drawableItems.where((i) => i.rarity == item.rarity).length;
+    final bps = probabilities[item.rarity];
+    return bps == null || count == 0 ? null : bps / 100 / count;
+  }
+
   final List<CosmeticItem> items;
   final Map<String, int> probabilities;
   factory CosmeticCatalog.fromJson(JsonMap j) => CosmeticCatalog(
     items: (j['items'] as List)
         .map((e) => CosmeticItem.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
+    withinRaritySelection:
+        j['drawPolicy']['withinRaritySelection'] as String? ?? 'UNIFORM',
+    duplicateChipRewards: j['drawPolicy']['duplicateChipReward'] is Map
+        ? (j['drawPolicy']['duplicateChipReward'] as Map).map(
+            (key, value) =>
+                MapEntry((key as String).toUpperCase(), (value as num).toInt()),
+          )
+        : const {'COMMON': 1, 'RARE': 3, 'SPECIAL': 5},
     chipExchangeCost:
         (j['drawPolicy']['chipExchangeCost'] as num?)?.toInt() ?? 10,
     probabilities: (j['drawPolicy']['rarityProbabilityBps'] as Map).map(
