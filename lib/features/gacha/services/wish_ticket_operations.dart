@@ -74,7 +74,7 @@ class WishTicketOperations {
       pending = null;
       return receipt;
     } on ApiException catch (error) {
-      // Proposed server contract: these codes guarantee NO mutation committed.
+      // Confirmed server contract: these codes guarantee NO mutation committed.
       if (const {
         'INSUFFICIENT_DOLLAR_CHIP',
         'INSUFFICIENT_WISH_TICKET',

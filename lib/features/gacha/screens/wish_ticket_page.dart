@@ -163,7 +163,20 @@ class _WishTicketPageState extends State<WishTicketPage> {
       if (mounted) await _load();
     } catch (e) {
       if (!mounted) return;
-      final message = e is ApiException ? e.actionableUserMessage : '';
+      // Numeric error.details are diagnostics, not user-facing validation text.
+      final message = e is ApiException
+          ? switch (e.code) {
+              'INSUFFICIENT_DOLLAR_CHIP' => '달러칩이 부족해요. 교환하려면 100개가 필요해요.',
+              'INSUFFICIENT_WISH_TICKET' => '염원의 선택권이 부족해요.',
+              'COSMETIC_ALREADY_OWNED' => '이미 보유한 장식이에요. 다른 SPECIAL을 선택해 주세요.',
+              'COSMETIC_NOT_SELECTABLE' => '현재 선택할 수 없는 장식이에요. 목록을 다시 확인해 주세요.',
+              'WISH_TICKETS_DISABLED' => '지금은 선택권을 교환하거나 사용할 수 없어요.',
+              'IDEMPOTENCY_CONFLICT' => '이전 요청 정보가 일치하지 않아요. 문의를 통해 확인해 주세요.',
+              'RATE_LIMITED' => '요청이 많아요. 잠시 후 같은 요청으로 다시 확인해 주세요.',
+              'SERVICE_UNAVAILABLE' => '일시적으로 결과를 확인할 수 없어요. 잠시 후 다시 확인해 주세요.',
+              _ => e.actionableUserMessage,
+            }
+          : '';
       await _load(
         error: message.isNotEmpty
             ? message

@@ -63,10 +63,9 @@ void main() {
     },
   );
 
-  test(
-    'wish ticket proposal sends operation IDs and selected item, and reads server balances',
-    () async {
-      final adapter = _Adapter();
+  for (final statusCode in [201, 200]) {
+    test('wish ticket confirmed contract accepts HTTP $statusCode', () async {
+      final adapter = _Adapter()..wishStatus = statusCode;
       final tokens = _Tokens();
       final api = DollarApi.withDependencies(
         ApiClient(
@@ -78,11 +77,16 @@ void main() {
       );
       final state = await api.getWishTickets();
       expect(state.supported, isTrue);
-      expect(state.chips, 100);
+      expect(state.chips, 120);
+      expect(
+        state.options.single.item.appearance['styleToken'],
+        'golden_shimmer',
+      );
+      expect(state.options.single.selectable, isTrue);
       final exchange = await api.exchangeWishTicket('wish-exchange');
       expect(adapter.requests[1].path, '/gacha/wish-ticket-exchanges');
       expect(adapter.requests[1].data, {'operationId': 'wish-exchange'});
-      expect(exchange.chips, 0);
+      expect(exchange.chips, 20);
       expect(exchange.tickets, 2);
       final redeem = await api.redeemWishTicket('wish-redeem', 'color-1');
       expect(adapter.requests[2].path, '/gacha/wish-ticket-redemptions');
@@ -93,8 +97,8 @@ void main() {
       expect(redeem.item!.id, 'color-1');
       expect(redeem.item!.rarity, 'SPECIAL');
       expect(redeem.tickets, 1);
-    },
-  );
+    });
+  }
   test('wish receipt with a different operation ID is rejected', () async {
     final adapter = _Adapter()..wrongWishId = true;
     final tokens = _Tokens();
@@ -289,6 +293,7 @@ class _Adapter implements HttpClientAdapter {
   Map<String, dynamic>? batchResponse;
   String? batchIdOverride;
   bool wrongWishId = false;
+  int wishStatus = 200;
   @override
   Future<ResponseBody> fetch(
     RequestOptions o,
@@ -300,18 +305,27 @@ class _Adapter implements HttpClientAdapter {
       '/gacha/wish-tickets' => {
         'enabled': true,
         'exchangeCost': 100,
-        'dollarChipBalance': 100,
+        'dollarChipBalance': 120,
         'wishTicketCount': 1,
-        'items': [],
+        'items': [
+          {
+            'cosmetic': {
+              ...itemJson,
+              'rarity': 'SPECIAL',
+              'appearance': {'nameColor': null, 'styleToken': 'golden_shimmer'},
+            },
+            'isOwned': false,
+          },
+        ],
       },
       '/gacha/wish-ticket-exchanges' => {
         'operationId': wrongWishId ? 'wrong' : (o.data as Map)['operationId'],
-        'dollarChipBalanceAfter': 0,
+        'dollarChipBalanceAfter': 20,
         'wishTicketCountAfter': 2,
       },
       '/gacha/wish-ticket-redemptions' => {
         'operationId': wrongWishId ? 'wrong' : (o.data as Map)['operationId'],
-        'dollarChipBalanceAfter': 0,
+        'dollarChipBalanceAfter': 20,
         'wishTicketCountAfter': 1,
         'cosmetic': {...itemJson, 'rarity': 'SPECIAL'},
       },
@@ -385,7 +399,9 @@ class _Adapter implements HttpClientAdapter {
     };
     return ResponseBody.fromString(
       jsonEncode(data),
-      200,
+      o.method == 'POST' && o.path.startsWith('/gacha/wish-ticket-')
+          ? wishStatus
+          : 200,
       headers: {
         Headers.contentTypeHeader: [Headers.jsonContentType],
       },

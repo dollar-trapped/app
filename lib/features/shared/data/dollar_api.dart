@@ -269,7 +269,7 @@ class DollarApi implements DollarRepository {
           data: equipment.toRequest(),
         )).data!,
       );
-  // Proposed contract; the server must opt in through GET.enabled.
+  // Confirmed wish-ticket contract; new operations require GET.enabled.
   @override
   Future<WishTicketState> getWishTickets() async => WishTicketState.fromJson(
     (await _client.get<Map<String, dynamic>>('/gacha/wish-tickets')).data!,

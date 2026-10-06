@@ -83,6 +83,10 @@ class Repo extends MockDollarRepository {
         statusCode: 409,
         code: failure!,
         message: '다시 선택해 주세요.',
+        details: const [
+          ApiErrorDetail(field: 'required', reason: '100'),
+          ApiErrorDetail(field: 'balance', reason: '99'),
+        ],
       );
     }
     if (cosmeticId != null) selectedIds.add(cosmeticId);
@@ -207,6 +211,54 @@ void main() {
     await expectLater(ops.execute(), throwsStateError);
     expect(repo.calls, 0);
   });
+  for (final code in [
+    'INSUFFICIENT_DOLLAR_CHIP',
+    'INSUFFICIENT_WISH_TICKET',
+    'COSMETIC_ALREADY_OWNED',
+    'COSMETIC_NOT_SELECTABLE',
+    'WISH_TICKETS_DISABLED',
+    'IDEMPOTENCY_CONFLICT',
+    'VALIDATION_ERROR',
+    'AUTH_REQUIRED',
+    'INVALID_TOKEN',
+    'TOKEN_EXPIRED',
+    'ACCOUNT_DISABLED',
+    'RATE_LIMITED',
+    'SERVICE_UNAVAILABLE',
+  ]) {
+    test(
+      'pending request handling for $code matches confirmed server guarantee',
+      () async {
+        final repo = Repo()..failure = code;
+        final store = Store();
+        final ops = WishTicketOperations(repo, store, 'account');
+        await ops.restore();
+        await expectLater(
+          ops.execute(cosmeticId: 'gold'),
+          throwsA(isA<ApiException>()),
+        );
+        final noCommit = const {
+          'INSUFFICIENT_DOLLAR_CHIP',
+          'INSUFFICIENT_WISH_TICKET',
+          'COSMETIC_ALREADY_OWNED',
+          'COSMETIC_NOT_SELECTABLE',
+          'WISH_TICKETS_DISABLED',
+        }.contains(code);
+        expect(ops.pending == null, noCommit);
+        expect(store.saved.isEmpty, noCommit);
+        if (!noCommit) {
+          expect(
+            ops.pending!.id,
+            matches(
+              RegExp(
+                r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+              ),
+            ),
+          );
+        }
+      },
+    );
+  }
   Future<void> open(WidgetTester tester, Repo repo, {Store? store}) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -300,6 +352,34 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'replayed historical balances never replace current GET balances',
+    (tester) async {
+      final repo = Repo()..lost = true;
+      await open(tester, repo);
+      await tap(tester, find.byKey(const Key('wish-exchange')));
+      await tap(tester, find.text('100개로 교환'));
+      expect(repo.mutations, 1);
+      // Other activity after the original receipt changes the live account.
+      repo.chips = 70;
+      repo.tickets = 0;
+      await tap(tester, find.text('이전 결과 다시 확인'));
+      expect(find.text('내 달러칩  70개'), findsOneWidget);
+      expect(find.text('염원의 선택권  0장'), findsOneWidget);
+      expect(repo.mutations, 1);
+    },
+  );
+  testWidgets('numeric error details are not shown as form validation', (
+    tester,
+  ) async {
+    final repo = Repo()..failure = 'INSUFFICIENT_DOLLAR_CHIP';
+    await open(tester, repo);
+    await tap(tester, find.byKey(const Key('wish-exchange')));
+    await tap(tester, find.text('100개로 교환'));
+    expect(find.text('달러칩이 부족해요. 교환하려면 100개가 필요해요.'), findsOneWidget);
+    expect(find.textContaining('required:'), findsNothing);
+    expect(find.text('이전 결과 다시 확인'), findsNothing);
+  });
   testWidgets('large text and navigation insets fit on a narrow phone', (
     tester,
   ) async {
