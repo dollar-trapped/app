@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'gacha_card_back.dart';
 
 /// Presentation only: waiting never grants an item or reveals an invented result.
 class GachaReveal extends StatefulWidget {
@@ -9,8 +10,10 @@ class GachaReveal extends StatefulWidget {
     this.isPreview = false,
     this.waitingForResult = false,
     this.rarity = 'COMMON',
+    this.preview,
   });
   final Widget child;
+  final Widget? preview;
   final bool isPreview;
   final bool waitingForResult;
   final String rarity;
@@ -23,36 +26,46 @@ class _GachaRevealState extends State<GachaReveal>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    animationBehavior: AnimationBehavior.preserve,
-    duration: Duration(
-      milliseconds: switch (widget.rarity) {
-        'RARE' => 4800,
-        'SPECIAL' => 6400,
-        _ => 3200,
-      },
-    ),
+    duration: const Duration(milliseconds: 1500),
   );
-  bool _waitingStarted = false;
   bool _spinning = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (widget.waitingForResult && !_waitingStarted) {
-      _waitingStarted = true;
-      if (!MediaQuery.disableAnimationsOf(context)) {
-        _controller.repeat(
-          max: .48,
-          period: const Duration(milliseconds: 1200),
-        );
-      }
+    _syncMotion();
+  }
+
+  void _syncMotion() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+      if (_spinning && !widget.waitingForResult) _controller.value = 1;
+      return;
+    }
+    if (widget.waitingForResult && !_controller.isAnimating) {
+      _controller.repeat(max: .48, period: const Duration(milliseconds: 1800));
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant GachaReveal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.waitingForResult != widget.waitingForResult) {
+      _controller.stop();
+      _controller.value = 0;
+      _spinning = false;
+      _syncMotion();
     }
   }
 
   void _turnCard() {
     if (widget.waitingForResult || _spinning) return;
     setState(() => _spinning = true);
-    _controller.forward(from: 0);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward(from: 0);
+    }
   }
 
   @override
@@ -70,27 +83,16 @@ class _GachaRevealState extends State<GachaReveal>
       final enhanced =
           !widget.waitingForResult &&
           (widget.rarity == 'RARE' || widget.rarity == 'SPECIAL');
-      final turns = switch (widget.rarity) {
-        'RARE' => 5,
-        'SPECIAL' => 7,
-        _ => 3,
+      const spinEnd = .65;
+      final spin = Curves.easeInOutCubic.transform(
+        (t / spinEnd).clamp(0.0, 1.0),
+      );
+      final accent = switch (widget.rarity) {
+        'SPECIAL' => const Color(0xFFE1B64A),
+        'RARE' => const Color(0xFF9258CC),
+        _ => const Color(0xFF447956),
       };
-      final spinEnd = (turns * 800) / (turns * 800 + 800);
-      final spin = (t / spinEnd).clamp(0.0, 1.0);
-      final palette = <Color>[
-        const Color(0xFF447956),
-        const Color(0xFF327CC5),
-        const Color(0xFF9258CC),
-        if (widget.rarity == 'SPECIAL') const Color(0xFFE1B64A),
-      ];
-      final colorProgress = enhanced ? ((t - .18) / .56).clamp(0.0, 1.0) : 0.0;
-      final position = colorProgress * (palette.length - 1);
-      final index = position.floor();
-      final cardColor = Color.lerp(
-        palette[index],
-        palette[math.min(index + 1, palette.length - 1)],
-        position - index,
-      )!;
+      final cardColor = Color.lerp(const Color(0xFF447956), accent, spin)!;
       final glowColor = enhanced ? cardColor : const Color(0xFFE3D99A);
       final reveal = Curves.easeOut.transform(
         ((t - spinEnd - .04) / (1 - spinEnd - .04)).clamp(0, 1),
@@ -101,6 +103,7 @@ class _GachaRevealState extends State<GachaReveal>
       return Stack(
         fit: StackFit.expand,
         children: [
+          const ColoredBox(color: Color(0xFF102D22)),
           if (reveal > 0)
             ExcludeSemantics(
               child: IgnorePointer(
@@ -192,18 +195,17 @@ class _GachaRevealState extends State<GachaReveal>
                                           ..rotateY(
                                             widget.waitingForResult
                                                 ? 0
-                                                : spin * math.pi * 2 * turns,
+                                                : spin * math.pi,
                                           )
                                           ..rotateZ(
-                                            math.sin(t * math.pi * 18) *
-                                                .055 *
-                                                (1 - burst),
+                                            widget.waitingForResult
+                                                ? math.sin(t * math.pi * 4) *
+                                                      .012
+                                                : 0,
                                           ),
                                         child: Transform.scale(
                                           scale:
-                                              .9 +
-                                              .1 * math.sin(t * math.pi) +
-                                              burst * .12,
+                                              .96 + .04 * math.sin(t * math.pi),
                                           child: Container(
                                             width: size * .58,
                                             height: size * .76,
@@ -242,13 +244,26 @@ class _GachaRevealState extends State<GachaReveal>
                                                 ),
                                               ],
                                             ),
-                                            child: const Center(
-                                              child: Icon(
-                                                Icons.auto_awesome,
-                                                color: Color(0xFFF2E9BB),
-                                                size: 48,
-                                              ),
-                                            ),
+                                            child:
+                                                spin < .5 ||
+                                                    widget.preview == null
+                                                ? const GachaCardBack()
+                                                : Transform(
+                                                    alignment: Alignment.center,
+                                                    transform:
+                                                        Matrix4.rotationY(
+                                                          math.pi,
+                                                        ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            12,
+                                                          ),
+                                                      child: Center(
+                                                        child: widget.preview,
+                                                      ),
+                                                    ),
+                                                  ),
                                           ),
                                         ),
                                       ),

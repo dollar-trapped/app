@@ -13,8 +13,10 @@ class BatchDrawResultPage extends StatelessWidget {
     required this.results,
     required this.onOpenResult,
     this.failure,
+    this.animate = true,
   });
 
+  final bool animate;
   final String nickname;
   final List<CosmeticDraw> results;
   final String? failure;
@@ -24,51 +26,50 @@ class BatchDrawResultPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final newItems = results.where((result) => !result.duplicate).length;
     final chips = results.fold(0, (sum, result) => sum + result.chipsGranted);
-    return BatchGachaReveal(
-      nickname: nickname,
-      results: results,
-      child: ProfileLayout(
-        title: '10회 뽑기 결과',
-        child: CosmeticContent(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('${results.length}개의 취향을\n만났어요.', style: ProfileStyle.title),
+    final content = ProfileLayout(
+      title: '10회 뽑기 결과',
+      child: CosmeticContent(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('${results.length}개의 취향을\n만났어요.', style: ProfileStyle.title),
+            const SizedBox(height: 16),
+            Text('새 아이템 $newItems개 · 중복 ${results.length - newItems}개'),
+            if (chips > 0) Text('중복 보상 달러칩 $chips개'),
+            const SizedBox(height: 8),
+            const Text(
+              '아이템을 눌러 자세히 보거나 적용할 수 있어요.',
+              style: ProfileStyle.caption,
+            ),
+            if (failure != null) ...[
               const SizedBox(height: 16),
-              Text('새 아이템 $newItems개 · 중복 ${results.length - newItems}개'),
-              if (chips > 0) Text('중복 보상 달러칩 $chips개'),
-              const SizedBox(height: 8),
-              const Text(
-                '아이템을 눌러 자세히 보거나 적용할 수 있어요.',
-                style: ProfileStyle.caption,
+              Text(
+                '확인된 ${results.length}회 결과만 표시했어요.\n$failure',
+                style: const TextStyle(color: Color(0xFFB3261E)),
               ),
-              if (failure != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  '확인된 ${results.length}회 결과만 표시했어요.\n$failure',
-                  style: const TextStyle(color: Color(0xFFB3261E)),
-                ),
-              ],
-              const SizedBox(height: 24),
-              for (var i = 0; i < results.length; i++) ...[
-                _ResultCard(
-                  index: i + 1,
-                  result: results[i],
-                  nickname: nickname,
-                  onPressed: () => onOpenResult(context, results[i]),
-                ),
-                const SizedBox(height: 12),
-              ],
             ],
-          ),
-          actions: CosmeticAction(
-            label: '확인',
-            hint: '획득한 아이템은 내 아이템에 보관됐어요.',
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+            const SizedBox(height: 24),
+            for (var i = 0; i < results.length; i++) ...[
+              _ResultCard(
+                index: i + 1,
+                result: results[i],
+                nickname: nickname,
+                onPressed: () => onOpenResult(context, results[i]),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ),
+        actions: CosmeticAction(
+          label: '확인',
+          hint: '획득한 아이템은 내 아이템에 보관됐어요.',
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
     );
+    return animate
+        ? BatchGachaReveal(nickname: nickname, results: results, child: content)
+        : content;
   }
 }
 

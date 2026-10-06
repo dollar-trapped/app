@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import '../data/gacha_models.dart';
+import 'gacha_card_back.dart';
 
 /// Presentation only. Unknown outcomes stay face down, including partial batches.
 class BatchGachaReveal extends StatefulWidget {
@@ -26,44 +27,102 @@ class BatchGachaReveal extends StatefulWidget {
 }
 
 class _BatchGachaRevealState extends State<BatchGachaReveal>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final _controller = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 6000),
+    duration: const Duration(milliseconds: 2200),
   );
-  bool _started = false;
+  late final _turns = List.generate(
+    10,
+    (_) => AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    ),
+  );
+  final _taps = List.filled(10, 0);
+  final _opened = List.filled(10, false);
+  bool _finished = false;
+
+  int _requiredTaps(int index) => switch (widget.results[index].item.rarity) {
+    'SPECIAL' => 3,
+    'RARE' => 2,
+    _ => 1,
+  };
+
+  Future<void> _tapCard(int index) async {
+    if (widget.waiting ||
+        index >= widget.results.length ||
+        _opened[index] ||
+        _turns[index].isAnimating) {
+      return;
+    }
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      try {
+        await _turns[index].forward(from: 0).orCancel;
+      } on TickerCanceled {
+        return;
+      }
+    }
+    if (!mounted || _finished) return;
+    setState(() {
+      _taps[index]++;
+      _opened[index] = _taps[index] >= _requiredTaps(index);
+      _turns[index].value = 0;
+    });
+  }
+
+  void _openAll() {
+    for (final turn in _turns) {
+      turn.stop(canceled: true);
+    }
+    setState(() => _finished = true);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncMotion();
+  }
+
+  void _syncMotion() {
     if (MediaQuery.disableAnimationsOf(context)) {
       _controller.stop();
-      if (!widget.waiting) _controller.value = 1;
-    } else if (widget.waiting) {
-      if (!_controller.isAnimating) {
-        _controller.repeat(period: const Duration(milliseconds: 2200));
+      for (final turn in _turns) {
+        if (turn.isAnimating) turn.value = 1;
       }
-    } else if (!_started) {
-      _started = true;
-      _controller.forward(from: 0);
+    } else if (widget.waiting && !_controller.isAnimating) {
+      _controller.repeat(period: const Duration(milliseconds: 2200));
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant BatchGachaReveal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.waiting != widget.waiting) {
+      _controller.stop();
+      _controller.value = 0;
+      _syncMotion();
     }
   }
 
   @override
   void dispose() {
+    for (final turn in _turns) {
+      turn.dispose();
+    }
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
+    animation: Listenable.merge([_controller, ..._turns]),
     builder: (context, _) {
-      if (!widget.waiting && _controller.value == 1) {
+      if (!widget.waiting && _finished) {
         return widget.child ?? const SizedBox.shrink();
       }
       final reduced = MediaQuery.disableAnimationsOf(context);
-      return Scaffold(
+      final scene = Scaffold(
         backgroundColor: const Color(0xFF102D22),
         body: SafeArea(
           child: LayoutBuilder(
@@ -87,8 +146,8 @@ class _BatchGachaRevealState extends State<BatchGachaReveal>
                     const SizedBox(height: 12),
                     Text(
                       widget.waiting
-                          ? '뽑기 결과를 확인하고 있어요. ${widget.completed} / 10'
-                          : '열 가지 취향이 펼쳐집니다',
+                          ? '뽑기 결과를 확인하고 있어요.'
+                          : '카드를 눌러 열어보세요 · ${_opened.where((v) => v).length} / 10',
                       style: const TextStyle(color: Colors.white70),
                     ),
                     const SizedBox(height: 24),
@@ -104,168 +163,214 @@ class _BatchGachaRevealState extends State<BatchGachaReveal>
                           mainAxisExtent: (gridHeight - (rows - 1) * 12) / rows,
                         ),
                         itemBuilder: (context, index) {
-                          final progress = widget.waiting
-                              ? _controller.value
-                              : (((_controller.value / .8).clamp(0.0, 1.0) -
-                                            index * .045) /
-                                        .595)
-                                    .clamp(0.0, 1.0);
-                          final entered = widget.waiting
-                              ? 1.0
-                              : Curves.easeOut.transform(
-                                  (progress / .2).clamp(0.0, 1.0),
-                                );
+                          final progress = _turns[index].value;
+                          const entered = 1.0;
+                          final flip = Curves.easeInOutCubic.transform(
+                            progress,
+                          );
                           final spin = widget.waiting
-                              ? (reduced ? 0.0 : progress * math.pi * 2)
-                              : Curves.easeInOut.transform(
-                                      (progress / .9).clamp(0.0, 1.0),
-                                    ) *
-                                    math.pi *
-                                    4;
+                              ? (reduced
+                                    ? 0.0
+                                    : math.sin(
+                                            _controller.value * math.pi * 2 +
+                                                index * .2,
+                                          ) *
+                                          .08)
+                              : flip * math.pi * 2;
                           final result = index < widget.results.length
                               ? widget.results[index]
                               : null;
-                          final opened = !widget.waiting && progress >= .9;
+                          final opened =
+                              !widget.waiting &&
+                              (_opened[index] ||
+                                  (result != null &&
+                                      _taps[index] + 1 >=
+                                          _requiredTaps(index) &&
+                                      progress >= .75));
                           final color = opened && result != null
                               ? switch (result.item.rarity) {
                                   'SPECIAL' => const Color(0xFFE1B64A),
                                   'RARE' => const Color(0xFF9258CC),
                                   _ => const Color(0xFF447956),
                                 }
-                              : const Color(0xFF447956);
-                          return Opacity(
-                            opacity: entered,
-                            child: Transform.translate(
-                              offset: Offset(0, (1 - entered) * 32),
-                              child: Transform(
-                                key: Key('batch-card-turn-$index'),
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..setEntry(3, 2, .0015)
-                                  ..rotateY(spin),
-                                child: Container(
-                                  key: Key('batch-card-$index'),
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [color, const Color(0xFF102D22)],
-                                    ),
-                                    border: Border.all(
-                                      color: opened
-                                          ? color
-                                          : const Color(0xFFE3D99A),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: color.withValues(
-                                          alpha: opened ? .35 : .1,
-                                        ),
-                                        blurRadius: opened ? 18 : 6,
-                                      ),
-                                    ],
+                              : Color.lerp(
+                                  const Color(0xFF447956),
+                                  const Color(0xFFE1B64A),
+                                  _taps[index] * .25,
+                                )!;
+                          return Semantics(
+                            button:
+                                !widget.waiting &&
+                                !_opened[index] &&
+                                result != null,
+                            label:
+                                '${index + 1}번 카드${_opened[index] ? ", 공개됨" : ", 눌러 열기"}',
+                            child: GestureDetector(
+                              key: Key('batch-card-touch-$index'),
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _tapCard(index),
+                              child: Opacity(
+                                opacity: entered,
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    widget.waiting && !reduced
+                                        ? math.sin(
+                                                _controller.value *
+                                                        math.pi *
+                                                        2 +
+                                                    index * .2,
+                                              ) *
+                                              3
+                                        : -math.sin(progress * math.pi) * 8,
                                   ),
                                   child: Transform(
+                                    key: Key('batch-card-turn-$index'),
                                     alignment: Alignment.center,
                                     transform: Matrix4.identity()
-                                      ..rotateY(
-                                        math.cos(spin) < 0 ? math.pi : 0,
-                                      ),
-                                    child: opened
-                                        ? result == null
-                                              ? const Center(
-                                                  child: Text(
-                                                    '미확인',
-                                                    style: TextStyle(
-                                                      color: Colors.white70,
-                                                    ),
-                                                  ),
-                                                )
-                                              : Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      result.item.name,
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 6),
-                                                    FittedBox(
-                                                      fit: BoxFit.scaleDown,
-                                                      child: DecoratedBox(
-                                                        decoration: BoxDecoration(
-                                                          color: const Color(
-                                                            0xFFF5F7F5,
-                                                          ),
-                                                          borderRadius:
-                                                              BorderRadius.circular(
-                                                                6,
-                                                              ),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 4,
-                                                                vertical: 2,
-                                                              ),
-                                                          child: ServerCosmeticNickname(
-                                                            nickname:
-                                                                widget.nickname,
-                                                            color:
-                                                                result
-                                                                        .item
-                                                                        .type ==
-                                                                    'NAME_COLOR'
-                                                                ? result.item
-                                                                : null,
-                                                            font:
-                                                                result
-                                                                        .item
-                                                                        .type ==
-                                                                    'NAME_FONT'
-                                                                ? result.item
-                                                                : null,
-                                                            background:
-                                                                result
-                                                                        .item
-                                                                        .type ==
-                                                                    'NAME_BACKGROUND'
-                                                                ? result.item
-                                                                : null,
-                                                            size: 18,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 6),
-                                                    Text(
-                                                      '${result.item.rarity} · ${result.duplicate ? '중복' : 'NEW'}',
-                                                      style: const TextStyle(
-                                                        color: Colors.white70,
-                                                        fontSize: 11,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                        : Center(
-                                            child: Text(
-                                              '${index + 1}',
-                                              style: const TextStyle(
-                                                color: Color(0xFFE3D99A),
-                                                fontSize: 28,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                      ..setEntry(3, 2, .0015)
+                                      ..rotateY(spin),
+                                    child: Container(
+                                      key: Key('batch-card-$index'),
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            color,
+                                            const Color(0xFF102D22),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: opened
+                                              ? color
+                                              : const Color(0xFFE3D99A),
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: color.withValues(
+                                              alpha: opened
+                                                  ? .35
+                                                  : .1 + _taps[index] * .12,
                                             ),
+                                            blurRadius: opened ? 12 : 6,
                                           ),
+                                        ],
+                                      ),
+                                      child: Transform(
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()
+                                          ..rotateY(
+                                            math.cos(spin) < 0 ? math.pi : 0,
+                                          ),
+                                        child: opened
+                                            ? result == null
+                                                  ? const Center(
+                                                      child: Text(
+                                                        '미확인',
+                                                        style: TextStyle(
+                                                          color: Colors.white70,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Text(
+                                                          result.item.name,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 6,
+                                                        ),
+                                                        FittedBox(
+                                                          fit: BoxFit.scaleDown,
+                                                          child: DecoratedBox(
+                                                            decoration: BoxDecoration(
+                                                              color:
+                                                                  const Color(
+                                                                    0xFFF5F7F5,
+                                                                  ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    6,
+                                                                  ),
+                                                            ),
+                                                            child: Padding(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        4,
+                                                                    vertical: 2,
+                                                                  ),
+                                                              child: ServerCosmeticNickname(
+                                                                nickname: widget
+                                                                    .nickname,
+                                                                color:
+                                                                    result
+                                                                            .item
+                                                                            .type ==
+                                                                        'NAME_COLOR'
+                                                                    ? result
+                                                                          .item
+                                                                    : null,
+                                                                font:
+                                                                    result
+                                                                            .item
+                                                                            .type ==
+                                                                        'NAME_FONT'
+                                                                    ? result
+                                                                          .item
+                                                                    : null,
+                                                                background:
+                                                                    result
+                                                                            .item
+                                                                            .type ==
+                                                                        'NAME_BACKGROUND'
+                                                                    ? result
+                                                                          .item
+                                                                    : null,
+                                                                size: 18,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 6,
+                                                        ),
+                                                        Text(
+                                                          '${result.item.rarity} · ${result.duplicate ? '중복' : 'NEW'}',
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white70,
+                                                                fontSize: 11,
+                                                              ),
+                                                        ),
+                                                      ],
+                                                    )
+                                            : GachaCardBack(
+                                                number: index + 1,
+                                                prompt: _taps[index] > 0
+                                                    ? '한 번 더'
+                                                    : null,
+                                              ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -277,9 +382,9 @@ class _BatchGachaRevealState extends State<BatchGachaReveal>
                     const SizedBox(height: 12),
                     if (!widget.waiting)
                       TextButton(
-                        onPressed: () => _controller.value = 1,
-                        child: const Text(
-                          '연출 건너뛰기',
+                        onPressed: _openAll,
+                        child: Text(
+                          _opened.every((v) => v) ? '결과 보기' : '바로 열기',
                           style: TextStyle(color: Colors.white),
                         ),
                       ),
@@ -290,6 +395,7 @@ class _BatchGachaRevealState extends State<BatchGachaReveal>
           ),
         ),
       );
+      return scene;
     },
   );
 }

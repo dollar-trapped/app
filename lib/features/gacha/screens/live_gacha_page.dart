@@ -16,7 +16,7 @@ import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import '../../inventory/screens/owned_cosmetics_page.dart';
 import '../widgets/gacha_reveal.dart';
 import 'batch_draw_result_page.dart';
-import '../widgets/batch_gacha_reveal.dart';
+import '../widgets/draw_session.dart';
 
 class LiveGachaPage extends StatefulWidget {
   const LiveGachaPage({
@@ -55,8 +55,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   String? _error, _drawRequestId, _userId;
   String? _batchRequestId;
   bool _batchStateReady = false;
-  bool _loading = true, _drawing = false, _awaitingDraw = false;
-  int _batchTotal = 0;
+  bool _loading = true, _drawing = false;
   @override
   void initState() {
     super.initState();
@@ -185,59 +184,59 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     }
     setState(() {
       _drawing = true;
-      _awaitingDraw = true;
-      _batchTotal = 10;
       _error = null;
     });
     try {
-      _userId ??= (await widget.repository.getMe()).id;
-      _batchRequestId ??=
-          await widget.pendingBatchDrawStore.read(_userId!) ?? newRequestId();
-      await widget.pendingBatchDrawStore.write(_userId!, _batchRequestId!);
-      final batch = await widget.repository.drawCosmeticBatch(_batchRequestId!);
-      if (batch.requestId != _batchRequestId ||
-          batch.count != 10 ||
-          batch.results.length != 10) {
-        throw const FormatException('Unexpected batch draw response');
-      }
-      await widget.pendingBatchDrawStore.clear(_userId!);
-      _batchRequestId = null;
-      if (!mounted) return;
-      setState(() {
-        _awaitingDraw = false;
-        final inventory = _inventory;
-        if (inventory != null) {
-          _inventory = CosmeticInventory(
-            items: inventory.items,
-            equipment: inventory.equipment,
-            tickets: batch.ticketsAfter,
-            dollarChips: batch.chipsAfter,
-          );
-        }
-      });
-      await _load();
-      if (!mounted) return;
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) => BatchDrawResultPage(
+      final outcome = await Navigator.of(context).push<Object>(
+        PageRouteBuilder(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => DrawSession<CosmeticBatchDraw>(
             nickname: widget.nickname,
-            results: batch.results,
-            onOpenResult: (context, result) => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (_) => LiveDrawResultPage(
-                  repository: widget.repository,
-                  nickname: widget.nickname,
-                  result: result,
-                  allowDrawAgain: false,
+            batch: true,
+            request: () async {
+              _userId ??= (await widget.repository.getMe()).id;
+              _batchRequestId ??=
+                  await widget.pendingBatchDrawStore.read(_userId!) ??
+                  newRequestId();
+              await widget.pendingBatchDrawStore.write(
+                _userId!,
+                _batchRequestId!,
+              );
+              final result = await widget.repository.drawCosmeticBatch(
+                _batchRequestId!,
+              );
+              if (result.requestId != _batchRequestId ||
+                  result.count != 10 ||
+                  result.results.length != 10) {
+                throw const FormatException('Unexpected batch draw response');
+              }
+              await widget.pendingBatchDrawStore.clear(_userId!);
+              _batchRequestId = null;
+              return result;
+            },
+            results: (result) => result.results,
+            builder: (_, result, _) => BatchDrawResultPage(
+              animate: false,
+              nickname: widget.nickname,
+              results: result.results,
+              onOpenResult: (context, item) => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => LiveDrawResultPage(
+                    repository: widget.repository,
+                    nickname: widget.nickname,
+                    result: item,
+                    allowDrawAgain: false,
+                    animate: false,
+                  ),
                 ),
               ),
             ),
           ),
         ),
       );
-      if (mounted) {
-        await _load();
-      }
+      if (outcome is DrawSessionFailure) throw outcome.error;
+      if (mounted) await _load();
     } catch (error) {
       // Keep the whole batch key, even if the response or local cleanup was lost.
       // Never fall back to single draws: the server may have consumed all ten.
@@ -256,8 +255,6 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       if (mounted) {
         setState(() {
           _drawing = false;
-          _awaitingDraw = false;
-          _batchTotal = 0;
         });
       }
     }
@@ -274,36 +271,28 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       _drawing = true;
       _error = null;
     });
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    var drawAgain = false;
     try {
-      do {
-        drawAgain = false;
-        setState(() => _awaitingDraw = true);
-        final anticipation = Stopwatch()..start();
-        final result = await _requestDraw();
-        final remaining = 900 - anticipation.elapsedMilliseconds;
-        if (!reduceMotion && remaining > 0) {
-          await Future<void>.delayed(Duration(milliseconds: remaining));
-        }
-        if (!mounted) return;
-        setState(() => _awaitingDraw = false);
-        drawAgain =
-            await Navigator.of(context).push<bool>(
-              MaterialPageRoute<bool>(
-                builder: (_) => LiveDrawResultPage(
-                  repository: widget.repository,
-                  nickname: widget.nickname,
-                  result: result,
-                ),
-              ),
-            ) ??
-            false;
-        if (mounted) await _load();
-      } while (mounted &&
-          drawAgain &&
-          _error == null &&
-          (_inventory?.tickets ?? 0) > 0);
+      final outcome = await Navigator.of(context).push<Object>(
+        PageRouteBuilder(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => DrawSession<CosmeticDraw>(
+            nickname: widget.nickname,
+            request: _requestDraw,
+            results: (result) => [result],
+            builder: (_, result, drawAgain) => LiveDrawResultPage(
+              key: ValueKey(result),
+              repository: widget.repository,
+              nickname: widget.nickname,
+              result: result,
+              animate: false,
+              onDrawAgain: drawAgain,
+            ),
+          ),
+        ),
+      );
+      if (outcome is DrawSessionFailure) throw outcome.error;
+      if (mounted) await _load();
     } catch (e) {
       // Keep the request key after any ambiguous failure; a retry cannot spend twice.
       if (mounted) {
@@ -317,7 +306,6 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       if (mounted) {
         setState(() {
           _drawing = false;
-          _awaitingDraw = false;
         });
       }
     }
@@ -363,201 +351,182 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !_drawing && !_exchanging,
-    child: _awaitingDraw
-        ? _batchTotal > 0
-              ? BatchGachaReveal(nickname: widget.nickname, waiting: true)
-              : const GachaReveal(
-                  key: Key('gacha-draw-pending'),
-                  waitingForResult: true,
-                  child: SizedBox.shrink(),
-                )
-        : ProfileLayout(
-            title: '닉네임 뽑기',
-            child: CosmeticContent(
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('이름은 그대로.\n분위기는 새롭게.', style: ProfileStyle.title),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('내 뽑기권'),
-                      Text(
-                        _inventory == null ? '—' : '${_inventory!.tickets}장',
-                        key: const Key('gacha-ticket-balance'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('내 달러칩'),
-                      Text(
-                        _inventory == null
-                            ? '—'
-                            : '${_inventory!.dollarChips}개',
-                        key: const Key('gacha-chip-balance'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton(
-                    key: const Key('exchange-dollar-chips'),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: _hasExchangeChips
-                          ? ProfileStyle.action
-                          : Colors.transparent,
-                      disabledBackgroundColor: _hasExchangeChips
-                          ? ProfileStyle.action
-                          : Colors.transparent,
-                      foregroundColor: _hasExchangeChips
-                          ? Colors.white
-                          : ProfileStyle.muted,
-                      disabledForegroundColor: _hasExchangeChips
-                          ? Colors.white70
-                          : ProfileStyle.muted,
-                      side: BorderSide(
-                        color: _hasExchangeChips
-                            ? ProfileStyle.action
-                            : const Color(0xFFE1E6E2),
-                      ),
-                    ),
-                    onPressed:
-                        !_loading &&
-                            !_drawing &&
-                            !_exchanging &&
-                            _inventory != null &&
-                            (_exchangeId != null || _hasExchangeChips)
-                        ? _exchangeChips
-                        : null,
-                    child: Text(
-                      _exchanging
-                          ? '교환 중…'
-                          : _exchangeId != null
-                          ? '교환 결과 다시 확인'
-                          : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개 → 뽑기권 1개로 바꾸기',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  RewardedTestButton(
-                    repository: widget.repository,
-                    enabled: !_drawing && !_loading && !_exchanging,
-                    onVerified: _load,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.6,
-                      color: ProfileStyle.muted,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _catalog == null ? null : _showCatalog,
-                    child: const Text('획득 목록 · 확률 안내  ›'),
-                  ),
-                  TextButton(
-                    onPressed: _drawing || _exchanging
-                        ? null
-                        : () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute<bool>(
-                                builder: (_) => OwnedCosmeticsPage(
-                                  repository: widget.repository,
-                                  nickname: widget.nickname,
-                                  onOpenGacha: (context) =>
-                                      Navigator.of(context).push<void>(
-                                        MaterialPageRoute(
-                                          builder: (_) => CosmeticGachaPage(
-                                            repository: widget.repository,
-                                            nickname: widget.nickname,
-                                          ),
-                                        ),
-                                      ),
-                                ),
-                              ),
-                            );
-                            if (mounted) await _load();
-                          },
-                    child: const Text('내 아이템 · 꾸미기'),
-                  ),
-                  if (_loading)
-                    const Center(child: CircularProgressIndicator()),
-                  if (_error != null) ...[
-                    if (_error!.isNotEmpty)
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                    TextButton(
-                      onPressed: _loading || _drawing || _exchanging
-                          ? null
-                          : _load,
-                      child: const Text('정보 다시 불러오기'),
-                    ),
-                  ],
-                ],
+    child: ProfileLayout(
+      title: '닉네임 뽑기',
+      child: CosmeticContent(
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('이름은 그대로.\n분위기는 새롭게.', style: ProfileStyle.title),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('내 뽑기권'),
+                Text(
+                  _inventory == null ? '—' : '${_inventory!.tickets}장',
+                  key: const Key('gacha-ticket-balance'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('내 달러칩'),
+                Text(
+                  _inventory == null ? '—' : '${_inventory!.dollarChips}개',
+                  key: const Key('gacha-chip-balance'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              key: const Key('exchange-dollar-chips'),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: _hasExchangeChips
+                    ? ProfileStyle.action
+                    : Colors.transparent,
+                disabledBackgroundColor: _hasExchangeChips
+                    ? ProfileStyle.action
+                    : Colors.transparent,
+                foregroundColor: _hasExchangeChips
+                    ? Colors.white
+                    : ProfileStyle.muted,
+                disabledForegroundColor: _hasExchangeChips
+                    ? Colors.white70
+                    : ProfileStyle.muted,
+                side: BorderSide(
+                  color: _hasExchangeChips
+                      ? ProfileStyle.action
+                      : const Color(0xFFE1E6E2),
+                ),
               ),
-              actions: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: CosmeticAction(
-                          label: _batchRequestId == null
-                              ? '10회 뽑기'
-                              : '10회 결과 다시 확인',
-                          hint: _batchRequestId == null
-                              ? '뽑기권 10장 사용'
-                              : '이전 10회 요청 결과 확인',
-                          onPressed:
-                              !_loading &&
-                                  _batchStateReady &&
-                                  !_exchanging &&
-                                  !_drawing &&
-                                  _drawRequestId == null &&
-                                  (_batchRequestId != null ||
-                                      (_inventory?.tickets ?? 0) >= 10)
-                              ? _drawTen
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: CosmeticAction(
-                          label: _drawRequestId != null
-                              ? '뽑기 결과 다시 확인'
-                              : '1회 뽑기',
-                          hint: _drawRequestId != null
-                              ? '이전 요청 결과 확인'
-                              : '뽑기권 1장 사용',
-                          onPressed:
-                              !_loading &&
-                                  _batchStateReady &&
-                                  !_exchanging &&
-                                  !_drawing &&
-                                  _batchRequestId == null &&
-                                  (_drawRequestId != null ||
-                                      (_inventory?.tickets ?? 0) > 0)
-                              ? _draw
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    AdConfig.isTest
-                        ? '테스트 광고는 뽑기권을 지급하지 않아요.'
-                        : '광고 보상은 서버 검증 후 반영돼요.',
-                    style: ProfileStyle.caption,
-                  ),
-                ],
+              onPressed:
+                  !_loading &&
+                      !_drawing &&
+                      !_exchanging &&
+                      _inventory != null &&
+                      (_exchangeId != null || _hasExchangeChips)
+                  ? _exchangeChips
+                  : null,
+              child: Text(
+                _exchanging
+                    ? '교환 중…'
+                    : _exchangeId != null
+                    ? '교환 결과 다시 확인'
+                    : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개 → 뽑기권 1개로 바꾸기',
               ),
             ),
-          ),
+            const SizedBox(height: 12),
+            RewardedTestButton(
+              repository: widget.repository,
+              enabled: !_drawing && !_loading && !_exchanging,
+              onVerified: _load,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                color: ProfileStyle.muted,
+              ),
+            ),
+            TextButton(
+              onPressed: _catalog == null ? null : _showCatalog,
+              child: const Text('획득 목록 · 확률 안내  ›'),
+            ),
+            TextButton(
+              onPressed: _drawing || _exchanging
+                  ? null
+                  : () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => OwnedCosmeticsPage(
+                            repository: widget.repository,
+                            nickname: widget.nickname,
+                            onOpenGacha: (context) =>
+                                Navigator.of(context).push<void>(
+                                  MaterialPageRoute(
+                                    builder: (_) => CosmeticGachaPage(
+                                      repository: widget.repository,
+                                      nickname: widget.nickname,
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      );
+                      if (mounted) await _load();
+                    },
+              child: const Text('내 아이템 · 꾸미기'),
+            ),
+            if (_loading) const Center(child: CircularProgressIndicator()),
+            if (_error != null) ...[
+              if (_error!.isNotEmpty)
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              TextButton(
+                onPressed: _loading || _drawing || _exchanging ? null : _load,
+                child: const Text('정보 다시 불러오기'),
+              ),
+            ],
+          ],
+        ),
+        actions: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CosmeticAction(
+                    label: _batchRequestId == null ? '10회 뽑기' : '10회 결과 다시 확인',
+                    hint: _batchRequestId == null
+                        ? '뽑기권 10장 사용'
+                        : '이전 10회 요청 결과 확인',
+                    onPressed:
+                        !_loading &&
+                            _batchStateReady &&
+                            !_exchanging &&
+                            !_drawing &&
+                            _drawRequestId == null &&
+                            (_batchRequestId != null ||
+                                (_inventory?.tickets ?? 0) >= 10)
+                        ? _drawTen
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CosmeticAction(
+                    label: _drawRequestId != null ? '뽑기 결과 다시 확인' : '1회 뽑기',
+                    hint: _drawRequestId != null ? '이전 요청 결과 확인' : '뽑기권 1장 사용',
+                    onPressed:
+                        !_loading &&
+                            _batchStateReady &&
+                            !_exchanging &&
+                            !_drawing &&
+                            _batchRequestId == null &&
+                            (_drawRequestId != null ||
+                                (_inventory?.tickets ?? 0) > 0)
+                        ? _draw
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AdConfig.isTest
+                  ? '테스트 광고는 뽑기권을 지급하지 않아요.'
+                  : '광고 보상은 서버 검증 후 반영돼요.',
+              style: ProfileStyle.caption,
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 }
 
@@ -568,11 +537,14 @@ class LiveDrawResultPage extends StatefulWidget {
     required this.nickname,
     required this.result,
     this.allowDrawAgain = true,
+    this.animate = true,
+    this.onDrawAgain,
   });
   final DollarRepository repository;
   final String nickname;
   final CosmeticDraw result;
-  final bool allowDrawAgain;
+  final bool allowDrawAgain, animate;
+  final VoidCallback? onDrawAgain;
   @override
   State<LiveDrawResultPage> createState() => _LiveDrawResultPageState();
 }
@@ -624,108 +596,109 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
     final color = item.type == 'NAME_COLOR' ? item : null,
         font = item.type == 'NAME_FONT' ? item : null,
         bg = item.type == 'NAME_BACKGROUND' ? item : null;
-    return GachaReveal(
-      rarity: item.rarity,
-      child: PopScope(
-        canPop: !_busy,
-        child: ProfileLayout(
-          title: '뽑기 결과',
-          child: CosmeticContent(
-            content: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  result.duplicate ? '이미 보유한 아이템' : '새로운 아이템',
-                  style: const TextStyle(color: ProfileStyle.action),
+    final content = PopScope(
+      canPop: !_busy,
+      child: ProfileLayout(
+        title: '뽑기 결과',
+        child: CosmeticContent(
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                result.duplicate ? '이미 보유한 아이템' : '새로운 아이템',
+                style: const TextStyle(color: ProfileStyle.action),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                result.duplicate ? '익숙한 취향을\n다시 만났어요.' : '새로운 취향을\n뽑았어요.',
+                style: ProfileStyle.title,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7F5),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  result.duplicate ? '익숙한 취향을\n다시 만났어요.' : '새로운 취향을\n뽑았어요.',
-                  style: ProfileStyle.title,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7F5),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '${item.type} · ${item.rarity}',
-                        style: ProfileStyle.caption,
+                child: Column(
+                  children: [
+                    Text(
+                      '${item.type} · ${item.rarity}',
+                      style: ProfileStyle.caption,
+                    ),
+                    const SizedBox(height: 16),
+                    ServerCosmeticNickname(
+                      nickname: widget.nickname,
+                      color: color,
+                      font: font,
+                      background: bg,
+                      size: 32,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      item.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(height: 16),
-                      ServerCosmeticNickname(
-                        nickname: widget.nickname,
-                        color: color,
-                        font: font,
-                        background: bg,
-                        size: 32,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                ServerCosmeticPreview(
-                  nickname: widget.nickname,
-                  color: color,
-                  font: font,
-                  background: bg,
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  result.duplicate
-                      ? '중복 보상으로 달러칩 ${result.chipsGranted}개를 받았어요.'
-                      : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
-                  style: ProfileStyle.caption,
-                ),
-                if (_error?.isNotEmpty == true)
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
-              ],
-            ),
-            actions: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+              ),
+              const SizedBox(height: 24),
+              ServerCosmeticPreview(
+                nickname: widget.nickname,
+                color: color,
+                font: font,
+                background: bg,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                result.duplicate
+                    ? '중복 보상으로 달러칩 ${result.chipsGranted}개를 받았어요.'
+                    : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
+                style: ProfileStyle.caption,
+              ),
+              if (_error?.isNotEmpty == true)
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+          ),
+          actions: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CosmeticAction(
+                label: _busy ? '적용 중…' : '지금 적용',
+                hint: '새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.',
+                onPressed:
+                    _busy ||
+                        ![
+                          'NAME_COLOR',
+                          'NAME_FONT',
+                          'NAME_BACKGROUND',
+                        ].contains(item.type)
+                    ? null
+                    : _apply,
+              ),
+              if (widget.allowDrawAgain) ...[
+                const SizedBox(height: 12),
                 CosmeticAction(
-                  label: _busy ? '적용 중…' : '지금 적용',
-                  hint: '새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.',
-                  onPressed:
-                      _busy ||
-                          ![
-                            'NAME_COLOR',
-                            'NAME_FONT',
-                            'NAME_BACKGROUND',
-                          ].contains(item.type)
+                  label: '다시 뽑기',
+                  hint: result.ticketsAfter > 0
+                      ? '남은 뽑기권 ${result.ticketsAfter}장 · 1장 사용'
+                      : '뽑기권이 없어요. 뽑기권을 얻은 뒤 다시 뽑아주세요.',
+                  onPressed: _busy || result.ticketsAfter <= 0
                       ? null
-                      : _apply,
+                      : widget.onDrawAgain ??
+                            () => Navigator.of(context).pop(true),
                 ),
-                if (widget.allowDrawAgain) ...[
-                  const SizedBox(height: 12),
-                  CosmeticAction(
-                    label: '다시 뽑기',
-                    hint: result.ticketsAfter > 0
-                        ? '남은 뽑기권 ${result.ticketsAfter}장 · 1장 사용'
-                        : '뽑기권이 없어요. 뽑기권을 얻은 뒤 다시 뽑아주세요.',
-                    onPressed: _busy || result.ticketsAfter <= 0
-                        ? null
-                        : () => Navigator.of(context).pop(true),
-                  ),
-                ],
               ],
-            ),
+            ],
           ),
         ),
       ),
     );
+    return widget.animate
+        ? GachaReveal(rarity: item.rarity, child: content)
+        : content;
   }
 }

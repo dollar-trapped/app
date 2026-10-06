@@ -11,7 +11,11 @@ final _results = List.generate(
       id: '$i',
       type: 'NAME_COLOR',
       name: '장식 $i',
-      rarity: i == 9 ? 'SPECIAL' : 'COMMON',
+      rarity: i == 2
+          ? 'SPECIAL'
+          : i == 1
+          ? 'RARE'
+          : 'COMMON',
       drawable: true,
       appearance: const {'nameColor': '#4477CC'},
     ),
@@ -43,78 +47,127 @@ void main() {
     ),
   );
 
-  testWidgets('ten cards enter, turn, reveal server items and then show list', (
-    tester,
-  ) async {
-    await tester.pumpWidget(scene());
-    expect(find.text('결과 목록'), findsNothing);
-    expect(find.text('장식 0'), findsNothing);
-    for (var i = 0; i < 10; i++) {
-      expect(find.byKey(Key('batch-card-$i')), findsOneWidget);
-    }
+  Future<void> tapCard(WidgetTester tester, int index) async {
+    final card = find.byKey(Key('batch-card-touch-$index'));
+    await tester.ensureVisible(card);
+    await tester.tap(card);
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
-    final turn = tester
-        .widget<Transform>(find.byKey(const Key('batch-card-turn-0')))
-        .transform;
-    expect(turn.storage[0], isNot(closeTo(1, .01)));
-    await tester.pump(const Duration(milliseconds: 4100));
-    expect(find.text('장식 0'), findsOneWidget);
-    expect(find.text('장식 9'), findsOneWidget);
-    expect(find.text('결과 목록'), findsNothing);
-    await tester.pump(const Duration(milliseconds: 1200));
+  }
+
+  for (final reduced in [false, true]) {
+    testWidgets('cards require 1/2/3 taps with reduced motion=$reduced', (
+      tester,
+    ) async {
+      await tester.pumpWidget(scene(reduced: reduced));
+      await tester.pump(const Duration(seconds: 10));
+      expect(find.text('장식 0'), findsNothing);
+      expect(find.text('결과 목록'), findsNothing);
+      for (var index = 0; index < 3; index++) {
+        for (var tap = 0; tap <= index; tap++) {
+          expect(find.text('장식 $index'), findsNothing);
+          await tapCard(tester, index);
+        }
+        expect(find.text('장식 $index'), findsOneWidget);
+        await tapCard(tester, index); // Revealed cards stay revealed.
+        expect(find.text('장식 $index'), findsOneWidget);
+      }
+      expect(find.text('장식 3'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets(
+    'double taps during a turn count once and cards turn independently',
+    (tester) async {
+      await tester.pumpWidget(scene());
+      await tester.tap(find.byKey(const Key('batch-card-touch-1')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('batch-card-touch-1')));
+      await tester.tap(find.byKey(const Key('batch-card-touch-0')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final turn = tester
+          .widget<Transform>(find.byKey(const Key('batch-card-turn-1')))
+          .transform;
+      expect(turn.storage[0], isNot(closeTo(1, .01)));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('장식 0'), findsOneWidget);
+      expect(find.text('장식 1'), findsNothing);
+      await tapCard(tester, 1);
+      expect(find.text('장식 1'), findsOneWidget);
+    },
+  );
+
+  testWidgets('open all works while a card is turning', (tester) async {
+    await tester.pumpWidget(scene());
+    await tester.tap(find.byKey(const Key('batch-card-touch-2')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('바로 열기'));
+    await tester.tap(find.text('바로 열기'));
     await tester.pumpAndSettle();
     expect(find.text('결과 목록'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'waiting cards rotate without exposing supplied outcomes or skip',
-    (tester) async {
-      await tester.pumpWidget(scene(waiting: true));
-      await tester.pump(const Duration(milliseconds: 500));
-      final turn = tester
-          .widget<Transform>(find.byKey(const Key('batch-card-turn-0')))
-          .transform;
-      expect(turn.storage[0], isNot(closeTo(1, .01)));
-      expect(find.text('장식 0'), findsNothing);
-      expect(find.text('결과 목록'), findsNothing);
-      expect(find.text('연출 건너뛰기'), findsNothing);
-      expect(find.text('뽑기 결과를 확인하고 있어요. 3 / 10'), findsOneWidget);
-    },
-  );
-
-  testWidgets('partial outcomes never invent the other seven rewards', (
+  testWidgets('waiting cannot reveal and completion retains the same scene', (
     tester,
   ) async {
-    await tester.pumpWidget(scene(results: _results.take(3).toList()));
-    await tester.pump(const Duration(milliseconds: 5000));
-    expect(find.text('장식 2'), findsOneWidget);
-    expect(find.text('장식 3'), findsNothing);
-    expect(find.text('미확인'), findsNWidgets(7));
-    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(scene(waiting: true));
+    final state = tester.state(find.byType(BatchGachaReveal));
+    await tapCard(tester, 0);
+    expect(find.text('장식 0'), findsNothing);
+    expect(find.text('바로 열기'), findsNothing);
+    await tester.pumpWidget(scene());
+    expect(tester.state(find.byType(BatchGachaReveal)), same(state));
+    await tester.pump(const Duration(seconds: 10));
+    expect(find.text('장식 0'), findsNothing);
+    await tapCard(tester, 0);
+    expect(find.text('장식 0'), findsOneWidget);
   });
 
-  testWidgets('small screen with large text reveals without overflow', (
+  testWidgets('unknown outcomes cannot be opened', (tester) async {
+    await tester.pumpWidget(scene(results: _results.take(3).toList()));
+    await tapCard(tester, 3);
+    expect(find.text('장식 3'), findsNothing);
+    expect(find.text('카드를 눌러 열어보세요 · 0 / 10'), findsOneWidget);
+  });
+
+  testWidgets('all ten stay visible until result button is pressed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(scene(reduced: true));
+    for (var index = 0; index < 10; index++) {
+      final count = index == 2
+          ? 3
+          : index == 1
+          ? 2
+          : 1;
+      for (var tap = 0; tap < count; tap++) {
+        await tapCard(tester, index);
+      }
+    }
+    expect(find.text('결과 목록'), findsNothing);
+    await tester.ensureVisible(find.text('결과 보기'));
+    await tester.tap(find.text('결과 보기'));
+    await tester.pump();
+    expect(find.text('결과 목록'), findsOneWidget);
+  });
+
+  testWidgets('small screen with large text and reduced motion waiting', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(scene(textScale: 1.5));
-    await tester.pump(const Duration(milliseconds: 5000));
+    await tester.pumpWidget(
+      scene(waiting: true, reduced: true, textScale: 1.5),
+    );
+    await tester.pump(const Duration(seconds: 10));
+    expect(tester.hasRunningAnimations, isFalse);
+    await tester.pumpWidget(scene(reduced: true, textScale: 1.5));
+    await tapCard(tester, 0);
+    expect(find.text('장식 0'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
-
-  testWidgets(
-    'reduced motion shows results immediately and waiting stays static',
-    (tester) async {
-      await tester.pumpWidget(scene(reduced: true));
-      expect(find.text('결과 목록'), findsOneWidget);
-      expect(tester.hasRunningAnimations, isFalse);
-      await tester.pumpWidget(scene(waiting: true, reduced: true));
-      await tester.pump(const Duration(seconds: 10));
-      expect(find.text('결과 목록'), findsNothing);
-      expect(tester.hasRunningAnimations, isFalse);
-    },
-  );
 }

@@ -37,6 +37,11 @@ void main() {
     await tester.ensureVisible(find.text(label));
     await tester.tap(find.text(label));
     await tester.pumpAndSettle();
+    if (find.text('바로 열기').evaluate().isNotEmpty) {
+      await tester.ensureVisible(find.text('바로 열기'));
+      await tester.tap(find.text('바로 열기'));
+      await tester.pumpAndSettle();
+    }
   }
 
   testWidgets('equal buttons put ten on left and require ten tickets', (
@@ -70,6 +75,7 @@ void main() {
     action();
     action();
     await tester.pumpAndSettle();
+    await draw(tester, '바로 열기');
     expect(repo.requests.length, 1);
     expect(repo.singleRequests, 0);
     expect(repo.tickets, 0);

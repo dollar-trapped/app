@@ -1,13 +1,12 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/features/gacha/widgets/gacha_reveal.dart';
 
 void main() {
   for (final reduced in [false, true]) {
-    for (final entry in {'COMMON': 3, 'RARE': 5, 'SPECIAL': 7}.entries) {
+    for (final entry in {'COMMON': 1, 'RARE': 1, 'SPECIAL': 1}.entries) {
       testWidgets(
-        '${entry.key} waits for touch then turns ${entry.value} times; disabled animations=$reduced',
+        '${entry.key} waits for touch then reveals with one flip; disabled animations=$reduced',
         (tester) async {
           tester.platformDispatcher.accessibilityFeaturesTestValue =
               FakeAccessibilityFeatures(disableAnimations: reduced);
@@ -27,16 +26,15 @@ void main() {
           expect(find.text('결과'), findsNothing);
           await tester.tap(find.byKey(const Key('gacha-card-touch')));
           await tester.pump();
-          for (var turn = 0; turn < entry.value; turn++) {
-            await tester.pump(const Duration(milliseconds: 200));
+          if (!reduced) {
+            await tester.pump(const Duration(milliseconds: 450));
             final transform = tester
                 .widget<Transform>(find.byKey(const Key('gacha-card-turn')))
                 .transform;
-            expect(transform.storage[0], closeTo(math.cos(math.pi / 2), .001));
+            expect(transform.storage[0], isNot(closeTo(1, .01)));
             expect(find.text('결과'), findsNothing);
-            await tester.pump(const Duration(milliseconds: 600));
           }
-          await tester.pump(const Duration(milliseconds: 800));
+          await tester.pump(const Duration(milliseconds: 1600));
           await tester.pumpAndSettle();
           expect(find.text('결과'), findsOneWidget);
           expect(find.text('연출 건너뛰기'), findsNothing);

@@ -38,12 +38,15 @@ void main() {
         await tester.ensureVisible(find.text('1회 뽑기'));
         await tester.tap(find.text('1회 뽑기'));
         await tester.pump();
-        expect(find.byKey(const Key('gacha-draw-pending')), findsOneWidget);
+        expect(find.byKey(const Key('gacha-draw-scene')), findsOneWidget);
         expect(find.text('어떤 취향을 만나게 될까요?'), findsOneWidget);
         expect(find.text('연출 건너뛰기'), findsNothing);
         await tester.pump(const Duration(seconds: 5));
-        expect(find.byKey(const Key('gacha-draw-pending')), findsOneWidget);
+        expect(find.byKey(const Key('gacha-draw-scene')), findsOneWidget);
         expect(repo.keys, hasLength(1));
+        final revealState = tester.state(
+          find.byKey(const Key('gacha-draw-scene')),
+        );
         if (fail) {
           repo.response.completeError(StateError('timeout'));
         } else {
@@ -56,8 +59,20 @@ void main() {
             ),
           );
         }
+        await tester.pump();
+        if (!fail) {
+          expect(
+            tester.state(find.byKey(const Key('gacha-draw-scene'))),
+            same(revealState),
+          );
+          expect(find.text('1회 뽑기'), findsNothing);
+          expect(find.text('내 뽑기권'), findsNothing);
+        }
         await _settleAndOpenCard(tester);
-        expect(find.byKey(const Key('gacha-draw-pending')), findsNothing);
+        expect(
+          find.byKey(const Key('gacha-draw-scene')),
+          fail ? findsNothing : findsOneWidget,
+        );
         if (fail) {
           expect(find.text('뽑기 결과 다시 확인'), findsOneWidget);
           expect(await pending.read('user-me'), repo.keys.single);
