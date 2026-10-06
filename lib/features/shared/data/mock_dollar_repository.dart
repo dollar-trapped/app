@@ -238,6 +238,9 @@ class MockDollarRepository implements DollarRepository {
   Future<CosmeticDraw> drawCosmetic(String requestId) async =>
       throw StateError('뽑기권이 없습니다.');
   @override
+  Future<CosmeticBatchDraw> drawCosmeticBatch(String requestId) async =>
+      throw StateError('뽑기권이 없습니다.');
+  @override
   Future<AdRewardSession> createAdRewardSession(String requestId) async =>
       throw StateError('Mock에서는 광고 보상을 지급하지 않습니다.');
   @override

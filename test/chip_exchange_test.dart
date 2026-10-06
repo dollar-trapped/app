@@ -59,6 +59,7 @@ void main() {
         home: LiveGachaPage(
           repository: repo,
           nickname: '나',
+          pendingBatchDrawStore: _Store(),
           pendingDrawStore: _Store(),
           pendingExchangeStore: store,
         ),
@@ -99,6 +100,7 @@ void main() {
         home: LiveGachaPage(
           repository: _Repo()..chips = 9,
           nickname: '나',
+          pendingBatchDrawStore: _Store(),
           pendingDrawStore: _Store(),
           pendingExchangeStore: _Store(),
         ),

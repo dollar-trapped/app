@@ -173,6 +173,49 @@ void main() {
       expect(adapter.requests.where((r) => r.path.contains('ssv')), isEmpty);
     },
   );
+  test(
+    'batch draw uses deployed contract and validates all ten results',
+    () async {
+      final adapter = _Adapter();
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = adapter;
+      final store = _Tokens();
+      final api = DollarApi.withDependencies(ApiClient(store, dio: dio), store);
+      final batch = await api.drawCosmeticBatch('batch-key');
+      expect(adapter.requests.single.path, '/gacha/batch-draws');
+      expect(adapter.requests.single.method, 'POST');
+      expect(adapter.requests.single.data, {
+        'drawRequestId': 'batch-key',
+        'count': 10,
+      });
+      expect(batch.results, hasLength(10));
+      expect(batch.ticketsAfter, 0);
+      expect(batch.chipsAfter, 15);
+      expect(batch.results.last.duplicate, isTrue);
+      expect(batch.results.last.chipsGranted, 1);
+      expect(
+        batch.results.last.item.appearance['styleToken'],
+        'golden_shimmer',
+      );
+      adapter.batchResponse = {
+        'drawRequestId': 'batch-key',
+        'count': 10,
+        'results': [],
+        'drawEntitlementCountAfter': 0,
+        'dollarChipBalanceAfter': 15,
+      };
+      await expectLater(
+        api.drawCosmeticBatch('batch-key'),
+        throwsFormatException,
+      );
+      adapter.batchResponse = null;
+      adapter.batchIdOverride = 'wrong-batch';
+      await expectLater(
+        api.drawCosmeticBatch('batch-key'),
+        throwsFormatException,
+      );
+    },
+  );
 }
 
 class _Tokens implements TokenStore {
@@ -191,6 +234,8 @@ class _Tokens implements TokenStore {
 
 class _Adapter implements HttpClientAdapter {
   final requests = <RequestOptions>[];
+  Map<String, dynamic>? batchResponse;
+  String? batchIdOverride;
   @override
   Future<ResponseBody> fetch(
     RequestOptions o,
@@ -229,6 +274,30 @@ class _Adapter implements HttpClientAdapter {
         'dollarChipBalanceAfter': 22,
         'drawEntitlementBalance': 1,
       },
+      '/gacha/batch-draws' =>
+        batchResponse ??
+            {
+              'drawRequestId':
+                  batchIdOverride ?? (o.data as Map)['drawRequestId'],
+              'count': 10,
+              'drawEntitlementCountAfter': 0,
+              'dollarChipBalanceAfter': 15,
+              'results': List.generate(
+                10,
+                (i) => {
+                  'cosmetic': {
+                    ...itemJson,
+                    'appearance': {
+                      'nameColor': null,
+                      'styleToken': 'golden_shimmer',
+                    },
+                  },
+                  'outcome': 'DUPLICATE',
+                  'dollarChipGranted': 1,
+                  'drawEntitlementCountAfter': 9 - i,
+                },
+              ),
+            },
       '/gacha/draws' => {
         'cosmetic': itemJson,
         'outcome': 'DUPLICATE',

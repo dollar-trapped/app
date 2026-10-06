@@ -42,6 +42,34 @@ class CosmeticDraw {
   );
 }
 
+class CosmeticBatchDraw {
+  CosmeticBatchDraw({
+    required this.requestId,
+    required this.count,
+    required List<CosmeticDraw> results,
+    required this.ticketsAfter,
+    required this.chipsAfter,
+  }) : results = List.unmodifiable(results) {
+    if (count <= 0 || results.length != count) {
+      throw const FormatException('Batch draw result count does not match');
+    }
+  }
+
+  final String requestId;
+  final int count, ticketsAfter, chipsAfter;
+  final List<CosmeticDraw> results;
+
+  factory CosmeticBatchDraw.fromJson(JsonMap json) => CosmeticBatchDraw(
+    requestId: json['drawRequestId'] as String,
+    count: (json['count'] as num).toInt(),
+    results: (json['results'] as List)
+        .map((value) => CosmeticDraw.fromJson(JsonMap.from(value as Map)))
+        .toList(),
+    ticketsAfter: (json['drawEntitlementCountAfter'] as num).toInt(),
+    chipsAfter: (json['dollarChipBalanceAfter'] as num).toInt(),
+  );
+}
+
 class AdRewardSession {
   const AdRewardSession({
     required this.id,

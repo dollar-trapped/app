@@ -15,6 +15,8 @@ import '../../shared/widgets/cosmetic_layout.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import '../../inventory/screens/owned_cosmetics_page.dart';
 import '../widgets/gacha_reveal.dart';
+import 'batch_draw_result_page.dart';
+import '../widgets/batch_gacha_reveal.dart';
 
 class LiveGachaPage extends StatefulWidget {
   const LiveGachaPage({
@@ -22,11 +24,16 @@ class LiveGachaPage extends StatefulWidget {
     required this.repository,
     required this.nickname,
     this.pendingDrawStore = const SecurePendingDrawStore(),
+    this.pendingBatchDrawStore = const SecurePendingDrawStore(
+      prefix: 'pending_cosmetic_batch_draw_',
+    ),
     this.pendingExchangeStore = const SecurePendingDrawStore(
       prefix: 'pending_chip_exchange_',
     ),
   });
-  final PendingDrawStore pendingDrawStore, pendingExchangeStore;
+  final PendingDrawStore pendingDrawStore,
+      pendingBatchDrawStore,
+      pendingExchangeStore;
   final DollarRepository repository;
   final String nickname;
   @override
@@ -46,7 +53,10 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   CosmeticCatalog? _catalog;
   bool _loadingCatalog = false;
   String? _error, _drawRequestId, _userId;
+  String? _batchRequestId;
+  bool _batchStateReady = false;
   bool _loading = true, _drawing = false, _awaitingDraw = false;
+  int _batchTotal = 0;
   @override
   void initState() {
     super.initState();
@@ -57,6 +67,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     if (!mounted) return;
     setState(() {
       _loading = true;
+      _batchStateReady = false;
       _error = null;
     });
     try {
@@ -66,6 +77,8 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       ]);
       if (!mounted) return;
       final user = await widget.repository.getMe();
+      final pendingBatch = await widget.pendingBatchDrawStore.read(user.id);
+      if (!mounted) return;
       String? pending;
       try {
         pending = await widget.pendingDrawStore.read(user.id);
@@ -83,9 +96,11 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
       _exchangeId ??= pendingExchange;
       _userId = user.id;
       _drawRequestId ??= pending;
+      _batchRequestId ??= pendingBatch;
       setState(() {
         _inventory = results[0] as CosmeticInventory;
         _catalog = results[1] as CosmeticCatalog;
+        _batchStateReady = true;
       });
     } catch (e) {
       if (mounted) {
@@ -148,8 +163,113 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     }
   }
 
+  Future<CosmeticDraw> _requestDraw() async {
+    _userId ??= (await widget.repository.getMe()).id;
+    _drawRequestId ??=
+        await widget.pendingDrawStore.read(_userId!) ?? newRequestId();
+    await widget.pendingDrawStore.write(_userId!, _drawRequestId!);
+    final result = await widget.repository.drawCosmetic(_drawRequestId!);
+    await widget.pendingDrawStore.clear(_userId!);
+    _drawRequestId = null;
+    return result;
+  }
+
+  Future<void> _drawTen() async {
+    if (_drawing ||
+        !_batchStateReady ||
+        _exchanging ||
+        _loading ||
+        _drawRequestId != null ||
+        (_batchRequestId == null && (_inventory?.tickets ?? 0) < 10)) {
+      return;
+    }
+    setState(() {
+      _drawing = true;
+      _awaitingDraw = true;
+      _batchTotal = 10;
+      _error = null;
+    });
+    try {
+      _userId ??= (await widget.repository.getMe()).id;
+      _batchRequestId ??=
+          await widget.pendingBatchDrawStore.read(_userId!) ?? newRequestId();
+      await widget.pendingBatchDrawStore.write(_userId!, _batchRequestId!);
+      final batch = await widget.repository.drawCosmeticBatch(_batchRequestId!);
+      if (batch.requestId != _batchRequestId ||
+          batch.count != 10 ||
+          batch.results.length != 10) {
+        throw const FormatException('Unexpected batch draw response');
+      }
+      await widget.pendingBatchDrawStore.clear(_userId!);
+      _batchRequestId = null;
+      if (!mounted) return;
+      setState(() {
+        _awaitingDraw = false;
+        final inventory = _inventory;
+        if (inventory != null) {
+          _inventory = CosmeticInventory(
+            items: inventory.items,
+            equipment: inventory.equipment,
+            tickets: batch.ticketsAfter,
+            dollarChips: batch.chipsAfter,
+          );
+        }
+      });
+      await _load();
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => BatchDrawResultPage(
+            nickname: widget.nickname,
+            results: batch.results,
+            onOpenResult: (context, result) => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (_) => LiveDrawResultPage(
+                  repository: widget.repository,
+                  nickname: widget.nickname,
+                  result: result,
+                  allowDrawAgain: false,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      if (mounted) {
+        await _load();
+      }
+    } catch (error) {
+      // Keep the whole batch key, even if the response or local cleanup was lost.
+      // Never fall back to single draws: the server may have consumed all ten.
+      if (mounted) {
+        await _load();
+      }
+      if (mounted) {
+        setState(
+          () => _error =
+              error is ApiException && error.actionableUserMessage.isNotEmpty
+              ? error.actionableUserMessage
+              : '10회 뽑기 결과를 확인하지 못했어요. 같은 요청으로 다시 확인해 주세요.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _drawing = false;
+          _awaitingDraw = false;
+          _batchTotal = 0;
+        });
+      }
+    }
+  }
+
   Future<void> _draw() async {
-    if (_drawing || _exchanging) return;
+    if (_drawing ||
+        _exchanging ||
+        !_batchStateReady ||
+        _batchRequestId != null) {
+      return;
+    }
     setState(() {
       _drawing = true;
       _error = null;
@@ -161,13 +281,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
         drawAgain = false;
         setState(() => _awaitingDraw = true);
         final anticipation = Stopwatch()..start();
-        _userId ??= (await widget.repository.getMe()).id;
-        _drawRequestId ??=
-            await widget.pendingDrawStore.read(_userId!) ?? newRequestId();
-        await widget.pendingDrawStore.write(_userId!, _drawRequestId!);
-        final result = await widget.repository.drawCosmetic(_drawRequestId!);
-        await widget.pendingDrawStore.clear(_userId!);
-        _drawRequestId = null;
+        final result = await _requestDraw();
         final remaining = 900 - anticipation.elapsedMilliseconds;
         if (!reduceMotion && remaining > 0) {
           await Future<void>.delayed(Duration(milliseconds: remaining));
@@ -250,11 +364,13 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
   Widget build(BuildContext context) => PopScope(
     canPop: !_drawing && !_exchanging,
     child: _awaitingDraw
-        ? const GachaReveal(
-            key: Key('gacha-draw-pending'),
-            waitingForResult: true,
-            child: SizedBox.shrink(),
-          )
+        ? _batchTotal > 0
+              ? BatchGachaReveal(nickname: widget.nickname, waiting: true)
+              : const GachaReveal(
+                  key: Key('gacha-draw-pending'),
+                  waitingForResult: true,
+                  child: SizedBox.shrink(),
+                )
         : ProfileLayout(
             title: '닉네임 뽑기',
             child: CosmeticContent(
@@ -382,25 +498,63 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                   ],
                 ],
               ),
-              actions: CosmeticAction(
-                label: _drawing
-                    ? '뽑기 처리 중…'
-                    : _drawRequestId != null
-                    ? '뽑기 결과 다시 확인'
-                    : (_inventory?.tickets ?? 0) > 0
-                    ? '1회 뽑기'
-                    : '뽑기권이 필요해요',
-                hint: AdConfig.isTest
-                    ? '테스트 광고는 뽑기권을 지급하지 않아요.'
-                    : '광고 보상은 서버 검증 후 반영돼요.',
-                onPressed:
-                    !_loading &&
-                        !_exchanging &&
-                        !_drawing &&
-                        (_drawRequestId != null ||
-                            (_inventory?.tickets ?? 0) > 0)
-                    ? _draw
-                    : null,
+              actions: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: CosmeticAction(
+                          label: _batchRequestId == null
+                              ? '10회 뽑기'
+                              : '10회 결과 다시 확인',
+                          hint: _batchRequestId == null
+                              ? '뽑기권 10장 사용'
+                              : '이전 10회 요청 결과 확인',
+                          onPressed:
+                              !_loading &&
+                                  _batchStateReady &&
+                                  !_exchanging &&
+                                  !_drawing &&
+                                  _drawRequestId == null &&
+                                  (_batchRequestId != null ||
+                                      (_inventory?.tickets ?? 0) >= 10)
+                              ? _drawTen
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CosmeticAction(
+                          label: _drawRequestId != null
+                              ? '뽑기 결과 다시 확인'
+                              : '1회 뽑기',
+                          hint: _drawRequestId != null
+                              ? '이전 요청 결과 확인'
+                              : '뽑기권 1장 사용',
+                          onPressed:
+                              !_loading &&
+                                  _batchStateReady &&
+                                  !_exchanging &&
+                                  !_drawing &&
+                                  _batchRequestId == null &&
+                                  (_drawRequestId != null ||
+                                      (_inventory?.tickets ?? 0) > 0)
+                              ? _draw
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    AdConfig.isTest
+                        ? '테스트 광고는 뽑기권을 지급하지 않아요.'
+                        : '광고 보상은 서버 검증 후 반영돼요.',
+                    style: ProfileStyle.caption,
+                  ),
+                ],
               ),
             ),
           ),
@@ -413,10 +567,12 @@ class LiveDrawResultPage extends StatefulWidget {
     required this.repository,
     required this.nickname,
     required this.result,
+    this.allowDrawAgain = true,
   });
   final DollarRepository repository;
   final String nickname;
   final CosmeticDraw result;
+  final bool allowDrawAgain;
   @override
   State<LiveDrawResultPage> createState() => _LiveDrawResultPageState();
 }
@@ -553,16 +709,18 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
                       ? null
                       : _apply,
                 ),
-                const SizedBox(height: 12),
-                CosmeticAction(
-                  label: '다시 뽑기',
-                  hint: result.ticketsAfter > 0
-                      ? '남은 뽑기권 ${result.ticketsAfter}장 · 1장 사용'
-                      : '뽑기권이 없어요. 뽑기권을 얻은 뒤 다시 뽑아주세요.',
-                  onPressed: _busy || result.ticketsAfter <= 0
-                      ? null
-                      : () => Navigator.of(context).pop(true),
-                ),
+                if (widget.allowDrawAgain) ...[
+                  const SizedBox(height: 12),
+                  CosmeticAction(
+                    label: '다시 뽑기',
+                    hint: result.ticketsAfter > 0
+                        ? '남은 뽑기권 ${result.ticketsAfter}장 · 1장 사용'
+                        : '뽑기권이 없어요. 뽑기권을 얻은 뒤 다시 뽑아주세요.',
+                    onPressed: _busy || result.ticketsAfter <= 0
+                        ? null
+                        : () => Navigator.of(context).pop(true),
+                  ),
+                ],
               ],
             ),
           ),

@@ -285,6 +285,20 @@ class DollarApi implements DollarRepository {
         )).data!,
       );
   @override
+  Future<CosmeticBatchDraw> drawCosmeticBatch(String requestId) async {
+    final result = CosmeticBatchDraw.fromJson(
+      (await _client.post<Map<String, dynamic>>(
+        '/gacha/batch-draws',
+        data: {'drawRequestId': requestId, 'count': 10},
+      )).data!,
+    );
+    if (result.requestId != requestId || result.count != 10) {
+      throw const FormatException('Unexpected batch draw response');
+    }
+    return result;
+  }
+
+  @override
   Future<AdRewardSession> createAdRewardSession(String requestId) async =>
       AdRewardSession.fromJson(
         (await _client.post<Map<String, dynamic>>(
