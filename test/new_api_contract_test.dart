@@ -63,6 +63,58 @@ void main() {
     },
   );
 
+  test(
+    'wish ticket proposal sends operation IDs and selected item, and reads server balances',
+    () async {
+      final adapter = _Adapter();
+      final tokens = _Tokens();
+      final api = DollarApi.withDependencies(
+        ApiClient(
+          tokens,
+          dio: Dio(BaseOptions(baseUrl: 'https://example.test'))
+            ..httpClientAdapter = adapter,
+        ),
+        tokens,
+      );
+      final state = await api.getWishTickets();
+      expect(state.supported, isTrue);
+      expect(state.chips, 100);
+      final exchange = await api.exchangeWishTicket('wish-exchange');
+      expect(adapter.requests[1].path, '/gacha/wish-ticket-exchanges');
+      expect(adapter.requests[1].data, {'operationId': 'wish-exchange'});
+      expect(exchange.chips, 0);
+      expect(exchange.tickets, 2);
+      final redeem = await api.redeemWishTicket('wish-redeem', 'color-1');
+      expect(adapter.requests[2].path, '/gacha/wish-ticket-redemptions');
+      expect(adapter.requests[2].data, {
+        'operationId': 'wish-redeem',
+        'cosmeticId': 'color-1',
+      });
+      expect(redeem.item!.id, 'color-1');
+      expect(redeem.item!.rarity, 'SPECIAL');
+      expect(redeem.tickets, 1);
+    },
+  );
+  test('wish receipt with a different operation ID is rejected', () async {
+    final adapter = _Adapter()..wrongWishId = true;
+    final tokens = _Tokens();
+    final api = DollarApi.withDependencies(
+      ApiClient(
+        tokens,
+        dio: Dio(BaseOptions(baseUrl: 'https://example.test'))
+          ..httpClientAdapter = adapter,
+      ),
+      tokens,
+    );
+    await expectLater(
+      api.exchangeWishTicket('requested'),
+      throwsFormatException,
+    );
+    await expectLater(
+      api.redeemWishTicket('requested', 'color-1'),
+      throwsFormatException,
+    );
+  });
   test('chip exchange uses operationId and server balances', () async {
     final adapter = _Adapter();
     final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
@@ -236,6 +288,7 @@ class _Adapter implements HttpClientAdapter {
   final requests = <RequestOptions>[];
   Map<String, dynamic>? batchResponse;
   String? batchIdOverride;
+  bool wrongWishId = false;
   @override
   Future<ResponseBody> fetch(
     RequestOptions o,
@@ -244,6 +297,24 @@ class _Adapter implements HttpClientAdapter {
   ) async {
     requests.add(o);
     final Object data = switch (o.path) {
+      '/gacha/wish-tickets' => {
+        'enabled': true,
+        'exchangeCost': 100,
+        'dollarChipBalance': 100,
+        'wishTicketCount': 1,
+        'items': [],
+      },
+      '/gacha/wish-ticket-exchanges' => {
+        'operationId': wrongWishId ? 'wrong' : (o.data as Map)['operationId'],
+        'dollarChipBalanceAfter': 0,
+        'wishTicketCountAfter': 2,
+      },
+      '/gacha/wish-ticket-redemptions' => {
+        'operationId': wrongWishId ? 'wrong' : (o.data as Map)['operationId'],
+        'dollarChipBalanceAfter': 0,
+        'wishTicketCountAfter': 1,
+        'cosmetic': {...itemJson, 'rarity': 'SPECIAL'},
+      },
       '/messages/message-1/reports' => {
         'id': 'report-1',
         'messageId': 'message-1',

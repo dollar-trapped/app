@@ -1,3 +1,4 @@
+import '../../gacha/data/wish_ticket_models.dart';
 import '../../inventory/data/cosmetic_inventory_repository.dart';
 import '../../gacha/data/gacha_models.dart';
 import 'api_models.dart';
@@ -24,6 +25,12 @@ abstract interface class DollarRepository
   Future<String> verifyPasswordReset(String email, String code);
   Future<void> resetPassword(String token, String password);
   Future<CosmeticCatalog> getCosmeticCatalog();
+  Future<WishTicketState> getWishTickets();
+  Future<WishTicketReceipt> exchangeWishTicket(String operationId);
+  Future<WishTicketReceipt> redeemWishTicket(
+    String operationId,
+    String cosmeticId,
+  );
   Future<ChipExchange> exchangeChips(String operationId);
   Future<CosmeticDraw> drawCosmetic(String requestId);
   Future<CosmeticBatchDraw> drawCosmeticBatch(String requestId);

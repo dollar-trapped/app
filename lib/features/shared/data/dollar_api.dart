@@ -1,3 +1,4 @@
+import '../../gacha/data/wish_ticket_models.dart';
 import '../../gacha/data/gacha_models.dart';
 import '../../../core/auth/reward_event_claim.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
@@ -268,6 +269,44 @@ class DollarApi implements DollarRepository {
           data: equipment.toRequest(),
         )).data!,
       );
+  // Proposed contract; the server must opt in through GET.enabled.
+  @override
+  Future<WishTicketState> getWishTickets() async => WishTicketState.fromJson(
+    (await _client.get<Map<String, dynamic>>('/gacha/wish-tickets')).data!,
+  );
+  @override
+  Future<WishTicketReceipt> exchangeWishTicket(String operationId) async {
+    final receipt = WishTicketReceipt.fromJson(
+      (await _client.post<Map<String, dynamic>>(
+        '/gacha/wish-ticket-exchanges',
+        data: {'operationId': operationId},
+      )).data!,
+    );
+    if (receipt.operationId != operationId || receipt.item != null) {
+      throw const FormatException('Unexpected wish exchange receipt');
+    }
+    return receipt;
+  }
+
+  @override
+  Future<WishTicketReceipt> redeemWishTicket(
+    String operationId,
+    String cosmeticId,
+  ) async {
+    final receipt = WishTicketReceipt.fromJson(
+      (await _client.post<Map<String, dynamic>>(
+        '/gacha/wish-ticket-redemptions',
+        data: {'operationId': operationId, 'cosmeticId': cosmeticId},
+      )).data!,
+    );
+    if (receipt.operationId != operationId ||
+        receipt.item?.id != cosmeticId ||
+        receipt.item?.rarity != 'SPECIAL') {
+      throw const FormatException('Unexpected wish redemption receipt');
+    }
+    return receipt;
+  }
+
   @override
   Future<ChipExchange> exchangeChips(String operationId) async =>
       ChipExchange.fromJson(

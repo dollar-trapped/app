@@ -1,3 +1,4 @@
+import '../../gacha/data/wish_ticket_models.dart';
 import '../../gacha/data/gacha_models.dart';
 import '../../legal/consent_versions.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
@@ -231,6 +232,17 @@ class MockDollarRepository implements DollarRepository {
   @override
   Future<CosmeticEquipment> equipCosmetics(CosmeticEquipment equipment) async =>
       equipment;
+  @override
+  Future<WishTicketState> getWishTickets() async =>
+      const WishTicketState(enabled: false, chips: 0, tickets: 0, options: []);
+  @override
+  Future<WishTicketReceipt> exchangeWishTicket(String operationId) async =>
+      throw StateError('염원의 선택권은 준비 중입니다.');
+  @override
+  Future<WishTicketReceipt> redeemWishTicket(
+    String operationId,
+    String cosmeticId,
+  ) async => throw StateError('염원의 선택권은 준비 중입니다.');
   @override
   Future<ChipExchange> exchangeChips(String operationId) async =>
       throw StateError('달러칩이 부족합니다.');

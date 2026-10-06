@@ -1,3 +1,4 @@
+import 'wish_ticket_page.dart';
 import 'cosmetic_gacha_page.dart';
 import '../data/gacha_models.dart';
 import '../widgets/cosmetic_catalog_sheet.dart';
@@ -417,6 +418,23 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     ? '교환 결과 다시 확인'
                     : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개 → 뽑기권 1개로 바꾸기',
               ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _loading || _drawing || _exchanging
+                  ? null
+                  : () async {
+                      await Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => WishTicketPage(
+                            repository: widget.repository,
+                            nickname: widget.nickname,
+                          ),
+                        ),
+                      );
+                      if (mounted) await _load();
+                    },
+              child: const Text('염원의 선택권 · SPECIAL 선택'),
             ),
             const SizedBox(height: 12),
             RewardedTestButton(
