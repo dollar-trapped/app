@@ -501,7 +501,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                   child: CosmeticAction(
                     label: _batchRequestId == null ? '10회 뽑기' : '10회 결과 다시 확인',
                     hint: _batchRequestId == null
-                        ? '뽑기권 10장 사용'
+                        ? '뽑기권 10장 사용\nRARE 이상 1개 보장'
                         : '이전 10회 요청 결과 확인',
                     onPressed:
                         !_loading &&
