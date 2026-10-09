@@ -1,6 +1,6 @@
 import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
-import 'package:dollar_trapped/features/gacha/screens/batch_draw_result_page.dart';
+import 'package:dollar_trapped/features/gacha/widgets/case_reward_card.dart';
 import 'package:dollar_trapped/features/gacha/screens/live_gacha_page.dart';
 import 'package:dollar_trapped/features/gacha/services/pending_draw_store.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
@@ -80,12 +80,15 @@ void main() {
     expect(repo.singleRequests, 0);
     expect(repo.tickets, 0);
     expect(store.pending, isNull);
-    final page = tester.widget<BatchDrawResultPage>(
-      find.byType(BatchDrawResultPage),
+    final cards = tester
+        .widgetList<CaseRewardCard>(find.byType(CaseRewardCard))
+        .toList();
+    expect(cards.length, 10);
+    expect(cards.where((card) => !card.result.duplicate).length, 5);
+    expect(
+      cards.fold<int>(0, (sum, card) => sum + card.result.chipsGranted),
+      5,
     );
-    expect(page.results.length, 10);
-    expect(find.text('새 아이템 5개 · 중복 5개'), findsOneWidget);
-    expect(find.text('중복 보상 달러칩 5개'), findsOneWidget);
     await draw(tester, '확인');
     expect(find.text('0장'), findsOneWidget);
     expect(find.text('5개'), findsOneWidget);
@@ -102,7 +105,7 @@ void main() {
       expect(repo.requests.length, 1);
       expect(repo.tickets, 0);
       expect(store.pending, repo.requests.single);
-      expect(find.byType(BatchDrawResultPage), findsNothing);
+      expect(find.byType(CaseRewardCard), findsNothing);
       expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, '1회 뽑기'))
@@ -118,10 +121,7 @@ void main() {
       expect(repo.tickets, 0);
       expect(store.pending, isNull);
       expect(
-        tester
-            .widget<BatchDrawResultPage>(find.byType(BatchDrawResultPage))
-            .results
-            .length,
+        tester.widgetList<CaseRewardCard>(find.byType(CaseRewardCard)).length,
         10,
       );
       expect(tester.takeException(), isNull);
@@ -134,7 +134,7 @@ void main() {
     await draw(tester, '10회 뽑기');
     expect(repo.requests, isEmpty);
     expect(repo.tickets, 10);
-    expect(find.byType(BatchDrawResultPage), findsNothing);
+    expect(find.byType(CaseRewardCard), findsNothing);
     expect(find.text('10회 결과 다시 확인'), findsOneWidget);
   });
 
@@ -148,16 +148,13 @@ void main() {
     expect(repo.requests.length, 1);
     expect(repo.singleRequests, 0);
     expect(store.pending, isNotNull);
-    expect(find.byType(BatchDrawResultPage), findsNothing);
+    expect(find.byType(CaseRewardCard), findsNothing);
     repo.truncated = false;
     await draw(tester, '10회 결과 다시 확인');
     expect(repo.requests[1], repo.requests[0]);
     expect(repo.tickets, 0);
     expect(
-      tester
-          .widget<BatchDrawResultPage>(find.byType(BatchDrawResultPage))
-          .results
-          .length,
+      tester.widgetList<CaseRewardCard>(find.byType(CaseRewardCard)).length,
       10,
     );
   });

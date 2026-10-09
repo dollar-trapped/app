@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../data/gacha_models.dart';
-import 'batch_gacha_reveal.dart';
-import 'gacha_reveal.dart';
-import '../../cosmetics/widgets/server_cosmetic_preview.dart';
+import 'dollar_case_reveal.dart';
+import 'case_reward_card.dart';
+import '../../shared/data/dollar_repository.dart';
 
 class DrawSessionFailure {
   const DrawSessionFailure(this.error);
@@ -18,14 +18,14 @@ class DrawSession<T> extends StatefulWidget {
     required this.nickname,
     required this.request,
     required this.results,
-    required this.builder,
+    required this.repository,
     this.batch = false,
   });
   final String nickname;
   final bool batch;
   final Future<T> Function() request;
   final List<CosmeticDraw> Function(T) results;
-  final Widget Function(BuildContext, T, VoidCallback) builder;
+  final DollarRepository repository;
 
   @override
   State<DrawSession<T>> createState() => _DrawSessionState<T>();
@@ -70,54 +70,22 @@ class _DrawSessionState<T> extends State<DrawSession<T>> {
   Widget build(BuildContext context) {
     final result = _result;
     final draws = _pending ? <CosmeticDraw>[] : widget.results(result as T);
-    final child = _pending
-        ? const SizedBox.shrink()
-        : widget.builder(context, result as T, _again);
     return PopScope(
       canPop: !_pending,
-      child: KeyedSubtree(
+      child: DollarCaseReveal(
         key: ValueKey(_generation),
-        child: widget.batch
-            ? BatchGachaReveal(
-                nickname: widget.nickname,
-                waiting: _pending,
-                results: draws,
-                child: child,
-              )
-            : GachaReveal(
-                key: const Key('gacha-draw-scene'),
-                waitingForResult: _pending,
-                preview: draws.isEmpty
-                    ? null
-                    : DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F7F5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: ServerCosmeticNickname(
-                              nickname: widget.nickname,
-                              color: draws.first.item.type == 'NAME_COLOR'
-                                  ? draws.first.item
-                                  : null,
-                              font: draws.first.item.type == 'NAME_FONT'
-                                  ? draws.first.item
-                                  : null,
-                              background:
-                                  draws.first.item.type == 'NAME_BACKGROUND'
-                                  ? draws.first.item
-                                  : null,
-                              size: 26,
-                            ),
-                          ),
-                        ),
-                      ),
-                rarity: draws.isEmpty ? 'COMMON' : draws.first.item.rarity,
-                child: child,
-              ),
+        count: widget.batch ? 10 : 1,
+        waiting: _pending,
+        rarities: draws.map((draw) => draw.item.rarity).toList(),
+        rewardBuilder: (index) => CaseRewardCard(
+          key: ValueKey('${_generation}_$index'),
+          repository: widget.repository,
+          nickname: widget.nickname,
+          result: draws[index],
+          onAgain: !widget.batch ? _again : null,
+        ),
+        onFinish: () => Navigator.of(context).pop(),
+        child: const SizedBox.shrink(),
       ),
     );
   }

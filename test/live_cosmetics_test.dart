@@ -1,3 +1,5 @@
+import 'package:dollar_trapped/features/gacha/widgets/case_reward_card.dart';
+import 'package:dollar_trapped/features/gacha/widgets/dollar_case_reveal.dart';
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'dart:async';
 import 'package:dollar_trapped/features/gacha/services/pending_draw_store.dart';
@@ -38,15 +40,13 @@ void main() {
         await tester.ensureVisible(find.text('1회 뽑기'));
         await tester.tap(find.text('1회 뽑기'));
         await tester.pump();
-        expect(find.byKey(const Key('gacha-draw-scene')), findsOneWidget);
-        expect(find.text('어떤 취향을 만나게 될까요?'), findsOneWidget);
+        expect(find.byType(DollarCaseReveal), findsOneWidget);
+        expect(find.text('보상을 준비하고 있어요'), findsOneWidget);
         expect(find.text('연출 건너뛰기'), findsNothing);
         await tester.pump(const Duration(seconds: 5));
-        expect(find.byKey(const Key('gacha-draw-scene')), findsOneWidget);
+        expect(find.byType(DollarCaseReveal), findsOneWidget);
         expect(repo.keys, hasLength(1));
-        final revealState = tester.state(
-          find.byKey(const Key('gacha-draw-scene')),
-        );
+        final revealState = tester.state(find.byType(DollarCaseReveal));
         if (fail) {
           repo.response.completeError(StateError('timeout'));
         } else {
@@ -62,7 +62,7 @@ void main() {
         await tester.pump();
         if (!fail) {
           expect(
-            tester.state(find.byKey(const Key('gacha-draw-scene'))),
+            tester.state(find.byType(DollarCaseReveal)),
             same(revealState),
           );
           expect(find.text('1회 뽑기'), findsNothing);
@@ -70,14 +70,14 @@ void main() {
         }
         await _settleAndOpenCard(tester);
         expect(
-          find.byKey(const Key('gacha-draw-scene')),
+          find.byType(DollarCaseReveal),
           fail ? findsNothing : findsOneWidget,
         );
         if (fail) {
           expect(find.text('뽑기 결과 다시 확인'), findsOneWidget);
           expect(await pending.read('user-me'), repo.keys.single);
         } else {
-          expect(find.byType(LiveDrawResultPage), findsOneWidget);
+          expect(find.byType(CaseRewardCard), findsOneWidget);
           expect(await pending.read('user-me'), isNull);
         }
         expect(tester.takeException(), isNull);
@@ -111,7 +111,7 @@ void main() {
       expect(repo.keys, hasLength(2));
       expect(repo.keys.toSet(), hasLength(2));
       expect(repo.tickets, 0);
-      expect(find.byType(LiveDrawResultPage), findsOneWidget);
+      expect(find.byType(CaseRewardCard), findsOneWidget);
       final button = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, '다시 뽑기'),
       );
@@ -165,14 +165,18 @@ void main() {
               builder: (context) => TextButton(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (_) => LiveDrawResultPage(
-                      repository: repo,
-                      nickname: '닉네임',
-                      result: const CosmeticDraw(
-                        item: item,
-                        duplicate: false,
-                        chipsGranted: 0,
-                        ticketsAfter: 0,
+                    builder: (_) => Scaffold(
+                      body: SingleChildScrollView(
+                        child: CaseRewardCard(
+                          repository: repo,
+                          nickname: '닉네임',
+                          result: const CosmeticDraw(
+                            item: item,
+                            duplicate: false,
+                            chipsGranted: 0,
+                            ticketsAfter: 0,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -192,7 +196,9 @@ void main() {
       expect(repo.saved!.fontId, 'font-existing');
       expect(repo.saved!.backgroundId, 'bg-existing');
       expect(repo.saved!.version, 7);
-      expect(find.text('장식을 적용했어요. 새로 보내는 채팅부터 반영돼요.'), findsOneWidget);
+      expect(find.text('적용 완료'), findsOneWidget);
+      expect(find.byType(CaseRewardCard), findsOneWidget);
+      expect(find.text('새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.'), findsOneWidget);
     },
   );
 
@@ -220,7 +226,7 @@ void main() {
       await _settleAndOpenCard(tester);
       expect(repo.keys.last, 'existing-key');
       expect(await pending.read('user-me'), isNull);
-      expect(find.byType(LiveDrawResultPage), findsOneWidget);
+      expect(find.byType(CaseRewardCard), findsOneWidget);
     },
   );
 
@@ -251,8 +257,8 @@ void main() {
       expect(repo.keys, hasLength(2));
       expect(repo.keys[0], repo.keys[1]);
       expect(find.text('중복 보상으로 달러칩 1개를 받았어요.'), findsOneWidget);
-      await tester.ensureVisible(find.text('‹').last);
-      await tester.tap(find.text('‹').last);
+      await tester.ensureVisible(find.text('확인'));
+      await tester.tap(find.text('확인'));
       await _settleAndOpenCard(tester);
       expect(find.text('0장'), findsOneWidget);
       expect(repo.saved, isNull);
@@ -415,8 +421,8 @@ class _DelayedRepo extends _Repo {
 
 Future<void> _settleAndOpenCard(WidgetTester tester) async {
   await tester.pumpAndSettle();
-  if (find.text('카드를 터치해서 열어보세요').evaluate().isNotEmpty) {
-    await tester.tap(find.byKey(const Key('gacha-card-touch')));
+  if (find.byKey(const Key('gacha-case-touch')).evaluate().isNotEmpty) {
+    await tester.tap(find.byKey(const Key('gacha-case-touch')));
     await tester.pumpAndSettle();
   }
 }

@@ -16,7 +16,6 @@ import '../../shared/widgets/cosmetic_layout.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import '../../inventory/screens/owned_cosmetics_page.dart';
 import '../widgets/gacha_reveal.dart';
-import 'batch_draw_result_page.dart';
 import '../widgets/draw_session.dart';
 
 class LiveGachaPage extends StatefulWidget {
@@ -217,22 +216,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
               return result;
             },
             results: (result) => result.results,
-            builder: (_, result, _) => BatchDrawResultPage(
-              animate: false,
-              nickname: widget.nickname,
-              results: result.results,
-              onOpenResult: (context, item) => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (_) => LiveDrawResultPage(
-                    repository: widget.repository,
-                    nickname: widget.nickname,
-                    result: item,
-                    allowDrawAgain: false,
-                    animate: false,
-                  ),
-                ),
-              ),
-            ),
+            repository: widget.repository,
           ),
         ),
       );
@@ -281,14 +265,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
             nickname: widget.nickname,
             request: _requestDraw,
             results: (result) => [result],
-            builder: (_, result, drawAgain) => LiveDrawResultPage(
-              key: ValueKey(result),
-              repository: widget.repository,
-              nickname: widget.nickname,
-              result: result,
-              animate: false,
-              onDrawAgain: drawAgain,
-            ),
+            repository: widget.repository,
           ),
         ),
       );
