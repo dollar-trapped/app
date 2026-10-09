@@ -193,8 +193,8 @@ void main() {
 
 Future<void> _settleAndOpenCard(WidgetTester tester) async {
   await tester.pumpAndSettle();
-  if (find.text('카드를 터치해서 열어보세요').evaluate().isNotEmpty) {
-    await tester.tap(find.byKey(const Key('gacha-card-touch')));
+  if (find.byKey(const Key('gacha-case-touch')).evaluate().isNotEmpty) {
+    await tester.tap(find.byKey(const Key('gacha-case-touch')));
     await tester.pumpAndSettle();
   }
 }
