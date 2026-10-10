@@ -69,6 +69,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Opt-in USB cosmetic QA install with an isolated login/session.
+            if (providers.environmentVariable("COSMETIC_PREVIEW_BUILD").orNull == "true") {
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+            }
+        }
         release {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
