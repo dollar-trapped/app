@@ -433,24 +433,6 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
               onPressed: _catalog == null ? null : _showCatalog,
               child: const Text('획득 목록 · 확률 안내  ›'),
             ),
-            if (_catalog?.cumulativeGuaranteedRareOrAbove == true) ...[
-              Text(
-                _loading
-                    ? '보장 횟수를 확인하고 있어요.'
-                    : _error != null || _inventory?.guaranteeState == null
-                    ? '보장 횟수를 확인하지 못했어요. 정보를 다시 불러와 주세요.'
-                    : _inventory!.guaranteeState!.drawsUntilGuaranteed == 1
-                    ? '다음 뽑기 레어 이상 확정'
-                    : '레어 이상 보장까지 최대 ${_inventory!.guaranteeState!.drawsUntilGuaranteed}회',
-                key: const Key('gacha-guarantee-status'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const Text(
-                '단뽑·10회 뽑기 누적 횟수 공유\n레어 또는 스페셜이 나오면 횟수가 초기화돼요.',
-                style: TextStyle(color: ProfileStyle.muted, height: 1.6),
-              ),
-              const SizedBox(height: 12),
-            ],
             TextButton(
               onPressed: _drawing || _exchanging
                   ? null
@@ -490,6 +472,24 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
         actions: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (_catalog?.cumulativeGuaranteedRareOrAbove == true) ...[
+              Text(
+                _loading
+                    ? '보장 횟수를 확인하고 있어요.'
+                    : _error != null || _inventory?.guaranteeState == null
+                    ? '보장 횟수를 확인하지 못했어요. 정보를 다시 불러와 주세요.'
+                    : _inventory!.guaranteeState!.drawsUntilGuaranteed == 1
+                    ? '누적 보장 9/10 · 다음 뽑기 레어 이상 확정'
+                    : '누적 보장 ${_inventory!.guaranteeState!.consecutiveCommonCount}/10',
+                key: const Key('gacha-guarantee-status'),
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const Text(
+                '단뽑·10회 뽑기 누적 횟수 공유\n레어 또는 스페셜이 나오면 횟수가 초기화돼요.',
+                style: TextStyle(color: ProfileStyle.muted, height: 1.6),
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

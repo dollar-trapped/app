@@ -131,8 +131,8 @@ void main() {
         count == null
             ? contains('확인하지 못했어요')
             : count == 9
-            ? '다음 뽑기 레어 이상 확정'
-            : '레어 이상 보장까지 최대 ${10 - count}회',
+            ? '누적 보장 9/10 · 다음 뽑기 레어 이상 확정'
+            : '누적 보장 $count/10',
       );
       expect(find.textContaining('단뽑·10회 뽑기 누적 횟수 공유'), findsOneWidget);
       expect(find.textContaining('RARE 이상 1개 보장'), findsNothing);
@@ -163,7 +163,7 @@ void main() {
         await tester.tap(find.text('확인').last);
         await tester.pumpAndSettle();
         expect(repo.loads, greaterThanOrEqualTo(2));
-        expect(find.text('레어 이상 보장까지 최대 8회'), findsOneWidget);
+        expect(find.text('누적 보장 2/10'), findsOneWidget);
       },
     );
     testWidgets(
@@ -181,8 +181,8 @@ void main() {
         await tester.tap(find.text('확인').last);
         await tester.pumpAndSettle();
         expect(repo.loads, greaterThanOrEqualTo(2));
-        expect(find.text('레어 이상 보장까지 최대 8회'), findsOneWidget);
-        expect(find.text('다음 뽑기 레어 이상 확정'), findsNothing);
+        expect(find.text('누적 보장 2/10'), findsOneWidget);
+        expect(find.textContaining('다음 뽑기 레어 이상 확정'), findsNothing);
       },
     );
   }
