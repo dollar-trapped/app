@@ -59,7 +59,7 @@ void main() {
     },
   );
 
-  testWidgets('animated backgrounds move and respect reduced motion', (
+  testWidgets('aurora keeps a steady base while its scene moves and stops', (
     tester,
   ) async {
     final bg = item('오로라', 'NAME_BACKGROUND', 'aurora');
@@ -81,13 +81,21 @@ void main() {
         .whereType<LinearGradient>()
         .first;
     await tester.pumpWidget(app(false));
-    final before = gradient().begin;
+    CosmeticScenePainter painter() => tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((widget) => widget.painter)
+        .whereType<CosmeticScenePainter>()
+        .single;
+    final before = painter();
+    final base = gradient().begin;
     await tester.pump(const Duration(seconds: 1));
-    expect(gradient().begin, isNot(before));
+    expect(painter().phase, isNot(before.phase));
+    expect(gradient().begin, base);
     await tester.pumpWidget(app(true));
-    final stopped = gradient().begin;
+    final stopped = painter().phase;
     await tester.pump(const Duration(seconds: 1));
-    expect(gradient().begin, stopped);
+    expect(painter().phase, stopped);
+    expect(tester.hasRunningAnimations, isFalse);
     expect(tester.takeException(), isNull);
   });
 

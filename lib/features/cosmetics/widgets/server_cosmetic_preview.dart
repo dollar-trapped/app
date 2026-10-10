@@ -81,7 +81,14 @@ class ServerCosmeticNickname extends StatelessWidget {
       }
       return GradientEffect.gradient(
         colors,
-        phase: effect.animated && !effect.shimmer ? phase : 0,
+        // These scenes move their own light bands over a steady dark base.
+        phase:
+            effect.animated &&
+                !effect.shimmer &&
+                effect.scene != CosmeticScene.aurora &&
+                effect.scene != CosmeticScene.starlight
+            ? phase
+            : 0,
       );
     }
 

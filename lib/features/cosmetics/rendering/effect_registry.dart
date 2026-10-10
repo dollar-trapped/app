@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 enum CosmeticScene {
   sakura('sakura_drift'),
   starry('starry_night'),
-  bubble('bubble_party');
+  bubble('bubble_party'),
+  aurora('aurora'),
+  starlight('starlight');
 
   const CosmeticScene(this.token);
   final String token;
@@ -87,12 +89,14 @@ abstract final class CosmeticEffectRegistry {
     'aurora': CosmeticEffect(
       animated: true,
       dark: true,
-      colors: [Color(0xFF173349), Color(0xFF235C57), Color(0xFF544274)],
+      scene: CosmeticScene.aurora,
+      colors: [Color(0xFF102D35), Color(0xFF25233E)],
     ),
     'starlight': CosmeticEffect(
       animated: true,
       dark: true,
-      colors: [Color(0xFF282D59), Color(0xFF514481), Color(0xFF275574)],
+      scene: CosmeticScene.starlight,
+      colors: [Color(0xFF182340), Color(0xFF293554)],
     ),
     'sakura_drift': CosmeticEffect(
       animated: true,
