@@ -79,10 +79,27 @@ flutter:
     - family: Noto Serif KR
       fonts:
         - asset: assets/fonts/NotoSerifKR.ttf
+    - family: Black Han Sans
+      fonts:
+        - asset: assets/fonts/BlackHanSans-Regular.ttf
+    - family: Gugi
+      fonts:
+        - asset: assets/fonts/Gugi-Regular.ttf
+    - family: Gowun Dodum
+      fonts:
+        - asset: assets/fonts/GowunDodum-Regular.ttf
+    - family: Gaegu
+      fonts:
+        - asset: assets/fonts/Gaegu-Bold.ttf
+          weight: 700
+    - family: Nanum Brush Script
+      fonts:
+        - asset: assets/fonts/NanumBrushScript-Regular.ttf
 
   assets:
     - config/admob_test.json
     - config/admob_production.json
+    - config/cosmetic_catalog_expansion.json
     - .env
     - assets/images/
 

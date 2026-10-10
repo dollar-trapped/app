@@ -1,0 +1,440 @@
+{
+  "items": [
+    {
+      "id": "cos_color_common_01",
+      "type": "NAME_COLOR",
+      "rarity": "COMMON",
+      "displayName": "차분한 파랑",
+      "appearance": {
+        "nameColor": "#4477CC",
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 10
+    },
+    {
+      "id": "cos_color_common_02",
+      "type": "NAME_COLOR",
+      "rarity": "COMMON",
+      "displayName": "은은한 초록",
+      "appearance": {
+        "nameColor": "#3E8E5A",
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 20
+    },
+    {
+      "id": "cos_color_rare_01",
+      "type": "NAME_COLOR",
+      "rarity": "COMMON",
+      "displayName": "선명한 주황",
+      "appearance": {
+        "nameColor": "#E07B39",
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 30
+    },
+    {
+      "id": "cos_color_rare_02",
+      "type": "NAME_COLOR",
+      "rarity": "COMMON",
+      "displayName": "깊은 보라",
+      "appearance": {
+        "nameColor": "#7A4FC2",
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 40
+    },
+    {
+      "id": "cos_color_special_01",
+      "type": "NAME_COLOR",
+      "rarity": "SPECIAL",
+      "displayName": "황금빛",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "golden_shimmer"
+      },
+      "isDrawable": true,
+      "sortOrder": 50
+    },
+    {
+      "id": "cos_color_special_02",
+      "type": "NAME_COLOR",
+      "rarity": "SPECIAL",
+      "displayName": "핏빛 진홍",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "blood_crimson"
+      },
+      "isDrawable": true,
+      "sortOrder": 60
+    },
+    {
+      "id": "cos_color_sunset_gradient",
+      "type": "NAME_COLOR",
+      "rarity": "RARE",
+      "displayName": "노을빛",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "sunset_gradient"
+      },
+      "isDrawable": true,
+      "sortOrder": 70
+    },
+    {
+      "id": "cos_color_unstable_hologram",
+      "type": "NAME_COLOR",
+      "rarity": "SPECIAL",
+      "displayName": "불완전한 미래",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "unstable_hologram"
+      },
+      "isDrawable": true,
+      "sortOrder": 80
+    },
+    {
+      "id": "cos_font_common_01",
+      "type": "NAME_FONT",
+      "rarity": "COMMON",
+      "displayName": "둥근 고딕",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "rounded_gothic",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 200
+    },
+    {
+      "id": "cos_font_rare_01",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "단정한 명조",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "serif_classic",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 210
+    },
+    {
+      "id": "cos_font_special_01",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "손글씨",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "handwriting",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 220
+    },
+    {
+      "id": "cos_font_heavy_gothic",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "두꺼운 고딕",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "heavy_gothic",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 230
+    },
+    {
+      "id": "cos_font_future_square",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "각진 미래체",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "future_square",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 240
+    },
+    {
+      "id": "cos_font_gentle_dodum",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "고운 돋움",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "gentle_dodum",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 250
+    },
+    {
+      "id": "cos_font_playful_handwriting",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "삐뚤 손글씨",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "playful_handwriting",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 260
+    },
+    {
+      "id": "cos_font_brush_script",
+      "type": "NAME_FONT",
+      "rarity": "RARE",
+      "displayName": "붓글씨",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": "brush_script",
+        "nameBackground": null,
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 270
+    },
+    {
+      "id": "cos_bg_common_01",
+      "type": "NAME_BACKGROUND",
+      "rarity": "COMMON",
+      "displayName": "은은한 회색",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": "soft_gray",
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 300
+    },
+    {
+      "id": "cos_bg_rare_01",
+      "type": "NAME_BACKGROUND",
+      "rarity": "RARE",
+      "displayName": "하늘 그라데이션",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": "sky_gradient",
+        "styleToken": null
+      },
+      "isDrawable": true,
+      "sortOrder": 310
+    },
+    {
+      "id": "cos_bg_special_01",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "금박",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "gold_foil_shimmer"
+      },
+      "isDrawable": true,
+      "sortOrder": 320
+    },
+    {
+      "id": "cos_bg_sakura_drift",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "흩날리는 벚꽃",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "sakura_drift"
+      },
+      "isDrawable": true,
+      "sortOrder": 330
+    },
+    {
+      "id": "cos_bg_starry_night",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "반짝이는 별밤",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "starry_night"
+      },
+      "isDrawable": true,
+      "sortOrder": 340
+    },
+    {
+      "id": "cos_bg_bubble_party",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "버블 파티",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "bubble_party"
+      },
+      "isDrawable": true,
+      "sortOrder": 350
+    },
+    {
+      "id": "cos_bg_aurora",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "춤추는 오로라",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "aurora"
+      },
+      "isDrawable": true,
+      "sortOrder": 360
+    },
+    {
+      "id": "cos_bg_starlight",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "별빛 물결",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "starlight"
+      },
+      "isDrawable": true,
+      "sortOrder": 370
+    },
+    {
+      "id": "cos_bg_mint_lattice",
+      "type": "NAME_BACKGROUND",
+      "rarity": "RARE",
+      "displayName": "민트 격자",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "mint_lattice"
+      },
+      "isDrawable": true,
+      "sortOrder": 380
+    },
+    {
+      "id": "cos_bg_orange",
+      "type": "NAME_BACKGROUND",
+      "rarity": "COMMON",
+      "displayName": "오렌지",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "orange_solid"
+      },
+      "isDrawable": true,
+      "sortOrder": 390
+    },
+    {
+      "id": "cos_bg_banana",
+      "type": "NAME_BACKGROUND",
+      "rarity": "COMMON",
+      "displayName": "바나나",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "banana_solid"
+      },
+      "isDrawable": true,
+      "sortOrder": 400
+    },
+    {
+      "id": "cos_bg_grape",
+      "type": "NAME_BACKGROUND",
+      "rarity": "COMMON",
+      "displayName": "청포도",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "grape_solid"
+      },
+      "isDrawable": true,
+      "sortOrder": 410
+    },
+    {
+      "id": "cos_bg_broken_glass",
+      "type": "NAME_BACKGROUND",
+      "rarity": "RARE",
+      "displayName": "깨진 유리",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "broken_glass"
+      },
+      "isDrawable": true,
+      "sortOrder": 420
+    },
+    {
+      "id": "cos_bg_desert_tumbleweed",
+      "type": "NAME_BACKGROUND",
+      "rarity": "SPECIAL",
+      "displayName": "사막의 새",
+      "appearance": {
+        "nameColor": null,
+        "nameFont": null,
+        "nameBackground": null,
+        "styleToken": "desert_tumbleweed"
+      },
+      "isDrawable": true,
+      "sortOrder": 430
+    }
+  ],
+  "drawPolicy": {
+    "rarityProbabilityBps": {
+      "COMMON": 7000,
+      "RARE": 2500,
+      "SPECIAL": 500
+    },
+    "withinRaritySelection": "UNIFORM",
+    "duplicateChipReward": {
+      "common": 1,
+      "rare": 3,
+      "special": 5
+    },
+    "chipExchangeCost": 10,
+    "batchGuaranteedRareOrAbove": true
+  },
+  "fixturePurpose": "Client preview / proposed server registration; not a published catalog"
+}

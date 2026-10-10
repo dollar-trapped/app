@@ -32,6 +32,18 @@ void main() {
         tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
         isFalse,
       );
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged,
+        isNotNull,
+      );
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pump();
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isTrue,
+      );
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
       expect(repository.catalogCalls, 2);
       await tester.scrollUntilVisible(
         find.text('진홍'),

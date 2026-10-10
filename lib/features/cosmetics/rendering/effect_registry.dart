@@ -5,11 +5,14 @@ enum CosmeticScene {
   starry('starry_night'),
   bubble('bubble_party'),
   aurora('aurora'),
-  starlight('starlight');
+  starlight('starlight'),
+  desert('desert_tumbleweed');
 
   const CosmeticScene(this.token);
   final String token;
 }
+
+enum CosmeticTextScene { blood, hologram }
 
 /// App-owned parameters. The server only selects an existing appearance token.
 class CosmeticEffect {
@@ -22,12 +25,15 @@ class CosmeticEffect {
     this.shimmer = false,
     this.pulse = false,
     this.lattice = false,
+    this.brokenGlass = false,
+    this.textScene,
   });
   final List<Color>? colors;
   final Color? solid;
   final bool animated, dark;
-  final bool shimmer, pulse, lattice;
+  final bool shimmer, pulse, lattice, brokenGlass;
   final CosmeticScene? scene;
+  final CosmeticTextScene? textScene;
 }
 
 abstract final class CosmeticEffectRegistry {
@@ -42,6 +48,14 @@ abstract final class CosmeticEffectRegistry {
       animated: true,
       pulse: true,
       colors: [Color(0xFF65172C), Color(0xFFA72A48), Color(0xFF741A32)],
+    ),
+    'blood_crimson': CosmeticEffect(
+      animated: true,
+      textScene: CosmeticTextScene.blood,
+    ),
+    'unstable_hologram': CosmeticEffect(
+      animated: true,
+      textScene: CosmeticTextScene.hologram,
     ),
     'sunset_gradient': CosmeticEffect(
       colors: [Color(0xFFA52F58), Color(0xFFB36116)],
@@ -66,6 +80,15 @@ abstract final class CosmeticEffectRegistry {
   };
   static const backgroundEffects = <String, CosmeticEffect>{
     'soft_gray': CosmeticEffect(solid: Color(0xFFEDEFEF)),
+    'orange_solid': CosmeticEffect(solid: Color(0xFFFFE4CF)),
+    'banana_solid': CosmeticEffect(solid: Color(0xFFFFF2B8)),
+    'grape_solid': CosmeticEffect(solid: Color(0xFFE5F3CC)),
+    'broken_glass': CosmeticEffect(solid: Color(0xFFE8F1F5), brokenGlass: true),
+    'desert_tumbleweed': CosmeticEffect(
+      animated: true,
+      scene: CosmeticScene.desert,
+      solid: Color(0xFFFFEDD0),
+    ),
     'gold_foil': CosmeticEffect(solid: Color(0xFFF7EDA6)),
     'gold_foil_shimmer': CosmeticEffect(
       animated: true,
@@ -119,6 +142,11 @@ abstract final class CosmeticEffectRegistry {
     'rounded_gothic': 'Jua',
     'serif_classic': 'Noto Serif KR',
     'handwriting': 'Nanum Pen Script',
+    'heavy_gothic': 'Black Han Sans',
+    'future_square': 'Gugi',
+    'gentle_dodum': 'Gowun Dodum',
+    'playful_handwriting': 'Gaegu',
+    'brush_script': 'Nanum Brush Script',
   };
   static const _legacyBackgrounds = {'soft_gray', 'gold_foil', 'sky_gradient'};
 
@@ -147,4 +175,13 @@ abstract final class CosmeticEffectRegistry {
     _ => false,
   };
   static String font(Object? token) => fonts[token] ?? 'Noto Sans KR';
+  static FontWeight fontWeight(Object? token) =>
+      const {
+        'heavy_gothic',
+        'future_square',
+        'gentle_dodum',
+        'brush_script',
+      }.contains(token)
+      ? FontWeight.w400
+      : FontWeight.w700;
 }

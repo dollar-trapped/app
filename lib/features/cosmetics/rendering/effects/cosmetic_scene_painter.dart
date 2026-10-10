@@ -3,6 +3,7 @@ import 'starry_effect.dart';
 import 'bubble_effect.dart';
 import 'aurora_effect.dart';
 import 'starlight_wave_effect.dart';
+import 'desert_effect.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -17,12 +18,18 @@ class CosmeticScenePainter extends CustomPainter {
     'bubble_party',
     'aurora',
     'starlight',
+    'desert_tumbleweed',
   };
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
+    if (style == 'desert_tumbleweed') {
+      DesertEffect.paint(canvas, size, phase);
+      canvas.restore();
+      return;
+    }
     if (style == 'aurora' || style == 'starlight') {
       if (style == 'aurora') {
         AuroraEffect.paint(canvas, size, phase);

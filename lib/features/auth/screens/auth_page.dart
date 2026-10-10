@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import '../../cosmetics/preview/cosmetic_expansion_preview_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -107,6 +109,17 @@ class AuthPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (kDebugMode &&
+                        const bool.fromEnvironment('COSMETIC_PREVIEW_BUILD'))
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push<void>(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const CosmeticExpansionPreviewPage(),
+                          ),
+                        ),
+                        child: const Text('신규 30종 개발 미리보기'),
+                      ),
                   ],
                 ),
               ),

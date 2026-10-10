@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 
 class CosmeticMotion extends StatefulWidget {
-  const CosmeticMotion({super.key, required this.builder});
+  const CosmeticMotion({
+    super.key,
+    required this.builder,
+    this.duration = const Duration(seconds: 4),
+  });
   final Widget Function(double) builder;
+  final Duration duration;
   @override
   State<CosmeticMotion> createState() => CosmeticMotionState();
 }
@@ -11,8 +16,17 @@ class CosmeticMotionState extends State<CosmeticMotion>
     with SingleTickerProviderStateMixin {
   late final _controller = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 4),
+    duration: widget.duration,
   );
+  @override
+  void didUpdateWidget(CosmeticMotion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.duration != oldWidget.duration) {
+      _controller.duration = widget.duration;
+      if (_controller.isAnimating) _controller.repeat();
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -34,7 +48,9 @@ class CosmeticMotionState extends State<CosmeticMotion>
   Widget build(BuildContext context) => RepaintBoundary(
     child: AnimatedBuilder(
       animation: _controller,
-      builder: (context, _) => widget.builder(_controller.value),
+      builder: (context, _) => widget.builder(
+        MediaQuery.disableAnimationsOf(context) ? 0 : _controller.value,
+      ),
     ),
   );
 }

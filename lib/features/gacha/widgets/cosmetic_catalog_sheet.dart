@@ -1,5 +1,7 @@
 import '../data/gacha_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import '../../cosmetics/preview/cosmetic_expansion_preview_page.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 
@@ -39,6 +41,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
   String? _rarity;
   @override
   Widget build(BuildContext context) {
+    final systemReducedMotion = MediaQuery.disableAnimationsOf(context);
     final drawable = widget.catalog.drawableItems;
     final rarities = <String>{
       for (final key in ['COMMON', 'RARE', 'SPECIAL'])
@@ -92,6 +95,16 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                 controller: controller,
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                 children: [
+                  if (kDebugMode &&
+                      const bool.fromEnvironment('COSMETIC_PREVIEW_BUILD'))
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => const CosmeticExpansionPreviewPage(),
+                        ),
+                      ),
+                      child: const Text('신규 30종 개발 미리보기'),
+                    ),
                   const Text(
                     '등급별 획득 확률',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
@@ -156,8 +169,8 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('움직임 재생'),
-                    value: _play && !MediaQuery.disableAnimationsOf(context),
-                    onChanged: MediaQuery.disableAnimationsOf(context)
+                    value: _play && !systemReducedMotion,
+                    onChanged: systemReducedMotion
                         ? null
                         : (value) => setState(() => _play = value),
                   ),

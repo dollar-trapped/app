@@ -4,6 +4,8 @@ import '../rendering/effects/gradient_effect.dart';
 import '../rendering/effects/cosmetic_scene_painter.dart';
 import '../rendering/effects/shimmer_effect.dart';
 import '../rendering/effects/lattice_effect.dart';
+import '../rendering/effects/broken_glass_effect.dart';
+import '../rendering/effects/cosmetic_text_painter.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/cosmetic_models.dart';
@@ -37,6 +39,7 @@ class ServerCosmeticNickname extends StatelessWidget {
           const CosmeticEffect(),
           const CosmeticEffect(),
           basic: true,
+          context: context,
         );
       }
     }
@@ -49,8 +52,14 @@ class ServerCosmeticNickname extends StatelessWidget {
       styleToken: background?.appearance['styleToken'],
     );
     final moving = textEffect.animated || backgroundEffect.animated;
-    Widget render(double phase) => _render(phase, textEffect, backgroundEffect);
-    return moving ? CosmeticMotion(builder: render) : render(0);
+    Widget render(double phase) =>
+        _render(phase, textEffect, backgroundEffect, context: context);
+    return moving
+        ? CosmeticMotion(
+            duration: Duration(seconds: textEffect.textScene == null ? 4 : 6),
+            builder: render,
+          )
+        : render(0);
   }
 
   Widget _render(
@@ -58,6 +67,7 @@ class ServerCosmeticNickname extends StatelessWidget {
     CosmeticEffect textEffect,
     CosmeticEffect backgroundEffect, {
     bool basic = false,
+    required BuildContext context,
   }) {
     final bgColors = backgroundEffect.colors;
     final textColors = textEffect.colors;
@@ -92,23 +102,40 @@ class ServerCosmeticNickname extends StatelessWidget {
       );
     }
 
+    final textStyle = TextStyle(
+      fontSize: size,
+      height: 1.5,
+      fontWeight: basic
+          ? FontWeight.w700
+          : CosmeticEffectRegistry.fontWeight(font?.appearance['nameFont']),
+      color: textColors != null
+          ? Colors.white
+          : textEffect.solid ??
+                (darkBackground ? Colors.white : const Color(0xFF151916)),
+      fontFamily: basic
+          ? 'Noto Sans KR'
+          : CosmeticEffectRegistry.font(font?.appearance['nameFont']),
+    );
     final text = Text(
       nickname,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontSize: size,
-        height: 1.5,
-        fontWeight: FontWeight.w700,
-        color: textColors != null
-            ? Colors.white
-            : textEffect.solid ??
-                  (darkBackground ? Colors.white : const Color(0xFF151916)),
-        fontFamily: basic
-            ? 'Noto Sans KR'
-            : CosmeticEffectRegistry.font(font?.appearance['nameFont']),
-      ),
+      style: textEffect.textScene == null
+          ? textStyle
+          : textStyle.copyWith(color: Colors.transparent),
     );
-    Widget content = textColors == null
+    Widget content = textEffect.textScene != null
+        ? CustomPaint(
+            foregroundPainter: CosmeticTextPainter(
+              nickname: nickname,
+              textStyle: textStyle,
+              scene: textEffect.textScene!,
+              phase: phase,
+              textDirection: Directionality.of(context),
+              textScaler: MediaQuery.textScalerOf(context),
+            ),
+            child: text,
+          )
+        : textColors == null
         ? text
         : ShaderMask(
             blendMode: BlendMode.srcIn,
@@ -122,6 +149,15 @@ class ServerCosmeticNickname extends StatelessWidget {
     if (backgroundEffect.lattice) {
       content = CustomPaint(
         painter: const LatticeEffect(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          child: content,
+        ),
+      );
+    }
+    if (backgroundEffect.brokenGlass) {
+      content = CustomPaint(
+        painter: const BrokenGlassEffect(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           child: content,
@@ -170,7 +206,8 @@ class ServerCosmeticNickname extends StatelessWidget {
       padding:
           backgroundEffect.scene != null ||
               backgroundEffect.shimmer ||
-              backgroundEffect.lattice
+              backgroundEffect.lattice ||
+              backgroundEffect.brokenGlass
           ? EdgeInsets.zero
           : background == null || basic
           ? EdgeInsets.zero
