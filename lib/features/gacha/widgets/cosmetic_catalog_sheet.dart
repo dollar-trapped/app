@@ -106,7 +106,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                       child: const Text('신규 30종 개발 미리보기'),
                     ),
                   const Text(
-                    '등급별 획득 확률',
+                    '등급별 기본 획득 확률',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                   ),
                   const SizedBox(height: 12),
@@ -146,6 +146,24 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                     const SizedBox(height: 8),
                   ],
                   const SizedBox(height: 8),
+                  if (widget.catalog.cumulativeGuaranteedRareOrAbove)
+                    const Text(
+                      '단뽑·10회 뽑기 합산으로 10회 안에 레어 이상이 나와요. 일반이 연속 9회 나오면 다음 뽑기가 보장되며, 레어·스페셜 획득 시 횟수가 초기화돼요. 중복도 동일하게 적용돼요.\n보장 추첨에서는 일반을 제외하고 레어·스페셜의 기본 확률 비율을 유지해요. 아래 개별 확률은 보장이 적용되지 않은 기본 추첨 기준이에요.',
+                      style: TextStyle(
+                        color: Color(0xFF667069),
+                        fontSize: 13,
+                        height: 1.6,
+                      ),
+                    )
+                  else if (widget.catalog.batchGuaranteedRareOrAbove)
+                    const Text(
+                      '10회 뽑기는 레어 이상 1개를 보장해요. 아래 개별 확률은 기본 추첨 기준이에요.',
+                      style: TextStyle(
+                        color: Color(0xFF667069),
+                        fontSize: 13,
+                        height: 1.6,
+                      ),
+                    ),
                   Text(
                     widget.catalog.withinRaritySelection == 'UNIFORM'
                         ? '등급 안에서는 각 아이템의 확률이 같아요.\n개별 확률 = 등급 확률 ÷ 해당 등급의 추첨 대상 수. 비활성 아이템은 제외하며, 소수점 다섯째 자리에서 반올림해 표시해요.'

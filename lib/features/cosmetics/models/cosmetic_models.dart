@@ -1,5 +1,31 @@
 typedef JsonMap = Map<String, dynamic>;
 
+/// Server snapshot only. Missing historical fields must not become a zero count.
+class CosmeticGuaranteeState {
+  const CosmeticGuaranteeState({
+    required this.consecutiveCommonCount,
+    required this.drawsUntilGuaranteed,
+  });
+
+  final int consecutiveCommonCount, drawsUntilGuaranteed;
+
+  static CosmeticGuaranteeState? fromJson(JsonMap json) {
+    final count = json['consecutiveCommonCount'];
+    final remaining = json['drawsUntilGuaranteed'];
+    if (count is! int ||
+        remaining is! int ||
+        count < 0 ||
+        count > 9 ||
+        remaining != 10 - count) {
+      return null;
+    }
+    return CosmeticGuaranteeState(
+      consecutiveCommonCount: count,
+      drawsUntilGuaranteed: remaining,
+    );
+  }
+}
+
 class CosmeticItem {
   const CosmeticItem({
     required this.id,
@@ -51,10 +77,12 @@ class CosmeticInventory {
     required this.equipment,
     required this.tickets,
     required this.dollarChips,
+    this.guaranteeState,
   });
   final List<CosmeticItem> items;
   final CosmeticEquipment equipment;
   final int tickets, dollarChips;
+  final CosmeticGuaranteeState? guaranteeState;
   factory CosmeticInventory.fromJson(JsonMap j) => CosmeticInventory(
     items: (j['items'] as List)
         .map(
@@ -68,6 +96,7 @@ class CosmeticInventory {
     ),
     tickets: (j['drawEntitlementCount'] as num).toInt(),
     dollarChips: ((j['dollarChip'] ?? j['settingToken']) as num).toInt(),
+    guaranteeState: CosmeticGuaranteeState.fromJson(j),
   );
 }
 

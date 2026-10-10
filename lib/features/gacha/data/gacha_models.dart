@@ -7,7 +7,10 @@ class CosmeticCatalog {
     this.chipExchangeCost = 10,
     this.withinRaritySelection = 'UNIFORM',
     this.duplicateChipRewards = const {'COMMON': 1, 'RARE': 3, 'SPECIAL': 5},
+    this.cumulativeGuaranteedRareOrAbove = false,
+    this.batchGuaranteedRareOrAbove = false,
   });
+  final bool cumulativeGuaranteedRareOrAbove, batchGuaranteedRareOrAbove;
   final int chipExchangeCost;
   final String withinRaritySelection;
   final Map<String, int> duplicateChipRewards;
@@ -37,6 +40,10 @@ class CosmeticCatalog {
   final List<CosmeticItem> items;
   final Map<String, int> probabilities;
   factory CosmeticCatalog.fromJson(JsonMap j) => CosmeticCatalog(
+    cumulativeGuaranteedRareOrAbove:
+        j['drawPolicy']['cumulativeGuaranteedRareOrAbove'] == true,
+    batchGuaranteedRareOrAbove:
+        j['drawPolicy']['batchGuaranteedRareOrAbove'] == true,
     items: (j['items'] as List)
         .map((e) => CosmeticItem.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList(),
@@ -62,10 +69,12 @@ class CosmeticDraw {
     required this.duplicate,
     required this.chipsGranted,
     required this.ticketsAfter,
+    this.guaranteeState,
   });
   final CosmeticItem item;
   final bool duplicate;
   final int chipsGranted, ticketsAfter;
+  final CosmeticGuaranteeState? guaranteeState;
   factory CosmeticDraw.fromJson(JsonMap j) => CosmeticDraw(
     item: CosmeticItem.fromJson(
       Map<String, dynamic>.from(j['cosmetic'] as Map),
@@ -74,6 +83,7 @@ class CosmeticDraw {
     chipsGranted: ((j['dollarChipGranted'] ?? j['settingTokenGranted']) as num)
         .toInt(),
     ticketsAfter: (j['drawEntitlementCountAfter'] as num).toInt(),
+    guaranteeState: CosmeticGuaranteeState.fromJson(j),
   );
 }
 
@@ -84,6 +94,7 @@ class CosmeticBatchDraw {
     required List<CosmeticDraw> results,
     required this.ticketsAfter,
     required this.chipsAfter,
+    this.guaranteeState,
   }) : results = List.unmodifiable(results) {
     if (count <= 0 || results.length != count) {
       throw const FormatException('Batch draw result count does not match');
@@ -93,6 +104,7 @@ class CosmeticBatchDraw {
   final String requestId;
   final int count, ticketsAfter, chipsAfter;
   final List<CosmeticDraw> results;
+  final CosmeticGuaranteeState? guaranteeState;
 
   factory CosmeticBatchDraw.fromJson(JsonMap json) => CosmeticBatchDraw(
     requestId: json['drawRequestId'] as String,
@@ -102,6 +114,7 @@ class CosmeticBatchDraw {
         .toList(),
     ticketsAfter: (json['drawEntitlementCountAfter'] as num).toInt(),
     chipsAfter: (json['dollarChipBalanceAfter'] as num).toInt(),
+    guaranteeState: CosmeticGuaranteeState.fromJson(json),
   );
 }
 
