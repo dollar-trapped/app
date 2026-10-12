@@ -1,6 +1,34 @@
 # 달러 가챠 연출
 
-2026-10-12. 하늘·유성·연기·광선은 Flutter Canvas로 생성한다. 사용자 요청으로 케이스는 기존에 직접 모델링한 Blender 렌더 24장을 복원했다. 새 런타임 패키지는 없고 기본 오디오는 NoOp다. `integration_test`는 실기기 측정용 Flutter SDK 개발 의존성이다.
+2026-10-12. 기본 연출을 **Blender 영상 + Flutter 보상 합성**으로 전환했다. 하늘·구름·카메라 하강·착지 지면·케이스 반동·먼지·뚜껑 개방은 Blender에서 제작한다. 실제 보상별 달러 유성, 등급 반전, 접점 빛, 림 색과 보상 카드는 Flutter가 그린다. 오디오는 기존 NoOp를 유지한다.
+
+## Blender 영상 경로
+
+10연차 도입부는 **오른쪽 위 광원 하나의 섬광 → 같은 위치에서 빛 10개 방출 → 잠깐 느린 확산 → 기존 가로 대형 → 가속 낙하** 순서다. `film/gacha_film_ignition.dart`에서 공통 출발점, 확산 곡선, 섬광 색상을 관리한다. 원본 시간 250ms에 분리되기 시작하고 600–950ms에 확산을 억제하며 1.85초에 기존 투영 경로로 합류한다. 이후 마지막 착지에서만 14ms의 개별 타격 시차를 적용한다. 단뽑은 같은 광원에서 빛 하나가 출발한다.
+
+첫 섬광은 확정된 결과에 SPECIAL이 하나라도 있으면 무지개색, 없으면 흰색이다. 이 초반 등급 암시는 최신 요청에 따른 동작이며, 이후 개별 SPECIAL 빛은 기존처럼 파랑에서 금색으로 반전한다. 섬광과 방출은 Flutter 합성 레이어에서 처리하며 Blender 배경·케이스와 충돌 시점은 공유한다.
+
+SPECIAL은 2.85초의 금색 반전과 동시에 추가 가속한다. 원본 재생 속도가 순간 약 2.6배가 된 뒤 완화되어 3.65초 정적 구간에 기존 시점으로 합류한다. 가속 중에도 10개 대형과 개별 타격 지점은 유지한다. 금색 빛만 320ms 동안 꼬리를 최대 1.9배 늘린다. `package_intro.py`가 `track.json`에 기록한 `specialBoost` 설정을 영상 패키징과 Flutter 좌표 보간이 공유하므로 카메라·구름·빛이 함께 빨라진다. COMMON/RARE와 결과 공개 시점은 유지한다.
+
+- `tool/gacha_art/render_intro.py`: 기존 케이스 모델을 재사용해 원본 3D 장면을 생성한다. EEVEE로 720×1600·30fps 프레임과 카메라 투영 좌표를 출력한다. 원본은 `build/gacha-art/intro/intro.blend`에 저장한다. 외부 이미지·음원은 사용하지 않는다.
+- `tool/gacha_art/package_intro.py`: 같은 장면을 현재 COMMON/RARE/SPECIAL 타이밍에 맞춰 H.264 MP4 3개로 변환하고 시작·개방 정지 화면과 `track.json`을 패키징한다. 생성물은 `assets/gacha/film/`이다.
+- `presentation/film/gacha_film_track.dart`: Blender의 보상별 1개/10개 빛 좌표와 케이스 좌표를 등급별 시간에 맞춰 보간한다. 영상과 합성 레이어는 동일한 contain 영역을 사용해 접힌 폰·펼친 폰·가로 화면에서도 좌표가 일치한다.
+- `presentation/film/gacha_film_driver.dart`: 로컬 영상 초기화, 재생 시계 동기화, 버퍼링·앱 중단·복귀, 시간 제한, 실패 복구와 자원 해제를 담당한다. 네이티브 재생 위치 사이를 Flutter vsync로 보간하고 75ms를 넘는 편차를 보정한다. 영상 종료 후 기존 카드 타임라인으로 넘긴다.
+- `presentation/film/gacha_film_layer.dart`: 영상과 확정 보상별 빛·입자·접점·개방 광선을 합성한다. 10개 빛의 등급을 하나의 색으로 합치지 않는다.
+
+네이티브 영상 디코딩에는 Flutter 공식 [`video_player`](https://pub.dev/packages/video_player)를 추가했다. 영상은 앱 번들에서 읽으므로 로그인·네트워크가 필요 없다. `video_player_platform_interface`는 모의 플랫폼 테스트용 개발 의존성이다. 영상 초기화가 8초를 넘거나 재생 진행이 6초 이상 멈추면 기존 Canvas 연출로 이어간다. 재생 실패·스킵은 이미 확정된 보상에 영향을 주지 않는다. 움직임 줄이기에서는 디코더를 초기화하지 않는다. 영상 사용 중에는 대체 케이스 24장을 디코딩하지 않는다.
+
+영상은 30fps이며 Flutter UI·빛은 기기 vsync로 갱신한다. High/Low는 합성 입자 수를 바꾸며 영상 파일은 공유한다. Flutter build/raster 성능과 네이티브 영상 디코더 성능은 별개이므로 UI 프레임 측정만으로 영상의 모든 프레임이 표시됐다고 판단하지 않는다.
+
+```sh
+blender --background --python tool/gacha_art/render_intro.py -- --preview
+blender --background --python tool/gacha_art/render_intro.py
+python3 tool/gacha_art/package_intro.py
+```
+
+이하 Canvas 장면과 Blender 케이스 24장에 대한 설명은 영상 재생 실패 시의 대체 경로에도 적용한다. 테스트·과거 시연은 `useBlenderFilm: false`로 이 경로를 명시적으로 선택할 수 있다.
+
+시연 영상·성능 측정 원본·검토 기록은 로컬 `docs/qa/`에 보관하며 새 QA 자료는 Git에서 제외한다. 앱에 필요한 배포용 영상은 `assets/gacha/film/`에서 계속 추적한다.
 
 ## 데이터와 화면 흐름
 
@@ -37,7 +65,7 @@
 
 | Phase | COMMON | RARE | SPECIAL |
 |---|---|---|---|
-| 별빛·암전·하늘 | 0–0.55 | 0–0.55 | 0–0.55 |
+| 단일 섬광·빛 방출 시작 | 0–0.55 | 0–0.55 | 0–0.55 |
 | 가속 낙하·카메라 추적 | 0.55–2.35 | 0.55–3.65 | 0.55–3.65 |
 | 정적·착지 접근 | 2.35–2.70 | 3.65–4.00 | 3.65–4.07 |
 | 충돌 | 2.70–2.88 | 4.00–4.18 | 4.07–4.26 |
