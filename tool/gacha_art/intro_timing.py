@@ -53,4 +53,3 @@ def source_time(ms, bounds, name):
                 return 3910+160*(max(0,(travel-.89)/.11)**(1/3))
             return base
     return SOURCE_BOUNDS[-1]
-
