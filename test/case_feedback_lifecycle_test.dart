@@ -37,6 +37,7 @@ void main() {
     home: MediaQuery(
       data: MediaQueryData(disableAnimations: reduced),
       child: GachaPresentation(
+        useBlenderFilm: false,
         audio: audio,
         result: GachaResult(
           rewards: const [

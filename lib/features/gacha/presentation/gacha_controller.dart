@@ -38,7 +38,7 @@ class GachaController extends ChangeNotifier {
     }
   }
 
-  void start({bool reduced = false}) {
+  void start({bool reduced = false, bool held = false}) {
     if (_started) return;
     _started = true;
     if (reduced) {
@@ -46,7 +46,7 @@ class GachaController extends ChangeNotifier {
       return;
     }
     _tick();
-    clock.forward();
+    if (!held) clock.forward();
   }
 
   void _emit(GachaEvent event, int at, {int? card}) {

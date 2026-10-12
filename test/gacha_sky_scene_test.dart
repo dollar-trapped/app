@@ -84,7 +84,10 @@ void main() {
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: GachaPresentation(result: fixture(GachaGrade.special, 10)),
+          home: GachaPresentation(
+            useBlenderFilm: false,
+            result: fixture(GachaGrade.special, 10),
+          ),
         ),
       );
       final state = tester.state<GachaPresentationState>(
@@ -138,6 +141,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: GachaPresentation(
+              useBlenderFilm: false,
               key: ValueKey('$count-$quality'),
               result: fixture(GachaGrade.special, count),
               quality: quality,
@@ -221,7 +225,10 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
       MaterialApp(
-        home: GachaPresentation(result: fixture(GachaGrade.special, 10)),
+        home: GachaPresentation(
+          useBlenderFilm: false,
+          result: fixture(GachaGrade.special, 10),
+        ),
       ),
     );
     final state = tester.state<GachaPresentationState>(
@@ -271,6 +278,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: GachaPresentation(
+            useBlenderFilm: false,
             key: ValueKey(grade),
             result: fixture(grade, 1),
           ),
@@ -326,6 +334,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: GachaPresentation(
+            useBlenderFilm: false,
             key: ValueKey(quality),
             result: fixture(GachaGrade.special, 10),
             quality: quality,
@@ -374,6 +383,7 @@ void main() {
                 home: RepaintBoundary(
                   key: const Key('movie'),
                   child: GachaPresentation(
+                    useBlenderFilm: false,
                     key: ValueKey(name),
                     result: result,
                     quality: quality,

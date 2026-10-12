@@ -6,6 +6,8 @@ import 'gacha_feedback.dart';
 import 'gacha_result.dart';
 import 'grade_config.dart';
 import 'painters/gacha_scene_painter.dart';
+import 'film/gacha_film_driver.dart';
+import 'film/gacha_film_layer.dart';
 
 class GachaPresentation extends StatefulWidget {
   const GachaPresentation({
@@ -18,6 +20,7 @@ class GachaPresentation extends StatefulWidget {
     this.onFinish,
     this.audio,
     this.haptics,
+    this.useBlenderFilm = true,
   });
   final GachaResult result;
   final GachaQuality quality;
@@ -29,6 +32,7 @@ class GachaPresentation extends StatefulWidget {
   /// Injected feedback belongs to this route and is disposed with it.
   final GachaAudio? audio;
   final GachaHaptics? haptics;
+  final bool useBlenderFilm;
   @override
   State<GachaPresentation> createState() => GachaPresentationState();
 }
@@ -37,6 +41,7 @@ class GachaPresentationState extends State<GachaPresentation>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final GachaController controller;
   late final GachaSceneResources resources;
+  GachaFilmDriver? film;
   bool _ready = false;
   @override
   void initState() {
@@ -50,8 +55,21 @@ class GachaPresentationState extends State<GachaPresentation>
       haptics: widget.haptics,
     );
     resources = GachaSceneResources(widget.result, widget.quality);
+    if (widget.useBlenderFilm) {
+      film = GachaFilmDriver(controller, onFallback: _prepareFallback)
+        ..addListener(_filmChanged);
+    } else {
+      _prepareFallback();
+    }
+  }
+
+  void _prepareFallback() {
     resources.prepareSmoke();
     resources.caseFrames.prepare();
+  }
+
+  void _filmChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -59,7 +77,11 @@ class GachaPresentationState extends State<GachaPresentation>
     super.didChangeDependencies();
     final reduced = MediaQuery.disableAnimationsOf(context);
     if (!_ready) {
-      controller.start(reduced: reduced);
+      if (reduced || film == null) {
+        controller.start(reduced: reduced);
+      } else {
+        film!.start();
+      }
       _ready = true;
     } else if (reduced) {
       controller.skip();
@@ -69,15 +91,25 @@ class GachaPresentationState extends State<GachaPresentation>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      controller.resume();
+      if (film != null) {
+        film!.resume();
+      } else {
+        controller.resume();
+      }
     } else {
-      controller.pause();
+      if (film != null) {
+        film!.pause();
+      } else {
+        controller.pause();
+      }
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    film?.removeListener(_filmChanged);
+    film?.dispose();
     controller.dispose();
     resources.dispose();
     super.dispose();
@@ -97,18 +129,31 @@ class GachaPresentationState extends State<GachaPresentation>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          RepaintBoundary(
-            child: CustomPaint(painter: GachaSkyPainter(resources, controller)),
-          ),
-          RepaintBoundary(
-            child: CustomPaint(
-              key: const Key('gacha-procedural-scene'),
-              painter: GachaScenePainter(
-                controller: controller,
-                resources: resources,
+          if (film?.ready ?? false)
+            GachaFilmLayer(film: film!, resources: resources)
+          else if (film != null && !film!.failed)
+            Image.asset(
+              'assets/gacha/film/poster.jpg',
+              fit: BoxFit.contain,
+              errorBuilder: (_, error, stack) =>
+                  const ColoredBox(color: GachaStyle.night),
+            )
+          else ...[
+            RepaintBoundary(
+              child: CustomPaint(
+                painter: GachaSkyPainter(resources, controller),
               ),
             ),
-          ),
+            RepaintBoundary(
+              child: CustomPaint(
+                key: const Key('gacha-procedural-scene'),
+                painter: GachaScenePainter(
+                  controller: controller,
+                  resources: resources,
+                ),
+              ),
+            ),
+          ],
           AnimatedBuilder(
             animation: controller,
             builder: (context, _) {
