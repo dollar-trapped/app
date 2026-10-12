@@ -40,7 +40,7 @@
 
 ffmpeg-analyse-video 스킬로 추출한 프레임에서 이전 하늘/금고의 분리된 전환이 해소된 것을 확인했다. 첫 검토에서 지적된 딱딱한 그림자, 과한 내부 광량, 마지막 카드의 여운 중 소실을 수정했다. 벡터 기반 2.5D 미술이며 사진처럼 사실적인 재질을 구현했다고 표현하지 않는다.
 
-[커먼](common_1_high.mp4) · [레어](rare_1_high.mp4) · [스페셜](special_1_high.mp4) · [스페셜 10연차](special_10_high.mp4)
+[커먼](../../../../local-archive/gacha-videos/qa/gacha-presentation-2026-10-11/procedural/common_1_high.mp4) · [레어](../../../../local-archive/gacha-videos/qa/gacha-presentation-2026-10-11/procedural/rare_1_high.mp4) · [스페셜](../../../../local-archive/gacha-videos/qa/gacha-presentation-2026-10-11/procedural/special_1_high.mp4) · [스페셜 10연차](../../../../local-archive/gacha-videos/qa/gacha-presentation-2026-10-11/procedural/special_10_high.mp4)
 
 ## 빌드·설치 상태
 

@@ -96,4 +96,4 @@ Flutter 렌더 장면 검증: [하늘](qa/gacha-presentation-2026-10-11/cinemati
 
 재구성된 도입부 기준 전체 테스트 269개와 연출 코드 정적 검사가 통과했다. 구름 레이어를 포함한 1.0.4(12) 릴리즈 APK 빌드도 성공했다(92.1MB). 새 도입부 실기기 성능 측정은 하지 않았다.
 
-[2초 도입부 영상](qa/gacha-presentation-2026-10-11/cinematic/intro.mp4)은 실제 Flutter painter를 30fps로 렌더링한 장면 검토 자료다. HUD/효과음이 없는 10회 도입부이며, 실기기 촬영이나 성능 측정 자료가 아니다. `flutter test test/gacha_sky_scene_test.dart --dart-define=EXPORT_GACHA_MOVIE=true`로 원본 프레임을 `/private/tmp/gacha-intro-frames`에 재생성할 수 있다.
+[2초 도입부 영상](../../../local-archive/gacha-videos/qa/gacha-presentation-2026-10-11/cinematic/intro.mp4)은 실제 Flutter painter를 30fps로 렌더링한 장면 검토 자료다. HUD/효과음이 없는 10회 도입부이며, 실기기 촬영이나 성능 측정 자료가 아니다. `flutter test test/gacha_sky_scene_test.dart --dart-define=EXPORT_GACHA_MOVIE=true`로 원본 프레임을 `/private/tmp/gacha-intro-frames`에 재생성할 수 있다.

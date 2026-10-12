@@ -7,7 +7,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--frames', type=Path, default=Path('/private/tmp/gacha-procedural'))
-parser.add_argument('--output', type=Path, default=Path('docs/qa/gacha-presentation-2026-10-11/procedural'))
+parser.add_argument('--output', type=Path, default=Path('build/gacha-art/procedural-previews'))
 args = parser.parse_args()
 if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
     parser.error('Install ffmpeg (including ffprobe) first')

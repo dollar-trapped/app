@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local video archives survive flutter clean and are not published.
+/local-archive/
+
 # Symbolication related
 app.*.symbols
 
