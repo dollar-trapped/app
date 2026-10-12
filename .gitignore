@@ -46,8 +46,8 @@ app.*.map.json
 
 # Local runtime configuration
 .env
+
+# Keep local documentation and QA captures out of new commits.
+# Retain the maintained gacha implementation guide.
 /docs/*
 !/docs/gacha-presentation.md
-!/docs/qa/
-/docs/qa/*
-!/docs/qa/gacha-presentation-2026-10-11/
