@@ -76,6 +76,12 @@ android {
                 versionNameSuffix = "-preview"
             }
         }
+        getByName("profile") {
+            if (providers.environmentVariable("COSMETIC_PREVIEW_BUILD").orNull == "true") {
+                applicationIdSuffix = ".preview"
+                versionNameSuffix = "-preview"
+            }
+        }
         release {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
