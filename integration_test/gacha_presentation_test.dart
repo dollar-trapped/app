@@ -11,7 +11,7 @@ void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   binding.framePolicy = LiveTestWidgetsFlutterBindingFramePolicy.fullyLive;
   testWidgets(
-    'procedural gacha real-device frame timings for all 12 scenarios',
+    'Blender hybrid gacha real-device frame timings for all 12 scenarios',
     (tester) async {
       for (final quality in GachaQuality.values) {
         for (final grade in GachaGrade.values) {
@@ -59,7 +59,8 @@ void main() {
                 await tester.pump(const Duration(milliseconds: 100));
               }
               expect(state.controller.complete, isTrue);
-              expect(state.resources.caseFrames.ready, isTrue);
+              expect(state.film?.ready, isTrue);
+              expect(state.film?.failed, isFalse);
               expect(state.resources.lights.length, count);
             }, reportKey: key);
             expect(
