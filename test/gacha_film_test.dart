@@ -13,6 +13,7 @@ import 'package:dollar_trapped/features/gacha/presentation/gacha_timeline.dart';
 import 'package:dollar_trapped/features/gacha/presentation/grade_config.dart';
 import 'package:dollar_trapped/features/gacha/presentation/film/gacha_film_track.dart';
 import 'package:dollar_trapped/features/gacha/presentation/film/gacha_film_layer.dart';
+import 'package:dollar_trapped/features/gacha/presentation/film/gacha_film_impact.dart';
 
 class FilmPlatform extends VideoPlayerPlatform {
   final events = StreamController<VideoEvent>();
@@ -87,78 +88,6 @@ class FilmPlatform extends VideoPlayerPlatform {
 }
 
 void main() {
-  testWidgets(
-    'export production film intro previews',
-    (tester) async {
-      if (!const bool.fromEnvironment('EXPORT_FILM_INTRO')) return;
-      final track = GachaFilmTrack.fromJson(
-        jsonDecode(File('assets/gacha/film/track.json').readAsStringSync())
-            as Map<String, dynamic>,
-      );
-      for (final grade in [GachaGrade.special, GachaGrade.rare]) {
-        final snapshot = GachaResult(
-          rewards: List.generate(
-            10,
-            (i) => GachaReward(
-              id: '$i',
-              title: '$i',
-              grade: i == 6
-                  ? grade
-                  : (i == 3 ? GachaGrade.rare : GachaGrade.common),
-            ),
-          ),
-        );
-        await tester.pumpWidget(
-          MaterialApp(
-            home: GachaPresentation(
-              key: ValueKey(grade),
-              result: snapshot,
-              useBlenderFilm: false,
-            ),
-          ),
-        );
-        final state = tester.state<GachaPresentationState>(
-          find.byType(GachaPresentation),
-        );
-        state.controller.clock.stop();
-        final root = 'build/gacha-art/source-movie/${grade.name}';
-        Directory('$root/composite').createSync(recursive: true);
-        for (var frame = 0; frame < 195; frame++) {
-          state.controller.clock.value =
-              frame * 1000 / 30 / state.controller.timeline.totalMs;
-          await tester.runAsync(() async {
-            final name = (frame + 1).toString().padLeft(4, '0');
-            final codec = await ui.instantiateImageCodec(
-              await File('$root/plate/$name.png').readAsBytes(),
-            );
-            final plate = (await codec.getNextFrame()).image;
-            final recorder = ui.PictureRecorder();
-            final canvas = Canvas(recorder)
-              ..drawImage(plate, Offset.zero, Paint());
-            GachaFilmPainter(
-              state.controller,
-              track,
-              state.resources,
-            ).paint(canvas, const Size(720, 1600));
-            final picture = recorder.endRecording();
-            final composite = await picture.toImage(720, 1600);
-            final bytes = (await composite.toByteData(
-              format: ui.ImageByteFormat.png,
-            ))!;
-            await File(
-              '$root/composite/$name.png',
-            ).writeAsBytes(bytes.buffer.asUint8List());
-            composite.dispose();
-            picture.dispose();
-            plate.dispose();
-            codec.dispose();
-          });
-        }
-        await tester.pumpWidget(const SizedBox());
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 10)),
-  );
   late FilmPlatform platform;
   setUp(() {
     platform = FilmPlatform();
@@ -282,6 +211,86 @@ void main() {
     expect(find.text('확인'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });
+  test('impact camera moves plate and lights together and fully settles', () {
+    final tl = GachaTimeline(result, GradeConfig.defaults);
+    const size = Size(420, 933);
+    final center = size.center(Offset.zero);
+    final grade = GradeConfig.defaults[GachaGrade.special]!;
+    Offset projected(double ms, Offset point) => MatrixUtils.transformPoint(
+      GachaFilmImpact.matrix(size, ms, tl, grade),
+      point,
+    );
+    expect(projected(tl.impactMs - 1.0, center), center);
+    final hit = projected(tl.impactMs.toDouble(), center);
+    expect(hit.dy - center.dy, greaterThan(20));
+    final offCenter = projected(
+      tl.impactMs.toDouble(),
+      center + const Offset(30, 0),
+    );
+    expect(offCenter.dx - hit.dx, greaterThan(32));
+    expect(
+      (projected(tl.impactMs + 250.0, center) - center).distance,
+      lessThan(2),
+    );
+    expect(projected(tl.impactMs + GachaFilmImpact.cameraMs, center), center);
+    for (var age = 0.0; age < GachaFilmImpact.cameraMs; age += 8) {
+      final top = projected(tl.impactMs + age, Offset.zero);
+      final bottom = projected(
+        tl.impactMs + age,
+        Offset(size.width, size.height),
+      );
+      expect(top.dx, lessThanOrEqualTo(0));
+      expect(top.dy, lessThanOrEqualTo(0));
+      expect(bottom.dx, greaterThanOrEqualTo(size.width));
+      expect(bottom.dy, greaterThanOrEqualTo(size.height));
+    }
+  });
+  test(
+    'landing holds briefly then accelerates sharply into the unchanged contacts',
+    () {
+      final json =
+          jsonDecode(File('assets/gacha/film/track.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final track = GachaFilmTrack.fromJson(json);
+      for (final grade in GachaGrade.values) {
+        final tl = GachaTimeline(
+          GachaResult(
+            rewards: [GachaReward(id: 'x', grade: grade, title: 'x')],
+          ),
+          GradeConfig.defaults,
+        );
+        final production = (json['production'] as Map)[grade.name] as Map;
+        expect(production['bounds'], tl.bounds.take(7).toList());
+        expect(production['fps'], greaterThanOrEqualTo(60));
+        for (final key in ['one', 'ten']) {
+          Offset point(double before) =>
+              track.point(tl.impactMs - before, tl, key, 0);
+          // A deliberate, short anticipation beat, followed by a fast strike.
+          expect((point(175) - point(95)).distance * 1600, lessThan(.05));
+          final early = (point(80) - point(55)).distance;
+          final late = (point(30) - point(5)).distance;
+          expect(late, greaterThan(early * 6));
+          final target = point(-20);
+          expect((point(0) - target).distance * 1600, lessThan(.05));
+          final launch = point(80);
+          for (var before = 70.0; before >= 10; before -= 10) {
+            final u = (80 - before) / 80;
+            final expected = Offset.lerp(launch, target, u * u * u * u)!;
+            expect(
+              (point(before).dy - expected.dy).abs() * 1600,
+              lessThan(1.5),
+              reason:
+                  '${grade.name}/$key at $before: vertical strike samples must follow the curve',
+            );
+          }
+          expect(
+            (point(5) - target).distance,
+            lessThan((launch - target).distance * .25),
+          );
+        }
+      }
+    },
+  );
   test(
     'gold reversal boosts only special motion and rejoins before contact',
     () {
@@ -302,8 +311,10 @@ void main() {
       for (var ms = 0.0; ms <= reversal; ms += 10) {
         expect(track.sourceMs(ms, special), track.sourceMs(ms, rare));
       }
-      final burst = track.sourceMs(reversal + 50, special) - reversal;
-      expect(burst, greaterThan(100));
+      final burst =
+          track.sourceMs(reversal + 140, special) -
+          track.sourceMs(reversal + 100, special);
+      expect(burst, greaterThan(65));
       expect(track.sourceMs(reversal + 50, rare) - reversal, closeTo(50, .001));
       var previous = track.sourceMs(reversal.toDouble(), special);
       for (var ms = reversal + 1.0; ms <= special.bounds[2]; ms++) {
@@ -311,7 +322,16 @@ void main() {
         expect(current, greaterThan(previous), reason: 'no rewind at $ms');
         previous = current;
       }
-      expect(track.sourceMs(3650, special), 3650);
+      expect(track.sourceMs(3650, special), 3770);
+      expect(track.boost['endMs'], 3090);
+      for (var ms = 3150.0; ms < 3600; ms += 25) {
+        expect(
+          track.sourceMs(ms + 25, special) - track.sourceMs(ms, special),
+          closeTo(25, .001),
+        );
+      }
+      expect(special.impactMs - special.bounds[2], 920);
+      expect(track.sourceMs(4400, special), lessThan(4070));
       expect(track.sourceMs(special.impactMs.toDouble(), special), 4070);
       expect(track.trailScale(reversal.toDouble(), true), greaterThan(1.5));
       expect(track.trailScale(reversal.toDouble(), false), 1);
@@ -332,19 +352,34 @@ void main() {
         expect(track.point(250, tl, 'ten', i), GachaFilmIgnition.origin);
         expect(
           (track.point(251, tl, 'ten', i) - GachaFilmIgnition.origin).distance,
-          lessThan(.001),
+          lessThan(.02),
         );
       }
       final released = [
         for (var i = 0; i < 10; i++) track.point(650, tl, 'ten', i),
       ];
       expect(released.toSet().length, 10);
-      expect(
-        GachaFilmIgnition.spread(950) - GachaFilmIgnition.spread(600),
-        lessThan(
-          (GachaFilmIgnition.spread(600) - GachaFilmIgnition.spread(250)) / 5,
-        ),
-      );
+      // The explosion must spread to all sides before gravity bends it down.
+      final burst = [
+        for (var i = 0; i < 10; i++) track.point(390, tl, 'ten', i),
+      ];
+      final center = GachaFilmIgnition.origin;
+      expect(burst.any((p) => p.dx < center.dx - .20), isTrue);
+      expect(burst.any((p) => p.dx > center.dx + .18), isTrue);
+      expect(burst.any((p) => p.dy < center.dy - .07), isTrue);
+      expect(burst.any((p) => p.dy > center.dy + .09), isTrue);
+      for (var i = 0; i < 10; i++) {
+        expect(track.point(950, tl, 'ten', i).dy, greaterThan(burst[i].dy));
+      }
+      expect(GachaFilmIgnition.releaseTrail(283), greaterThan(.8));
+      expect(GachaFilmIgnition.releaseTrail(700), 0);
+      final initialStep =
+          (track.point(283, tl, 'ten', 0) - track.point(250, tl, 'ten', 0))
+              .distance;
+      final driftingStep =
+          (track.point(683, tl, 'ten', 0) - track.point(650, tl, 'ten', 0))
+              .distance;
+      expect(initialStep, greaterThan(driftingStep * 5));
       for (final ms in [1850.0, 2500.0, 3200.0]) {
         final row = [
           for (var i = 0; i < 10; i++) track.point(ms, tl, 'ten', i),
@@ -357,6 +392,55 @@ void main() {
       }
       expect(track.point(1850, tl, 'case').dy, greaterThan(1));
       expect(track.point(3650, tl, 'case').dy, lessThan(1));
+    },
+  );
+  test(
+    'fireworks vary by seed, remain stable per replay and rejoin the same row',
+    () {
+      final json =
+          jsonDecode(File('assets/gacha/film/track.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final timeline = GachaTimeline(result, GradeConfig.defaults);
+      final reference = GachaFilmTrack.fromJson(json, burstSeed: 42);
+      final repeat = GachaFilmTrack.fromJson(json, burstSeed: 42);
+      for (var seed = 0; seed < 30; seed++) {
+        final track = GachaFilmTrack.fromJson(json, burstSeed: seed);
+        expect(track.firework.rays, isNot(equals(reference.firework.rays)));
+        for (var i = 0; i < 10; i++) {
+          expect(
+            reference.point(600, timeline, 'ten', i),
+            repeat.point(600, timeline, 'ten', i),
+          );
+          for (final ms in [390.0, 600.0, 950.0]) {
+            final at = track.point(ms, timeline, 'ten', i);
+            expect(at.dx, inInclusiveRange(.04, .96));
+            expect(at.dy, inInclusiveRange(.03, .46));
+          }
+          expect(
+            track.point(1850, timeline, 'ten', i),
+            reference.point(1850, timeline, 'ten', i),
+          );
+          var previous = track.point(700, timeline, 'ten', i);
+          for (var ms = 725.0; ms <= 1850; ms += 25) {
+            final at = track.point(ms, timeline, 'ten', i);
+            expect(at.dy, greaterThanOrEqualTo(previous.dy - .00001));
+            if (i > 0) {
+              expect(
+                at.dx,
+                greaterThan(track.point(ms, timeline, 'ten', i - 1).dx),
+              );
+            }
+            previous = at;
+          }
+          final before =
+              track.point(700, timeline, 'ten', i) -
+              track.point(699, timeline, 'ten', i);
+          final after =
+              track.point(701, timeline, 'ten', i) -
+              track.point(700, timeline, 'ten', i);
+          expect((after - before).distance, lessThan(.00002));
+        }
+      }
     },
   );
   testWidgets(
@@ -512,7 +596,11 @@ void main() {
         for (var i = 0; i < 7; i++) {
           expect(
             track.sourceMs(tl.bounds[i].toDouble(), tl),
-            closeTo(track.bounds[i], .001),
+            closeTo(
+              track.bounds[i] +
+                  (i == 2 && grade == GachaGrade.special ? 120 : 0),
+              .001,
+            ),
           );
         }
         final contacts = [

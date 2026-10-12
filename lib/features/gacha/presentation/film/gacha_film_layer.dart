@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../gacha_controller.dart';
@@ -8,6 +9,7 @@ import '../painters/gacha_scene_painter.dart';
 import 'gacha_film_driver.dart';
 import 'gacha_film_track.dart';
 import 'gacha_film_ignition.dart';
+import 'gacha_film_impact.dart';
 
 class GachaFilmLayer extends StatelessWidget {
   const GachaFilmLayer({
@@ -22,27 +24,41 @@ class GachaFilmLayer extends StatelessWidget {
     builder: (context, constraints) {
       final size = constraints.biggest;
       final rect = film.track!.viewport(size);
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          const ColoredBox(color: Color(0xFF03070E)),
-          Positioned.fromRect(
-            rect: rect,
-            child: film.finished
-                ? Image.asset(
-                    'assets/gacha/film/opened.jpg',
-                    fit: BoxFit.fill,
-                    gaplessPlayback: true,
-                  )
-                : VideoPlayer(film.video),
-          ),
-          RepaintBoundary(
-            child: CustomPaint(
-              key: const Key('gacha-blender-overlay'),
-              painter: GachaFilmPainter(film.scene, film.track!, resources),
+      return AnimatedBuilder(
+        animation: film.scene,
+        builder: (context, child) => ClipRect(
+          child: Transform(
+            transform: GachaFilmImpact.matrix(
+              size,
+              film.scene.ms,
+              film.scene.timeline,
+              film.scene.configs[film.scene.result.highest]!,
             ),
+            child: child,
           ),
-        ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: Color(0xFF03070E)),
+            Positioned.fromRect(
+              rect: rect,
+              child: film.finished
+                  ? Image.asset(
+                      'assets/gacha/film/opened.jpg',
+                      fit: BoxFit.fill,
+                      gaplessPlayback: true,
+                    )
+                  : VideoPlayer(film.video),
+            ),
+            RepaintBoundary(
+              child: CustomPaint(
+                key: const Key('gacha-blender-overlay'),
+                painter: GachaFilmPainter(film.scene, film.track!, resources),
+              ),
+            ),
+          ],
+        ),
       );
     },
   );
@@ -81,8 +97,19 @@ class GachaFilmPainter extends CustomPainter {
       scene.result.highest,
       p,
     );
+    GachaFilmIgnition.paintEmbers(
+      canvas,
+      Size(width, height),
+      sourceMs,
+      scene.result.highest,
+      p,
+      count: resources.quality == GachaQuality.high ? 64 : 28,
+      rotation: track.firework.emberRotation,
+    );
     for (final light in resources.lights) {
-      final hit = tl.impactMs + light.strikeDelayMs;
+      // All heads meet the lid together. Delaying each flash after contact
+      // leaves landed heads hovering and turns the strike into a soft dissolve.
+      final hit = tl.impactMs;
       final color = scene.configs[light.gradeAt(ms)]!.color;
       if (ms < hit) {
         if (sourceMs < GachaFilmIgnition.splitMs) continue;
@@ -98,8 +125,12 @@ class GachaFilmPainter extends CustomPainter {
                   (GachaFilmTrack.formationEndSourceMs - tl.bounds[1]))
               .clamp(0, 1),
         );
-        final strength = (quiet ? .16 : 1.0) * trailGrowth;
-        final trailScale = track.trailScale(ms, light.isReversed(ms));
+        final release = GachaFilmIgnition.releaseTrail(sourceMs);
+        final strength = (quiet ? .16 : 1.0) * math.max(trailGrowth, release);
+        final strike = tl.progress(ms, hit - track.strikeMs, hit);
+        final trailScale =
+            track.trailScale(ms, light.isReversed(ms)) *
+            (1 + strike * strike * 2.4);
         final scale = resources.lights.length == 1 ? 1.0 : .5;
         final radius = (9 + falling * 10) * scale;
         // Tail offsets use the exported camera at each sampled instant. Keeping
@@ -126,6 +157,25 @@ class GachaFilmPainter extends CustomPainter {
         p
           ..blendMode = BlendMode.srcOver
           ..style = PaintingStyle.fill;
+        if (release > 0) {
+          final previous = point(math.max(0, ms - 25), key, light.index);
+          final direction = at - previous;
+          if (direction.distance > .01) {
+            final tail = at - direction / direction.distance * 32 * release;
+            p
+              ..strokeWidth = 2.2 * release
+              ..strokeCap = StrokeCap.round
+              ..blendMode = BlendMode.plus
+              ..shader = ui.Gradient.linear(tail, at, [
+                color.withValues(alpha: 0),
+                Colors.white.withValues(alpha: release),
+              ]);
+            canvas.drawLine(tail, at, p);
+            p
+              ..shader = null
+              ..blendMode = BlendMode.srcOver;
+          }
+        }
         resources.glow(canvas, at, radius * 4, color, .7 * ignition);
         resources.casePainter.glyph(
           canvas,
@@ -180,13 +230,24 @@ class GachaFilmPainter extends CustomPainter {
                 GachaTimeline.reversalMs,
                 GachaTimeline.reversalMs + GachaTimeline.reversalFlashMs,
               );
-          resources.glow(canvas, at, 90, Colors.white, flash);
+          resources.glow(canvas, at, 48, Colors.white, flash * .7);
         }
       } else if (ms >= hit && ms < tl.openingMs) {
         final at = point(hit + 25, key, light.index);
         final burst =
-            1 - Curves.easeOutCubic.transform(tl.progress(ms, hit, hit + 300));
-        resources.glow(canvas, at, 42, color, burst);
+            1 -
+            Curves.easeOutCubic.transform(
+              tl.progress(ms, hit, hit + GachaFilmImpact.sparksMs),
+            );
+        final flash = 1 - tl.progress(ms, hit, hit + GachaFilmImpact.flashMs);
+        resources.glow(canvas, at, GachaFilmImpact.glowRadius, color, burst);
+        resources.glow(
+          canvas,
+          at,
+          GachaFilmImpact.coreRadius,
+          Colors.white,
+          flash,
+        );
         resources.casePainter.glyph(
           canvas,
           at.dx,
@@ -197,20 +258,24 @@ class GachaFilmPainter extends CustomPainter {
         );
         p
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.3
+          ..strokeWidth = 2
           ..color = color.withValues(alpha: burst);
-        for (var j = 0; j < 5; j++) {
-          final angle = j * math.pi * 2 / 5 + light.index;
+        final sparks = resources.quality == GachaQuality.high
+            ? GachaFilmImpact.sparkCount
+            : GachaFilmImpact.sparkCountLow;
+        for (var j = 0; j < sparks; j++) {
+          final angle = j * math.pi * 2 / sparks + light.index;
           final d = Offset(math.cos(angle), math.sin(angle));
           canvas.drawLine(
-            at + d * (1 - burst) * 22,
-            at + d * (1 - burst) * 38,
+            at + d * (1 - burst) * GachaFilmImpact.sparkInner,
+            at + d * (1 - burst) * GachaFilmImpact.sparkOuter,
             p,
           );
         }
         p.style = PaintingStyle.fill;
       }
     }
+    GachaFilmIgnition.paintCore(canvas, Size(width, height), sourceMs, p);
     if (ms >= tl.impactMs) {
       final color = scene.configs[scene.result.highest]!.color;
       final opening = Curves.easeInOutCubic.transform(
@@ -222,6 +287,14 @@ class GachaFilmPainter extends CustomPainter {
             tl.progress(ms, tl.cardsEnd, tl.totalMs),
           );
       final center = point(ms, 'case');
+      GachaFilmImpact.paint(
+        canvas,
+        center,
+        ms - tl.impactMs,
+        color,
+        resources.quality,
+        p,
+      );
       resources.glow(canvas, center, 130, color, (.10 + .25 * opening) * after);
       final path = resources.path..reset();
       for (var i = 0; i < 4; i++) {

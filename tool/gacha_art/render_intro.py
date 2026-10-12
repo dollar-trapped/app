@@ -3,23 +3,40 @@
 blender --background --python tool/gacha_art/render_intro.py -- --preview
 blender --background --python tool/gacha_art/render_intro.py
 python3 tool/gacha_art/package_intro.py
+
+Use --production-only only when the canonical scene is unchanged. It reuses
+canonical PNGs at exact matching timestamps; all other samples are rerendered.
+Add --reuse-production only when the scene/pose code is also unchanged.
+After changing geometry, camera, lighting or recoil, run the full render.
 """
 import json
 import math
 import random
 import runpy
 import sys
+
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from intro_timing import LANDING, PROJECTION_FPS, SOURCE_BOUNDS, SPECIAL_BOOST, TIMELINES, source_time
 
 import bpy
 from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
 
+options = set(sys.argv[sys.argv.index('--')+1:]) if '--' in sys.argv else set()
+supported = {'--preview', '--save-scene-only', '--production-only',
+             '--reuse-production', '--cycles'}
+if options - supported:
+    raise SystemExit(f'Unknown rendering options: {sorted(options-supported)}')
+if '--reuse-production' in options and '--production-only' not in options:
+    raise SystemExit('--reuse-production requires --production-only and unchanged scene/pose code')
+
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'build/gacha-art/intro'
 OUT.mkdir(parents=True, exist_ok=True)
 FPS, WIDTH, HEIGHT = 30, 720, 1600
-BOUNDS = [0, 550, 3650, 4070, 4260, 4790, 5750]
+BOUNDS = SOURCE_BOUNDS
 END = 5800
 FORMATION_END_MS = 1850
 START_HEIGHTS = (4.2, 5.3, 4.4, 5.0, 4.1, 5.2, 4.3, 4.9, 4.6, 4.15)
@@ -186,10 +203,9 @@ def travel(ms):
 
 def point(ms, index, count):
     # Ten persistent sources: scattered overhead -> horizontal formation ->
-    # accelerated camera-following descent. Delay only the final lid contacts,
-    # so the row does not become a diagonal staircase during the shared fall.
-    stagger = index*14*smooth(phase(ms, 3650, 3910))
-    t = travel(ms-stagger)
+    # accelerated camera-following descent. All heads reach the lid together;
+    # Flutter starts each contact flash at that same impact event.
+    t = travel(ms)
     formation = smooth(phase(ms, BOUNDS[1], FORMATION_END_MS))
     lane = index-(count-1)/2
     aim = smooth(phase(t, .76, 1))
@@ -216,8 +232,10 @@ def pose(ms):
     camera.rotation_euler = (Vector((0, 0, 1+elevation))-camera.location).to_track_quat('-Z', 'Y').to_euler()
     age = max(0, (ms-4070)/1000)
     recoil = math.exp(-age*10) if ms >= 4070 else 0
-    case.scale.z = 1-.035*recoil*math.cos(age*29)
-    case.rotation_euler.y = math.sin(age*31)*.013*recoil
+    hammer = max(0, 1-age/.6)**2 if ms >= 4070 else 0
+    case.scale.z = 1-(.035+.10*hammer)*recoil*math.cos(age*29)
+    case.rotation_euler.y = math.sin(age*31)*(.013+.017*hammer)*recoil
+    case.location.z = -.045*hammer*recoil
     opening = smooth(phase(ms, 4790, 5750))
     lid.rotation_euler.x = -math.radians(102)*opening
     inside.data.energy = 350*opening
@@ -245,7 +263,7 @@ for i in range(count):
     track.append(pose(ms))
     # Preserve an editable, scrub-able Blender timeline, not only rendered PNGs.
     for obj, paths in [(camera, ('location', 'rotation_euler')),
-                       (case, ('scale', 'rotation_euler')),
+                       (case, ('location', 'scale', 'rotation_euler')),
                        (lid, ('rotation_euler',)), (falllight, ('location',))]:
         for path in paths:
             obj.keyframe_insert(data_path=path, frame=i+1)
@@ -255,7 +273,7 @@ for i in range(count):
     for obj, _, _ in billows:
         obj.keyframe_insert(data_path='location', frame=i+1)
         obj.keyframe_insert(data_path='scale', frame=i+1)
-    if '--save-scene-only' not in sys.argv and (not preview or i in (0, 30, 75, 111, 122, 132, 159, 174)):
+    if '--save-scene-only' not in sys.argv and '--production-only' not in sys.argv and (not preview or i in (0, 30, 75, 111, 122, 132, 159, 174)):
         directory = OUT / ('preview' if preview else 'frames')
         directory.mkdir(parents=True, exist_ok=True)
         scene.render.filepath = str(directory/f'frame_{i:04d}.png')
@@ -264,3 +282,58 @@ for i in range(count):
     'bounds': BOUNDS, 'frames': track}, separators=(',', ':')))
 pose(5750)
 bpy.ops.wm.save_as_mainfile(filepath=str(OUT/'intro.blend'))
+
+# Evaluate at the *output* timestamp. Repeating nearest canonical frames after
+# retiming causes hold/jump motion, especially around the inverse landing curve.
+if not preview and '--save-scene-only' not in sys.argv:
+    # Keep the saved .blend editable, but detach baked animation in this render
+    # session. render() reevaluates keyframes and otherwise overwrites pose(ms).
+    for obj in scene.objects:
+        obj.animation_data_clear()
+        if obj.data is not None:
+            obj.data.animation_data_clear()
+    for mat in bpy.data.materials:
+        if mat.node_tree:
+            mat.node_tree.animation_data_clear()
+    production = OUT / 'production'
+    production.mkdir(parents=True, exist_ok=True)
+    manifest = {'files': {}, 'tracks': {}, 'specialBoost': SPECIAL_BOOST, 'landing': LANDING}
+    cache = {}
+    # Explicit reuse is safe only if the scene/pose code is unchanged. Exact
+    # source-time samples remain valid when only playback timing is edited.
+    if '--reuse-production' in sys.argv:
+        previous = json.loads((production/'manifest.json').read_text())
+        for paths in previous['files'].values():
+            for filename in paths:
+                path = OUT/filename
+                if path.stem.startswith('sample_') and path.is_file():
+                    cache[int(path.stem.removeprefix('sample_'))] = path
+    # Canonical frames are reusable only at their exact timestamps.
+    for name, bounds in TIMELINES.items():
+        files = []
+        for i in range(math.ceil(bounds[-1]*FPS/1000)+1):
+            ms = source_time(i*1000/FPS, bounds, name)
+            source_frame = ms*FPS/1000
+            canonical = OUT/f'frames/frame_{round(source_frame):04d}.png'
+            stamp = round(ms*1000)
+            if stamp in cache:
+                path = cache[stamp]
+            elif abs(source_frame-round(source_frame)) < 1e-6 and canonical.is_file():
+                path = canonical
+            else:
+                path = production/f'sample_{stamp:07d}.png'
+                # Do not scrub baked keyframes after pose: it would replace
+                # the precisely evaluated state with an integer frame.
+                pose(ms)
+                scene.render.filepath = str(path)
+                bpy.ops.render.render(write_still=True)
+                cache[stamp] = path
+            files.append(str(path.relative_to(OUT)))
+        projection_fps = PROJECTION_FPS
+        projected = [pose(source_time(i*1000/projection_fps, bounds, name))
+                     for i in range(math.ceil(bounds[-1]*projection_fps/1000)+1)]
+        manifest['files'][name] = files
+        manifest['tracks'][name] = {'fps': projection_fps, 'bounds': bounds,
+                                    'frames': projected}
+        print(f'Exact production samples ready: {name}', flush=True)
+    (production/'manifest.json').write_text(json.dumps(manifest, separators=(',', ':')))

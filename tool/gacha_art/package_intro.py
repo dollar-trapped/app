@@ -1,8 +1,9 @@
-"""Retime a shared Blender plate to the three production timelines; encode H.264."""
+"""Encode exact Blender production samples without nearest-frame retiming."""
 import json
 import math
 import subprocess
 from pathlib import Path
+from intro_timing import LANDING, SPECIAL_BOOST, TIMELINES
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'build/gacha-art/intro'
@@ -10,38 +11,26 @@ OUT = ROOT / 'assets/gacha/film'
 OUT.mkdir(parents=True, exist_ok=True)
 track = json.loads((SOURCE/'track.json').read_text())
 FPS = track['fps']
-# Shared with Flutter via track.json: accelerate the plate and projected heads
-# together, then rejoin the unchanged stillness/contact timeline.
-track['specialBoost'] = {
-    'startMs': 2850, 'endMs': 3650, 'gain': 1.6,
-    'trailMs': 320, 'trailStretch': .9,
-}
-timelines = {
-    'common': [0, 550, 2350, 2700, 2880, 3250, 3800],
-    'rare': [0, 550, 3650, 4000, 4180, 4550, 5270],
-    'special': [0, 550, 3650, 4070, 4260, 4790, 5750],
-}
-def source_time(ms, bounds, name):
-    boost = track['specialBoost']
-    if name == 'special' and boost['startMs'] < ms < boost['endMs']:
-        span = boost['endMs']-boost['startMs']
-        u = (ms-boost['startMs'])/span
-        ms += span*boost['gain']*u*(1-u)**2
-    for i in range(len(bounds)-1):
-        if ms <= bounds[i+1]:
-            f = max(0, (ms-bounds[i])/(bounds[i+1]-bounds[i]))
-            return track['bounds'][i]+f*(track['bounds'][i+1]-track['bounds'][i])
-    return track['bounds'][-1]
 
-for name, bounds in timelines.items():
+track['specialBoost'] = SPECIAL_BOOST
+track['landing'] = LANDING
+manifest = json.loads((SOURCE/'production/manifest.json').read_text())
+if manifest['specialBoost'] != SPECIAL_BOOST or manifest.get('landing') != LANDING:
+    raise ValueError('Rerender production frames: production timing changed')
+track['production'] = manifest['tracks']
+
+for name, bounds in TIMELINES.items():
     concat = SOURCE/f'{name}.ffconcat'
     lines = ['ffconcat version 1.0']
-    for i in range(math.ceil(bounds[-1]*FPS/1000)+1):
-        source = round(source_time(i*1000/FPS, bounds, name)*FPS/1000)
-        frame = SOURCE/f'frames/frame_{source:04d}.png'
+    files = manifest['files'][name]
+    expected = math.ceil(bounds[-1]*FPS/1000)+1
+    if len(files) != expected or manifest['tracks'][name]['bounds'] != bounds:
+        raise ValueError(f'Rerender production frames for {name}: timing changed')
+    for filename in files:
+        frame = SOURCE / filename
         if not frame.is_file():
             raise FileNotFoundError(frame)
-        lines.extend([f"file '{frame}'", f'duration {1/FPS:.9f}'])
+        lines.extend([f"file '{frame}'", f'option framerate {FPS}', f'duration {1/FPS:.9f}'])
     concat.write_text('\n'.join(lines)+'\n')
     subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-safe', '0',
         '-i', str(concat), '-r', str(FPS), '-c:v', 'libx264', '-preset', 'slow',

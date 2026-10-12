@@ -17,11 +17,10 @@ enum GachaPhase {
 class GachaTimeline {
   GachaTimeline(this.result, this.configs) {
     bounds = switch (result.highest) {
-      // Extend only the sky descent (+600ms Common, +1000ms Rare/Special).
-      // Preserve the impact, opening and reward-reading intervals afterward.
-      GachaGrade.common => const [0, 550, 2350, 2700, 2880, 3250, 3800, 4700],
-      GachaGrade.rare => const [0, 550, 3650, 4000, 4180, 4550, 5270, 6370],
-      GachaGrade.special => const [0, 550, 3650, 4070, 4260, 4790, 5750, 7250],
+      // Let the case approach read before contact; later phase lengths stay intact.
+      GachaGrade.common => const [0, 550, 2350, 3000, 3180, 3550, 4100, 5000],
+      GachaGrade.rare => const [0, 550, 3650, 4450, 4630, 5000, 5720, 6820],
+      GachaGrade.special => const [0, 550, 3650, 4570, 4760, 5290, 6250, 7750],
     };
     cardStarts = [bounds[6]];
     var end = bounds[7];
@@ -36,7 +35,7 @@ class GachaTimeline {
   late final List<int> bounds, cardStarts;
   late final int cardsEnd;
   static const reversalMs = 2850, reversalFlashMs = 70, afterglowMs = 450;
-  static const strikeMs = 160, strikeSpacingMs = 14, strikeGlowMs = 260;
+  static const strikeMs = 350, strikeSpacingMs = 14, strikeGlowMs = 260;
   static const starFlashMs = 180, blackoutEndMs = 300;
   static const hitStopMs = [60, 80, 100];
   int get totalMs => cardsEnd + afterglowMs;
