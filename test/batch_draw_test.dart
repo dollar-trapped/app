@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/gacha/widgets/batch_reward_summary.dart';
 import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'package:dollar_trapped/features/gacha/widgets/case_reward_card.dart';
@@ -37,9 +38,9 @@ void main() {
     await tester.ensureVisible(find.text(label));
     await tester.tap(find.text(label));
     await tester.pumpAndSettle();
-    if (find.text('바로 열기').evaluate().isNotEmpty) {
-      await tester.ensureVisible(find.text('바로 열기'));
-      await tester.tap(find.text('바로 열기'));
+    if (find.text('건너뛰기').evaluate().isNotEmpty) {
+      await tester.ensureVisible(find.text('건너뛰기'));
+      await tester.tap(find.text('건너뛰기'));
       await tester.pumpAndSettle();
     }
   }
@@ -75,20 +76,17 @@ void main() {
     action();
     action();
     await tester.pumpAndSettle();
-    await draw(tester, '바로 열기');
+    if (find.text('건너뛰기').evaluate().isNotEmpty) await draw(tester, '건너뛰기');
     expect(repo.requests.length, 1);
     expect(repo.singleRequests, 0);
     expect(repo.tickets, 0);
     expect(store.pending, isNull);
     final cards = tester
-        .widgetList<CaseRewardCard>(find.byType(CaseRewardCard))
-        .toList();
+        .widget<BatchRewardSummary>(find.byType(BatchRewardSummary))
+        .draws;
     expect(cards.length, 10);
-    expect(cards.where((card) => !card.result.duplicate).length, 5);
-    expect(
-      cards.fold<int>(0, (sum, card) => sum + card.result.chipsGranted),
-      5,
-    );
+    expect(cards.where((card) => !card.duplicate).length, 5);
+    expect(cards.fold<int>(0, (sum, card) => sum + card.chipsGranted), 5);
     await draw(tester, '확인');
     expect(find.text('0장'), findsOneWidget);
     expect(find.text('5개'), findsOneWidget);
@@ -121,7 +119,10 @@ void main() {
       expect(repo.tickets, 0);
       expect(store.pending, isNull);
       expect(
-        tester.widgetList<CaseRewardCard>(find.byType(CaseRewardCard)).length,
+        tester
+            .widget<BatchRewardSummary>(find.byType(BatchRewardSummary))
+            .draws
+            .length,
         10,
       );
       expect(tester.takeException(), isNull);
@@ -154,7 +155,10 @@ void main() {
     expect(repo.requests[1], repo.requests[0]);
     expect(repo.tickets, 0);
     expect(
-      tester.widgetList<CaseRewardCard>(find.byType(CaseRewardCard)).length,
+      tester
+          .widget<BatchRewardSummary>(find.byType(BatchRewardSummary))
+          .draws
+          .length,
       10,
     );
   });

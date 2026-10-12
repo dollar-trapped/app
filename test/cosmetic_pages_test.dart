@@ -95,7 +95,7 @@ void main() {
     );
     await _settleAndOpenCard(tester);
     expect(find.text('0장'), findsOneWidget);
-    expect(find.text('초록달러'), findsOneWidget);
+    expect(find.text('가나다'), findsNWidgets(3));
     final button = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, '뽑기권이 필요해요'),
     );

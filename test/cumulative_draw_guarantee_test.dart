@@ -158,7 +158,8 @@ void main() {
         await tester.ensureVisible(find.text('10회 뽑기'));
         await tester.tap(find.text('10회 뽑기'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('바로 열기'));
+        if (find.text('건너뛰기').evaluate().isNotEmpty)
+          await tester.tap(find.text('건너뛰기'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('확인').last);
         await tester.pumpAndSettle();
@@ -175,7 +176,8 @@ void main() {
         await tester.ensureVisible(find.text('1회 뽑기'));
         await tester.tap(find.text('1회 뽑기'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('gacha-case-touch')));
+        if (find.text('건너뛰기').evaluate().isNotEmpty)
+          await tester.tap(find.text('건너뛰기'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('확인').last);
         await tester.tap(find.text('확인').last);

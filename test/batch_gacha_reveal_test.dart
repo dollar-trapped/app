@@ -1,7 +1,8 @@
 import 'package:dollar_trapped/features/cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/gacha/data/gacha_models.dart';
 import 'package:dollar_trapped/features/gacha/widgets/batch_gacha_reveal.dart';
-import 'package:dollar_trapped/features/gacha/widgets/dollar_case_reveal.dart';
+import 'package:dollar_trapped/features/gacha/presentation/gacha_presentation.dart';
+import 'package:dollar_trapped/features/gacha/presentation/gacha_result.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,8 +18,7 @@ final results = List.generate(
           : i == 4
           ? 'RARE'
           : 'COMMON',
-      drawable: true,
-      appearance: const {'nameColor': '#4477CC'},
+      appearance: const {},
     ),
     duplicate: false,
     chipsGranted: 0,
@@ -26,62 +26,43 @@ final results = List.generate(
   ),
 );
 void main() {
-  Widget scene({bool waiting = false, bool reduced = false, int count = 10}) =>
-      MaterialApp(
-        home: MediaQuery(
-          data: MediaQueryData(disableAnimations: reduced),
-          child: BatchGachaReveal(
-            nickname: '달러',
-            waiting: waiting,
-            results: results.take(count).toList(),
-            child: const Scaffold(body: Text('10개 결과')),
-          ),
-        ),
-      );
-  DollarCasePainter painter(WidgetTester tester) =>
-      tester
-              .widget<CustomPaint>(find.byKey(const Key('dollar-case-scene')))
-              .painter!
-          as DollarCasePainter;
-  testWidgets(
-    'ten dollars retain individual server rarities and case opens once',
-    (tester) async {
-      await tester.pumpWidget(scene());
-      expect(painter(tester).count, 10);
-      expect(
-        painter(tester).rarities,
-        results.map((r) => r.item.rarity).toList(),
-      );
-      await tester.pump(const Duration(milliseconds: 900));
-      expect(painter(tester).drop, lessThan(1));
-      expect(find.text('10개 결과'), findsNothing);
-      await tester.pumpAndSettle();
-      expect(find.text('10 / 10'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('gacha-case-touch')));
-      await tester.pumpAndSettle();
-      expect(find.text('10개 결과'), findsOneWidget);
-    },
+  Widget scene({int count = 10, bool reduced = false}) => MaterialApp(
+    home: MediaQuery(
+      data: MediaQueryData(disableAnimations: reduced),
+      child: BatchGachaReveal(
+        nickname: '달러',
+        results: results.take(count).toList(),
+        child: const Text('10개 결과'),
+      ),
+    ),
   );
-  testWidgets(
-    'partial or pending responses never reveal an invented ten results',
-    (tester) async {
-      for (final pending in [false, true]) {
-        await tester.pumpWidget(scene(waiting: pending, count: 3));
-        await tester.pump(const Duration(seconds: 5));
-        expect(painter(tester).rarities, isEmpty);
-        expect(find.text('바로 열기'), findsNothing);
-      }
-    },
-  );
-  testWidgets(
-    'reduced motion keeps case interaction and allows immediate skip',
-    (tester) async {
-      await tester.pumpWidget(scene(reduced: true));
-      expect(find.text('10 / 10'), findsOneWidget);
-      expect(tester.hasRunningAnimations, isFalse);
-      await tester.tap(find.text('바로 열기'));
-      await tester.pump();
-      expect(find.text('10개 결과'), findsOneWidget);
-    },
-  );
+  testWidgets('single case uses highest grade while keeping reward order', (
+    tester,
+  ) async {
+    await tester.pumpWidget(scene());
+    final result = tester
+        .widget<GachaPresentation>(find.byType(GachaPresentation))
+        .result;
+    expect(result.highest, GachaGrade.special);
+    expect(
+      result.rewards.map((r) => r.grade),
+      results.map((r) => GachaGrade.fromServer(r.item.rarity)),
+    );
+    await tester.tap(find.text('건너뛰기'));
+    await tester.pump();
+    expect(find.text('10개 결과'), findsOneWidget);
+  });
+  testWidgets('partial response cannot start ten-card presentation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(scene(count: 3));
+    await tester.pump(const Duration(seconds: 20));
+    expect(find.byType(GachaPresentation), findsNothing);
+    expect(find.text('10개 결과'), findsNothing);
+  });
+  testWidgets('reduced motion directly presents all results', (tester) async {
+    await tester.pumpWidget(scene(reduced: true));
+    expect(find.text('10개 결과'), findsOneWidget);
+    expect(tester.hasRunningAnimations, isFalse);
+  });
 }

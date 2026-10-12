@@ -21,7 +21,7 @@ const item = CosmeticItem(
 void main() {
   for (final fail in [false, true]) {
     testWidgets(
-      'draw animates while server is pending and handles ${fail ? "failure" : "success"}',
+      'draw waits for confirmed server result and handles ${fail ? "failure" : "success"}',
       (tester) async {
         final repo = _DelayedRepo();
         final pending = _MemoryPending();
@@ -41,9 +41,10 @@ void main() {
         await tester.tap(find.text('1회 뽑기'));
         await tester.pump();
         expect(find.byType(DollarCaseReveal), findsOneWidget);
-        expect(find.text('보상을 준비하고 있어요'), findsOneWidget);
+        expect(find.text('뽑기 결과를 확인하는 중…'), findsOneWidget);
         expect(find.text('연출 건너뛰기'), findsNothing);
         await tester.pump(const Duration(seconds: 5));
+        expect(find.text('뽑기 결과를 확인하는 중…'), findsOneWidget);
         expect(find.byType(DollarCaseReveal), findsOneWidget);
         expect(repo.keys, hasLength(1));
         final revealState = tester.state(find.byType(DollarCaseReveal));

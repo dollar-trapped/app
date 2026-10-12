@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../data/gacha_models.dart';
+import '../presentation/gacha_result.dart';
+import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import 'dollar_case_reveal.dart';
 import 'case_reward_card.dart';
+import 'batch_reward_summary.dart';
 import '../../shared/data/dollar_repository.dart';
 
 class DrawSessionFailure {
@@ -76,6 +79,19 @@ class _DrawSessionState<T> extends State<DrawSession<T>> {
         key: ValueKey(_generation),
         count: widget.batch ? 10 : 1,
         waiting: _pending,
+        result: _pending ? null : GachaResult.fromDraws(draws),
+        previewBuilder: (context, index) {
+          final item = draws[index].item;
+          return FittedBox(
+            child: ServerCosmeticNickname(
+              nickname: widget.nickname,
+              color: item.type == 'NAME_COLOR' ? item : null,
+              font: item.type == 'NAME_FONT' ? item : null,
+              background: item.type == 'NAME_BACKGROUND' ? item : null,
+              size: 34,
+            ),
+          );
+        },
         rarities: draws.map((draw) => draw.item.rarity).toList(),
         rewardBuilder: (index) => CaseRewardCard(
           key: ValueKey('${_generation}_$index'),
@@ -85,6 +101,13 @@ class _DrawSessionState<T> extends State<DrawSession<T>> {
           onAgain: !widget.batch ? _again : null,
         ),
         onFinish: () => Navigator.of(context).pop(),
+        summaryBuilder: widget.batch
+            ? () => BatchRewardSummary(
+                draws: draws,
+                nickname: widget.nickname,
+                repository: widget.repository,
+              )
+            : null,
         child: const SizedBox.shrink(),
       ),
     );

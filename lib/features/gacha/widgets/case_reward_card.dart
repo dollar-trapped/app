@@ -14,16 +14,47 @@ class CaseRewardCard extends StatefulWidget {
     required this.nickname,
     required this.result,
     this.onAgain,
+    this.allowEquip = true,
   });
   final DollarRepository repository;
   final String nickname;
   final CosmeticDraw result;
   final VoidCallback? onAgain;
+  final bool allowEquip;
   @override
   State<CaseRewardCard> createState() => _CaseRewardCardState();
 }
 
-class _CaseRewardCardState extends State<CaseRewardCard> {
+class _CaseRewardCardState extends State<CaseRewardCard>
+    with SingleTickerProviderStateMixin {
+  late final _entry = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  bool _started = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _entry.value = 1;
+    } else if (!_started) {
+      _entry.forward();
+    }
+    _started = true;
+  }
+
+  @override
+  void dispose() {
+    _entry.dispose();
+    super.dispose();
+  }
+
+  Widget _staged(Widget child, double start) => FadeTransition(
+    opacity: _entry.drive(
+      CurveTween(curve: Interval(start, start + .35, curve: Curves.easeOut)),
+    ),
+    child: child,
+  );
   bool _busy = false, _applied = false;
   String? _error;
   Future<void> _apply() async {
@@ -70,9 +101,9 @@ class _CaseRewardCardState extends State<CaseRewardCard> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFF172820),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accent.withValues(alpha: .6)),
+          color: const Color(0xF2111E17),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accent.withValues(alpha: .25)),
           boxShadow: [
             BoxShadow(color: accent.withValues(alpha: .1), blurRadius: 24),
           ],
@@ -80,17 +111,20 @@ class _CaseRewardCardState extends State<CaseRewardCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              item.rarity,
-              style: TextStyle(color: accent, letterSpacing: 2),
+            _staged(
+              Text(
+                dollarRarityLabel(item.rarity),
+                style: TextStyle(color: accent, letterSpacing: 4, fontSize: 11),
+              ),
+              0,
             ),
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 34),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F7F5),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(4),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -99,33 +133,40 @@ class _CaseRewardCardState extends State<CaseRewardCard> {
                   color: item.type == 'NAME_COLOR' ? item : null,
                   font: item.type == 'NAME_FONT' ? item : null,
                   background: item.type == 'NAME_BACKGROUND' ? item : null,
-                  size: 28,
+                  size: 36,
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              item.name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            _staged(
+              Text(
+                item.name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              .25,
             ),
             const SizedBox(height: 6),
-            Text(
-              draw.duplicate
-                  ? '중복 보상으로 달러칩 ${draw.chipsGranted}개를 받았어요.'
-                  : '새로운 아이템',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFFAFC6BA)),
+            _staged(
+              Text(
+                draw.duplicate
+                    ? '중복 보상으로 달러칩 ${draw.chipsGranted}개를 받았어요.'
+                    : '새로운 아이템',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFAFC6BA)),
+              ),
+              .6,
             ),
             if (_error != null)
               Text(_error!, style: const TextStyle(color: Color(0xFFFFAAAA))),
             TextButton(
               onPressed:
-                  _busy ||
+                  !widget.allowEquip ||
+                      _busy ||
                       _applied ||
                       ![
                         'NAME_COLOR',
