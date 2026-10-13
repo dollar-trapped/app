@@ -71,6 +71,9 @@ class _PreviewState extends State<GachaPresentationPreview> {
                 nickname: '달러물림',
                 color: item.type == 'NAME_COLOR' ? item : null,
                 font: item.type == 'NAME_FONT' ? item : null,
+                defaultTextColor: item.type == 'NAME_FONT'
+                    ? Colors.white
+                    : null,
                 background: item.type == 'NAME_BACKGROUND' ? item : null,
                 size: 34,
               ),

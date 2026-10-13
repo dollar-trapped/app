@@ -19,10 +19,14 @@ class ServerCosmeticNickname extends StatelessWidget {
     this.font,
     this.background,
     this.size = 16,
+    this.defaultTextColor,
   });
   final String nickname;
   final CosmeticItem? color, font, background;
   final double size;
+
+  /// Used when no text color cosmetic is equipped, e.g. on dark reveal cards.
+  final Color? defaultTextColor;
   static Color? parseColor(Object? value) =>
       CosmeticEffectRegistry.parseColor(value);
 
@@ -111,7 +115,9 @@ class ServerCosmeticNickname extends StatelessWidget {
       color: textColors != null
           ? Colors.white
           : textEffect.solid ??
-                (darkBackground ? Colors.white : const Color(0xFF151916)),
+                (darkBackground
+                    ? Colors.white
+                    : defaultTextColor ?? const Color(0xFF151916)),
       fontFamily: basic
           ? 'Noto Sans KR'
           : CosmeticEffectRegistry.font(font?.appearance['nameFont']),

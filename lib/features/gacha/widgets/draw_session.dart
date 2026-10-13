@@ -87,6 +87,7 @@ class _DrawSessionState<T> extends State<DrawSession<T>> {
               nickname: widget.nickname,
               color: item.type == 'NAME_COLOR' ? item : null,
               font: item.type == 'NAME_FONT' ? item : null,
+              defaultTextColor: item.type == 'NAME_FONT' ? Colors.white : null,
               background: item.type == 'NAME_BACKGROUND' ? item : null,
               size: 34,
             ),
