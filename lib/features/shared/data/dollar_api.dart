@@ -6,6 +6,7 @@ import '../../cosmetics/models/cosmetic_models.dart';
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
 import 'api_models.dart';
+import '../../rewards/data/reward_grant_notices.dart';
 import 'dollar_repository.dart';
 
 const _unset = Object();
@@ -15,12 +16,14 @@ class DollarApi implements DollarRepository {
   factory DollarApi({
     TokenStore? tokenStore,
     RewardEventNotifications? rewardNotifications,
+    RewardGrantNotices? grantNotices,
   }) {
     final tokens = tokenStore ?? SecureTokenStore();
     return DollarApi.withDependencies(
       ApiClient(tokens),
       tokens,
       rewardNotifications: rewardNotifications,
+      grantNotices: grantNotices,
     );
   }
 
@@ -28,9 +31,11 @@ class DollarApi implements DollarRepository {
     this._client,
     this._tokens, {
     this.rewardNotifications,
+    this.grantNotices,
   });
 
   final RewardEventNotifications? rewardNotifications;
+  final RewardGrantNotices? grantNotices;
 
   final ApiClient _client;
   final TokenStore _tokens;
@@ -97,6 +102,7 @@ class DollarApi implements DollarRepository {
 
   Future<AuthSession> _auth(String path, Map<String, String> body) async {
     rewardNotifications?.clear();
+    grantNotices?.reset();
     final response = await _client.post<Map<String, dynamic>>(
       path,
       data: body,
@@ -111,6 +117,7 @@ class DollarApi implements DollarRepository {
         refreshExpiresAt: session.refreshExpiresAt,
       ),
     );
+    grantNotices?.activate();
     await claimRewardEvents(_client, notifications: rewardNotifications);
     return session;
   }
@@ -118,6 +125,7 @@ class DollarApi implements DollarRepository {
   @override
   Future<void> logOut() async {
     rewardNotifications?.clear();
+    grantNotices?.reset();
     final tokens = await _tokens.read();
     try {
       if (tokens != null) {

@@ -1,4 +1,6 @@
 import '../../legal/consent_gate.dart';
+import '../../rewards/data/reward_grant_notices.dart';
+import '../../rewards/widgets/reward_grant_notice_listener.dart';
 import '../../../core/auth/reward_event_notifications.dart';
 import '../../gacha/widgets/reward_event_listener.dart';
 import 'package:dollar_trapped/features/exchange/screens/usd_krw_detail_page.dart';
@@ -83,8 +85,12 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
     final content = notifications == null
         ? pages
         : RewardEventListener(notifications: notifications, child: pages);
+    final grants = context.read<RewardGrantNotices?>();
+    final withGrants = grants == null
+        ? content
+        : RewardGrantNoticeListener(notices: grants, child: content);
     return widget.checkConsent
-        ? ConsentGate(repository: repository, child: content)
-        : content;
+        ? ConsentGate(repository: repository, child: withGrants)
+        : withGrants;
   }
 }

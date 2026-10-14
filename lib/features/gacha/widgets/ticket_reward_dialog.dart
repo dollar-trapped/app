@@ -17,11 +17,14 @@ class TicketRewardDialog extends StatelessWidget {
     this.awardedTickets,
     this.rewardHeading,
     this.rewardMessage,
+    this.confirmationAction,
+    this.confirmationStatus,
   });
   final RewardEventReceipt? eventReward;
   final int? chipCost;
   final int? awardedTickets;
   final String? rewardHeading, rewardMessage;
+  final Widget? confirmationAction, confirmationStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -185,11 +188,17 @@ class TicketRewardDialog extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF667069), fontSize: 14),
             ),
+            if (confirmationStatus != null) ...[
+              const SizedBox(height: 12),
+              confirmationStatus!,
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: FilledButton(
+              child:
+                  confirmationAction ??
+                  FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: green,
                       foregroundColor: Colors.white,
