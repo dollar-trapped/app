@@ -14,13 +14,18 @@ class TicketRewardDialog extends StatelessWidget {
     super.key,
     this.chipCost,
     this.eventReward,
+    this.awardedTickets,
+    this.rewardHeading,
+    this.rewardMessage,
   });
   final RewardEventReceipt? eventReward;
   final int? chipCost;
+  final int? awardedTickets;
+  final String? rewardHeading, rewardMessage;
 
   @override
   Widget build(BuildContext context) {
-    final ticketCount = eventReward?.amount ?? 1;
+    final ticketCount = eventReward?.amount ?? awardedTickets ?? 1;
     const green = Color(0xFF008A29);
     final reduced = MediaQuery.disableAnimationsOf(context);
     return Dialog(
@@ -32,11 +37,12 @@ class TicketRewardDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              eventReward != null
+              rewardHeading ??
+                  (eventReward != null
                       ? '이벤트 보상 도착!'
                       : chipCost == null
                       ? '광고 보상 도착!'
-                      : '달러칩 교환 완료!',
+                      : '달러칩 교환 완료!'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
@@ -170,11 +176,12 @@ class TicketRewardDialog extends StatelessWidget {
               Text('현재 보유 뽑기권 ${eventReward!.balance}장'),
             ],
             Text(
-              eventReward != null
+              rewardMessage ??
+                  (eventReward != null
                       ? '지급된 뽑기권으로 닉네임 장식을 만나보세요.'
                       : chipCost == null
                       ? '새로운 닉네임 장식을 만나보세요.'
-                      : '달러칩 $chipCost개가 뽑기권 1장으로 바뀌었어요.',
+                      : '달러칩 $chipCost개가 뽑기권 1장으로 바뀌었어요.'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF667069), fontSize: 14),
             ),
