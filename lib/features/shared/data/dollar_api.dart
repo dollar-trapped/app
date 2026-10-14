@@ -1,6 +1,7 @@
 import '../../gacha/data/wish_ticket_models.dart';
 import '../../gacha/data/gacha_models.dart';
 import '../../../core/auth/reward_event_claim.dart';
+import '../../../core/auth/reward_event_notifications.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
@@ -11,12 +12,25 @@ const _unset = Object();
 
 /// Typed REST facade for every v0.1 HTTP endpoint.
 class DollarApi implements DollarRepository {
-  factory DollarApi({TokenStore? tokenStore}) {
+  factory DollarApi({
+    TokenStore? tokenStore,
+    RewardEventNotifications? rewardNotifications,
+  }) {
     final tokens = tokenStore ?? SecureTokenStore();
-    return DollarApi.withDependencies(ApiClient(tokens), tokens);
+    return DollarApi.withDependencies(
+      ApiClient(tokens),
+      tokens,
+      rewardNotifications: rewardNotifications,
+    );
   }
 
-  DollarApi.withDependencies(this._client, this._tokens);
+  DollarApi.withDependencies(
+    this._client,
+    this._tokens, {
+    this.rewardNotifications,
+  });
+
+  final RewardEventNotifications? rewardNotifications;
 
   final ApiClient _client;
   final TokenStore _tokens;
@@ -82,6 +96,7 @@ class DollarApi implements DollarRepository {
   }) => _auth('/auth/login', {'email': email, 'password': password});
 
   Future<AuthSession> _auth(String path, Map<String, String> body) async {
+    rewardNotifications?.clear();
     final response = await _client.post<Map<String, dynamic>>(
       path,
       data: body,
@@ -96,12 +111,13 @@ class DollarApi implements DollarRepository {
         refreshExpiresAt: session.refreshExpiresAt,
       ),
     );
-    await claimRewardEvents(_client);
+    await claimRewardEvents(_client, notifications: rewardNotifications);
     return session;
   }
 
   @override
   Future<void> logOut() async {
+    rewardNotifications?.clear();
     final tokens = await _tokens.read();
     try {
       if (tokens != null) {

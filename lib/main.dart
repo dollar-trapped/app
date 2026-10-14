@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'app.dart';
 import 'core/ads/mobile_ads_service.dart';
 import 'core/auth/session_restorer.dart';
+import 'core/auth/reward_event_notifications.dart';
 import 'core/auth/token_store.dart';
 import 'core/network/api_client.dart';
 import 'features/shared/data/dollar_api.dart';
@@ -34,16 +35,25 @@ Future<void> main() async {
   );
   final tokenStore = RememberingTokenStore(SecureTokenStore());
   final apiClient = ApiClient(tokenStore);
+  final rewardNotifications = RewardEventNotifications();
   final repository = const bool.fromEnvironment('USE_MOCK_REPOSITORY')
       ? MockDollarRepository()
-      : DollarApi.withDependencies(apiClient, tokenStore);
+      : DollarApi.withDependencies(
+          apiClient,
+          tokenStore,
+          rewardNotifications: rewardNotifications,
+        );
   final initiallyAuthenticated = await SessionRestorer(
     tokenStore,
     apiClient,
+    rewardNotifications: rewardNotifications,
   ).restore();
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<RewardEventNotifications>.value(
+          value: rewardNotifications,
+        ),
         Provider<TokenStore>.value(value: tokenStore),
         Provider<DollarRepository>.value(value: repository),
       ],

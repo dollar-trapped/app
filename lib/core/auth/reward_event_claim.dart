@@ -1,12 +1,20 @@
 import 'package:flutter/foundation.dart';
 
 import '../network/api_client.dart';
+import 'reward_event_notifications.dart';
 
 /// 서버가 이벤트 기간·대상·중복 수령을 판정하므로 앱에서 지급량을 정하지 않습니다.
-Future<void> claimRewardEvents(ApiClient client) async {
+Future<void> claimRewardEvents(
+  ApiClient client, {
+  RewardEventNotifications? notifications,
+}) async {
   try {
     // 본문과 요청 키가 없는 멱등 API입니다. 저장된 인증 토큰을 사용합니다.
-    await client.post<Map<String, dynamic>>('/reward-events/claims');
+    final response = await client.post<Map<String, dynamic>>(
+      '/reward-events/claims',
+    );
+    final receipt = RewardEventReceipt.fromJson(response.data ?? const {});
+    if (receipt != null) notifications?.add(receipt);
   } catch (_) {
     // 보상 서버 장애 때문에 완료된 가입·로그인을 실패로 표시하지 않습니다.
     // 다음 로그인 또는 앱 실행 시 같은 API로 안전하게 다시 확인합니다.

@@ -1,10 +1,17 @@
 import 'reward_event_claim.dart';
+import 'reward_event_notifications.dart';
 import '../network/api_client.dart';
 import 'token_store.dart';
 
 /// Restores a persisted session through the existing REST refresh endpoint.
 class SessionRestorer {
-  const SessionRestorer(this._tokenStore, this._apiClient);
+  const SessionRestorer(
+    this._tokenStore,
+    this._apiClient, {
+    this.rewardNotifications,
+  });
+
+  final RewardEventNotifications? rewardNotifications;
 
   final TokenStore _tokenStore;
   final ApiClient _apiClient;
@@ -14,7 +21,7 @@ class SessionRestorer {
     try {
       final refreshed = await _apiClient.refreshAccessToken();
       if (refreshed != null) {
-        await claimRewardEvents(_apiClient);
+        await claimRewardEvents(_apiClient, notifications: rewardNotifications);
         return true;
       }
     } catch (_) {

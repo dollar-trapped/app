@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../../../core/auth/reward_event_notifications.dart';
 import 'package:flutter/material.dart';
 
 /// Presentation only. Call after the server confirms the reward.
@@ -9,11 +10,17 @@ Future<void> showTicketReward(BuildContext context, {int? chipCost}) =>
     );
 
 class TicketRewardDialog extends StatelessWidget {
-  const TicketRewardDialog({super.key, this.chipCost});
+  const TicketRewardDialog({
+    super.key,
+    this.chipCost,
+    this.eventReward,
+  });
+  final RewardEventReceipt? eventReward;
   final int? chipCost;
 
   @override
   Widget build(BuildContext context) {
+    final ticketCount = eventReward?.amount ?? 1;
     const green = Color(0xFF008A29);
     final reduced = MediaQuery.disableAnimationsOf(context);
     return Dialog(
@@ -25,7 +32,11 @@ class TicketRewardDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              chipCost == null ? '광고 보상 도착!' : '달러칩 교환 완료!',
+              eventReward != null
+                      ? '이벤트 보상 도착!'
+                      : chipCost == null
+                      ? '광고 보상 도착!'
+                      : '달러칩 교환 완료!',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
@@ -109,24 +120,27 @@ class TicketRewardDialog extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.confirmation_number_outlined,
-                                      color: Colors.white,
-                                      size: 36,
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text(
-                                      '+1',
-                                      style: TextStyle(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.confirmation_number_outlined,
                                         color: Colors.white,
-                                        fontSize: 30,
-                                        fontWeight: FontWeight.w800,
+                                        size: 36,
                                       ),
-                                    ),
-                                  ],
+                                      SizedBox(width: 10),
+                                      Text(
+                                        '+$ticketCount',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -137,8 +151,8 @@ class TicketRewardDialog extends StatelessWidget {
                 },
               ),
             ),
-            const Text(
-              '뽑기권 1장 획득!',
+            Text(
+              '뽑기권 $ticketCount장 획득!',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
@@ -146,10 +160,21 @@ class TicketRewardDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+            if (eventReward != null) ...[
+              for (final event in eventReward!.events)
+                Text(
+                  '${event.name} · ${event.amount}장',
+                  textAlign: TextAlign.center,
+                ),
+              const SizedBox(height: 8),
+              Text('현재 보유 뽑기권 ${eventReward!.balance}장'),
+            ],
             Text(
-              chipCost == null
-                  ? '새로운 닉네임 장식을 만나보세요.'
-                  : '달러칩 $chipCost개가 뽑기권 1장으로 바뀌었어요.',
+              eventReward != null
+                      ? '지급된 뽑기권으로 닉네임 장식을 만나보세요.'
+                      : chipCost == null
+                      ? '새로운 닉네임 장식을 만나보세요.'
+                      : '달러칩 $chipCost개가 뽑기권 1장으로 바뀌었어요.',
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF667069), fontSize: 14),
             ),
@@ -158,13 +183,13 @@ class TicketRewardDialog extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: green,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('확인'),
-              ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: green,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('확인'),
+                  ),
             ),
           ],
         ),

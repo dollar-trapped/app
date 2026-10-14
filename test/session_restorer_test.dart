@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:dollar_trapped/core/auth/session_restorer.dart';
+import 'package:dollar_trapped/core/auth/reward_event_notifications.dart';
 import 'package:dollar_trapped/core/auth/token_store.dart';
 import 'package:dollar_trapped/core/network/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,28 @@ void main() {
     expect((await tokens.read())?.refreshToken, 'new-refresh');
   });
 
+  test(
+    'restored startup reward is buffered for the authenticated screen',
+    () async {
+      final tokens = _MemoryTokenStore(_tokens());
+      final notifications = RewardEventNotifications();
+      final adapter = _RefreshAdapter(statusCode: 200, grantedAmount: 2);
+      expect(
+        await SessionRestorer(
+          tokens,
+          _client(tokens, adapter),
+          rewardNotifications: notifications,
+        ).restore(),
+        isTrue,
+      );
+      final receipt = notifications.take();
+      expect(receipt?.amount, 2);
+      expect(receipt?.balance, 8);
+      expect(receipt?.events.single.name, '출석 보상');
+      expect(notifications.take(), isNull);
+    },
+  );
+
   test('reward outage does not invalidate restored login', () async {
     final tokens = _MemoryTokenStore(_tokens());
     final adapter = _RefreshAdapter(statusCode: 200, claimStatus: 503);
@@ -64,7 +87,12 @@ void main() {
 }
 
 ApiClient _client(TokenStore tokens, HttpClientAdapter adapter) {
-  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.example.test',
+      contentType: Headers.jsonContentType,
+    ),
+  );
   dio.httpClientAdapter = adapter;
   return ApiClient(tokens, dio: dio);
 }
@@ -92,10 +120,15 @@ class _MemoryTokenStore implements TokenStore {
 }
 
 class _RefreshAdapter implements HttpClientAdapter {
-  _RefreshAdapter({required this.statusCode, this.claimStatus = 200});
+  _RefreshAdapter({
+    required this.statusCode,
+    this.claimStatus = 200,
+    this.grantedAmount = 0,
+  });
 
   final int statusCode;
   final int claimStatus;
+  final int grantedAmount;
   int requestCount = 0;
   String? lastPath;
   Object? lastBody;
@@ -112,8 +145,34 @@ class _RefreshAdapter implements HttpClientAdapter {
       claimAuth = options.headers['Authorization'] as String?;
       expect(options.method, 'POST');
       expect(options.data, isNull);
+      expect(options.queryParameters, isEmpty);
+      expect(options.uri.query, isEmpty);
+      final bodyBytes =
+          await requestStream?.fold<int>(
+            0,
+            (size, chunk) => size + chunk.length,
+          ) ??
+          0;
+      expect(
+        bodyBytes,
+        0,
+        reason: 'claims must not send JSON {}, text, or any other body',
+      );
       return ResponseBody.fromString(
-        '{"grantedAmount":0}',
+        jsonEncode({
+          'grantedAmount': grantedAmount,
+          'drawEntitlementBalance': 8,
+          'events': grantedAmount == 0
+              ? []
+              : [
+                  {
+                    'eventId': 'daily',
+                    'name': '출석 보상',
+                    'outcome': 'GRANTED',
+                    'amount': grantedAmount,
+                  },
+                ],
+        }),
         claimStatus,
         headers: {
           Headers.contentTypeHeader: [Headers.jsonContentType],
