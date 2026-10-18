@@ -3,19 +3,21 @@ import 'package:flutter/material.dart';
 /// Launch-event reward schedule. UI only; the server owns attendance and grants.
 const launchAttendanceRewards = [1, 1, 2, 2, 3, 3, 8];
 
-/// Presentation snapshot. A future server adapter supplies these values.
+/// Presentation snapshot supplied by the server adapter or offline preview.
 class AttendanceViewData {
   const AttendanceViewData({
     required this.completedCount,
     this.checking = false,
     this.todayCompleted = false,
     this.newReward,
+    this.rewards = launchAttendanceRewards,
   }) : assert(completedCount >= 0 && completedCount <= 7);
 
   final int completedCount;
   final bool checking;
   final bool todayCompleted;
   final int? newReward;
+  final List<int> rewards;
   bool get complete => completedCount == 7;
 }
 
@@ -268,7 +270,7 @@ class AttendanceEventDialog extends StatelessWidget {
     final color = gold ? const Color(0xFFAC7215) : green;
     return Semantics(
       label:
-          '누적 ${index + 1}회차, 뽑기권 ${launchAttendanceRewards[index]}장, ${done ? '수령 완료' : '미수령'}',
+          '누적 ${index + 1}회차, 뽑기권 ${data.rewards[index]}장, ${done ? '수령 완료' : '미수령'}',
       child: ExcludeSemantics(
         child: AnimatedContainer(
           duration: MediaQuery.disableAnimationsOf(context)
@@ -354,7 +356,7 @@ class AttendanceEventDialog extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                '${launchAttendanceRewards[index]}장',
+                '${data.rewards[index]}장',
                 style: TextStyle(
                   color: color,
                   fontSize: 19,

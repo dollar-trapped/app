@@ -7,6 +7,7 @@ import '../../../core/auth/token_store.dart';
 import '../../../core/network/api_client.dart';
 import 'api_models.dart';
 import '../../rewards/data/reward_grant_notices.dart';
+import '../../attendance/data/launch_attendance.dart';
 import 'dollar_repository.dart';
 
 const _unset = Object();
@@ -17,6 +18,7 @@ class DollarApi implements DollarRepository {
     TokenStore? tokenStore,
     RewardEventNotifications? rewardNotifications,
     RewardGrantNotices? grantNotices,
+    LaunchAttendance? attendance,
   }) {
     final tokens = tokenStore ?? SecureTokenStore();
     return DollarApi.withDependencies(
@@ -24,6 +26,7 @@ class DollarApi implements DollarRepository {
       tokens,
       rewardNotifications: rewardNotifications,
       grantNotices: grantNotices,
+      attendance: attendance,
     );
   }
 
@@ -32,10 +35,12 @@ class DollarApi implements DollarRepository {
     this._tokens, {
     this.rewardNotifications,
     this.grantNotices,
+    this.attendance,
   });
 
   final RewardEventNotifications? rewardNotifications;
   final RewardGrantNotices? grantNotices;
+  final LaunchAttendance? attendance;
 
   final ApiClient _client;
   final TokenStore _tokens;
@@ -103,6 +108,7 @@ class DollarApi implements DollarRepository {
   Future<AuthSession> _auth(String path, Map<String, String> body) async {
     rewardNotifications?.clear();
     grantNotices?.reset();
+    attendance?.reset();
     final response = await _client.post<Map<String, dynamic>>(
       path,
       data: body,
@@ -118,12 +124,14 @@ class DollarApi implements DollarRepository {
       ),
     );
     grantNotices?.activate();
+    attendance?.activate();
     await claimRewardEvents(_client, notifications: rewardNotifications);
     return session;
   }
 
   @override
   Future<void> logOut() async {
+    attendance?.reset();
     rewardNotifications?.clear();
     grantNotices?.reset();
     final tokens = await _tokens.read();
@@ -176,6 +184,7 @@ class DollarApi implements DollarRepository {
       '/users/me/deletion',
       data: {'password': password},
     );
+    attendance?.reset();
     await _tokens.clear();
   }
 

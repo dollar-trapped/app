@@ -1,4 +1,6 @@
 import '../../legal/consent_gate.dart';
+import '../../attendance/data/launch_attendance.dart';
+import '../../attendance/widgets/launch_attendance_listener.dart';
 import '../../rewards/data/reward_grant_notices.dart';
 import '../../rewards/widgets/reward_grant_notice_listener.dart';
 import '../../../core/auth/reward_event_notifications.dart';
@@ -89,8 +91,12 @@ class _UsdKrwPageState extends State<UsdKrwPage> {
     final withGrants = grants == null
         ? content
         : RewardGrantNoticeListener(notices: grants, child: content);
+    final attendance = context.read<LaunchAttendance?>();
+    final withAttendance = attendance == null
+        ? withGrants
+        : LaunchAttendanceListener(attendance: attendance, child: withGrants);
     return widget.checkConsent
-        ? ConsentGate(repository: repository, child: withGrants)
-        : withGrants;
+        ? ConsentGate(repository: repository, child: withAttendance)
+        : withAttendance;
   }
 }

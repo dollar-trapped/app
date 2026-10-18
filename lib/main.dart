@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'features/attendance/data/launch_attendance.dart';
 import 'features/rewards/data/reward_grant_notices.dart';
 import 'core/ads/mobile_ads_service.dart';
 import 'core/auth/session_restorer.dart';
@@ -37,6 +38,7 @@ Future<void> main() async {
   final tokenStore = RememberingTokenStore(SecureTokenStore());
   final apiClient = ApiClient(tokenStore);
   final grantNotices = RewardGrantNotices(apiClient);
+  final attendance = LaunchAttendance(apiClient);
   final rewardNotifications = RewardEventNotifications();
   final repository = const bool.fromEnvironment('USE_MOCK_REPOSITORY')
       ? MockDollarRepository()
@@ -45,6 +47,7 @@ Future<void> main() async {
           tokenStore,
           rewardNotifications: rewardNotifications,
           grantNotices: grantNotices,
+          attendance: attendance,
         );
   final initiallyAuthenticated = await SessionRestorer(
     tokenStore,
@@ -54,6 +57,7 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<LaunchAttendance>.value(value: attendance),
         ChangeNotifierProvider<RewardGrantNotices>.value(value: grantNotices),
         ChangeNotifierProvider<RewardEventNotifications>.value(
           value: rewardNotifications,
