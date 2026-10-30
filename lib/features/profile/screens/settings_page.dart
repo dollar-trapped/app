@@ -232,7 +232,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '달러물림 · v1.0.0',
+                        '달러물림 · v1.0.7',
                         style: AppColors.of(context).caption,
                       ),
                     ],
