@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dollar_trapped/core/moderation/moderation_status.dart';
 import 'package:dollar_trapped/core/network/api_exception.dart';
 import 'package:dollar_trapped/features/chat/screens/usd_room_page.dart';
+import 'package:dollar_trapped/features/chat/widgets/chat_guidelines.dart';
 import 'package:dollar_trapped/features/auth/screens/login_page.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 import 'package:dollar_trapped/features/shared/data/mock_dollar_repository.dart';
@@ -45,7 +46,11 @@ class _SuspendedRepo extends MockDollarRepository {
 }
 
 void main() {
-  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
+  setUp(
+    () => FlutterSecureStorage.setMockInitialValues({
+      ChatGuidelinesStore.storageKey: 'true',
+    }),
+  );
   testWidgets('chat ban blocks input and reactivation refresh removes it', (
     tester,
   ) async {

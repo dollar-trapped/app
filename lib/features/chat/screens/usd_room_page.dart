@@ -1,3 +1,5 @@
+import '../widgets/chat_guidelines.dart';
+import '../widgets/chat_guidelines_listener.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../../core/moderation/moderation_status.dart';
 import '../../../core/moderation/moderation_dialog.dart';
@@ -63,6 +65,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   final _shownNotices = <String>{};
   Timer? _moderationPoll, _banExpiry;
   bool _checkingModeration = false;
+  bool _initialModerationChecked = false;
   bool get _chatRestricted => _restriction?.blocksChat == true;
 
   Future<void> _applyNotice(ModerationNotice notice) async {
@@ -117,6 +120,9 @@ class _UsdRoomPageState extends State<UsdRoomPage>
       // Keep any known restriction until the server confirms its removal.
     } finally {
       _checkingModeration = false;
+      if (mounted && !_initialModerationChecked) {
+        setState(() => _initialModerationChecked = true);
+      }
     }
   }
 
@@ -422,167 +428,193 @@ class _UsdRoomPageState extends State<UsdRoomPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 85,
-                    height: 32,
-                    child: SvgPicture.asset(
-                      'assets/images/dollar_wordmark.svg',
-                      colorFilter: ColorFilter.mode(
-                        AppColors.of(context).ink,
-                        BlendMode.srcIn,
-                      ),
+    return ChatGuidelinesListener(
+      enabled: widget.isActive && _initialModerationChecked,
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 85,
+                          height: 32,
+                          child: SvgPicture.asset(
+                            'assets/images/dollar_wordmark.svg',
+                            colorFilter: ColorFilter.mode(
+                              AppColors.of(context).ink,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        PopupMenuButton<String>(
+                          tooltip: '채팅방 메뉴',
+                          icon: const Icon(Icons.more_horiz_rounded),
+                          onSelected: (_) =>
+                              unawaited(showChatGuidelines(context)),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'guidelines',
+                              child: Text('채팅 이용 안내'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'USD방',
+                          style: TextStyle(
+                            color: AppColors.of(context).ink,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            height: 32 / 24,
+                          ),
+                        ),
+                        Text(
+                          _socketStatusLabel,
+                          style: TextStyle(
+                            color:
+                                _socketState == DollarSocketState.authenticated
+                                ? AppColors.of(context).action
+                                : AppColors.of(context).muted,
+                            fontSize: 12,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshRoom,
+                  child: MessageList(
+                    future: _messagesFuture,
+                    realtimeMessages: _realtimeMessages,
+                    blockedUserIds: _blockedUserIds,
+                    hiddenMessageIds: _hiddenMessageIds,
+                    currentUserId: _currentUserId,
+                    scrollController: _messageScrollController,
+                    onRetry: _reloadMessages,
+                    onModerate: _moderateMessage,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'USD방',
+                ),
+              ),
+              if (_restriction != null)
+                MaterialBanner(
+                  content: Text(
+                    '${_restriction!.title}\n${_restriction!.period}',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () =>
+                          showModerationDialog(context, _restriction!),
+                      child: const Text('자세히'),
+                    ),
+                  ],
+                ),
+              InkWell(
+                onTap: widget.onRateBarTap,
+                child: RateBar(rateFuture: _rateFuture),
+              ),
+              Container(
+                height: 76,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        enabled: !_chatRestricted,
+                        onChanged: (_) => setState(() {}),
                         style: TextStyle(
                           color: AppColors.of(context).ink,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          height: 32 / 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        _socketStatusLabel,
-                        style: TextStyle(
-                          color: _socketState == DollarSocketState.authenticated
-                              ? AppColors.of(context).action
-                              : AppColors.of(context).muted,
-                          fontSize: 12,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshRoom,
-                child: MessageList(
-                  future: _messagesFuture,
-                  realtimeMessages: _realtimeMessages,
-                  blockedUserIds: _blockedUserIds,
-                  hiddenMessageIds: _hiddenMessageIds,
-                  currentUserId: _currentUserId,
-                  scrollController: _messageScrollController,
-                  onRetry: _reloadMessages,
-                  onModerate: _moderateMessage,
-                ),
-              ),
-            ),
-            if (_restriction != null)
-              MaterialBanner(
-                content: Text(
-                  '${_restriction!.title}\n${_restriction!.period}',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () =>
-                        showModerationDialog(context, _restriction!),
-                    child: const Text('자세히'),
-                  ),
-                ],
-              ),
-            InkWell(
-              onTap: widget.onRateBarTap,
-              child: RateBar(rateFuture: _rateFuture),
-            ),
-            Container(
-              height: 76,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      enabled: !_chatRestricted,
-                      onChanged: (_) => setState(() {}),
-                      style: TextStyle(
-                        color: AppColors.of(context).ink,
-                        fontSize: 15,
-                        height: 1.6,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: _chatRestricted
-                            ? '채팅 이용이 제한되었습니다'
-                            : '메시지를 입력하세요',
-                        hintStyle: TextStyle(
-                          color: AppColors.of(context).muted,
                           fontSize: 15,
                           height: 1.6,
                         ),
-                        filled: true,
-                        fillColor: AppColors.of(context).surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 44,
-                    height: 44,
-                    child: ElevatedButton(
-                      key: const Key('chat-send'),
-                      onPressed:
-                          _chatRestricted ||
-                              _messageController.text.trim().isEmpty
-                          ? null
-                          : _sendMessage,
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        padding: EdgeInsets.zero,
-                        backgroundColor: AppColors.of(context).action,
-                        disabledBackgroundColor: AppColors.of(context).line,
-                        foregroundColor: AppColors.of(context).onAction,
-                        disabledForegroundColor: AppColors.of(context).muted,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        '↑',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
+                        decoration: InputDecoration(
+                          hintText: _chatRestricted
+                              ? '채팅 이용이 제한되었습니다'
+                              : '메시지를 입력하세요',
+                          hintStyle: TextStyle(
+                            color: AppColors.of(context).muted,
+                            fontSize: 15,
+                            height: 1.6,
+                          ),
+                          filled: true,
+                          fillColor: AppColors.of(context).surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: ElevatedButton(
+                        key: const Key('chat-send'),
+                        onPressed:
+                            _chatRestricted ||
+                                _messageController.text.trim().isEmpty
+                            ? null
+                            : _sendMessage,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: EdgeInsets.zero,
+                          backgroundColor: AppColors.of(context).action,
+                          disabledBackgroundColor: AppColors.of(context).line,
+                          foregroundColor: AppColors.of(context).onAction,
+                          disabledForegroundColor: AppColors.of(context).muted,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '↑',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
