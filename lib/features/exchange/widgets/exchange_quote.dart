@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 
@@ -20,10 +21,10 @@ class ExchangeQuote extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '미국 달러 / 대한민국 원',
               style: TextStyle(
-                color: Color(0xFF667069),
+                color: AppColors.of(context).muted,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 height: 20 / 13,
@@ -41,8 +42,8 @@ class ExchangeQuote extends StatelessWidget {
             else if (rate != null) ...[
               Text(
                 '${_formatRate(rate.rate)}원',
-                style: const TextStyle(
-                  color: Color(0xFF151916),
+                style: TextStyle(
+                  color: AppColors.of(context).ink,
                   fontSize: 36,
                   fontWeight: FontWeight.w700,
                   height: 46 / 36,
@@ -51,8 +52,8 @@ class ExchangeQuote extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 rate.isStale ? '마지막으로 확인된 환율' : '실시간 환율',
-                style: const TextStyle(
-                  color: Color(0xFF008A29),
+                style: TextStyle(
+                  color: AppColors.of(context).action,
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   height: 20 / 13,
@@ -61,16 +62,19 @@ class ExchangeQuote extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '${_formatDate(rate.asOf)} 한국 시간 기준 · ${rate.source}',
-                style: const TextStyle(
-                  color: Color(0xFF667069),
+                style: TextStyle(
+                  color: AppColors.of(context).muted,
                   fontSize: 12,
                   height: 1.5,
                 ),
               ),
             ] else ...[
-              const Text(
+              Text(
                 '환율을 불러오지 못했어요.',
-                style: TextStyle(color: Color(0xFF151916), fontSize: 18),
+                style: TextStyle(
+                  color: AppColors.of(context).ink,
+                  fontSize: 18,
+                ),
               ),
               TextButton(onPressed: onRetry, child: const Text('다시 시도')),
             ],

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../rendering/effect_registry.dart';
 import '../rendering/cosmetic_motion.dart';
 import '../rendering/effects/gradient_effect.dart';
@@ -117,7 +118,10 @@ class ServerCosmeticNickname extends StatelessWidget {
           : textEffect.solid ??
                 (darkBackground
                     ? Colors.white
-                    : defaultTextColor ?? const Color(0xFF151916)),
+                    : defaultTextColor ??
+                          (bgColors != null
+                              ? AppColors.light.ink
+                              : AppColors.of(context).ink)),
       fontFamily: basic
           ? 'Noto Sans KR'
           : CosmeticEffectRegistry.font(font?.appearance['nameFont']),
@@ -249,18 +253,18 @@ class ServerCosmeticPreview extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: const Color(0xFFF5F7F5),
+      color: AppColors.of(context).surface,
       borderRadius: BorderRadius.circular(16),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '채팅 미리보기',
           style: TextStyle(
             fontSize: 12,
             height: 1.5,
-            color: Color(0xFF667069),
+            color: AppColors.of(context).muted,
             fontWeight: FontWeight.w400,
           ),
         ),

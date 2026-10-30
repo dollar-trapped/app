@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../widgets/profile_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
@@ -79,27 +80,28 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
           return ListView.separated(
             padding: const EdgeInsets.all(24),
             itemCount: users.length,
-            separatorBuilder: (_, _) => const Divider(color: Color(0xFFE1E6E2)),
+            separatorBuilder: (_, _) =>
+                Divider(color: AppColors.of(context).line),
             itemBuilder: (context, index) {
               final user = users[index];
               final isUnblocking = _unblockingUserId == user.userId;
               return ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const CircleAvatar(
-                  backgroundColor: ProfileStyle.soft,
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.of(context).soft,
                   child: Icon(
                     Icons.person_off_outlined,
-                    color: ProfileStyle.forest,
+                    color: AppColors.of(context).forest,
                   ),
                 ),
                 title: Text(user.nickname),
-                subtitle: const Text(
+                subtitle: Text(
                   '이 사용자의 채팅을 숨기고 있어요.',
-                  style: ProfileStyle.caption,
+                  style: AppColors.of(context).caption,
                 ),
                 trailing: TextButton(
                   style: TextButton.styleFrom(
-                    foregroundColor: ProfileStyle.action,
+                    foregroundColor: AppColors.of(context).action,
                   ),
                   onPressed: _unblockingUserId != null
                       ? null

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/auth_button.dart';
 import '../../legal/consent_versions.dart';
@@ -20,9 +21,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  static const _muted = Color(0xFF667069);
-  static const _surface = Color(0xFFF5F7F5);
-  static const _action = Color(0xFF008A29);
   static const _minimumPasswordLength = 10;
 
   final _emailController = TextEditingController();
@@ -271,8 +269,8 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Widget _actionButton(String label, VoidCallback action) => AuthButton(
     label: label,
-    color: _action,
-    foreground: Colors.white,
+    color: AppColors.of(context).action,
+    foreground: AppColors.of(context).onAction,
     onPressed: _busy ? null : action,
   );
 
@@ -280,8 +278,8 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_errorMessage != null) ...[
       Text(
         _errorMessage!,
-        style: const TextStyle(
-          color: Color(0xFFB3261E),
+        style: TextStyle(
+          color: AppColors.of(context).error,
           fontSize: 13,
           height: 1.5,
         ),
@@ -314,15 +312,15 @@ class _SignUpPageState extends State<SignUpPage> {
         const SizedBox(height: 24),
         Text(
           '${_step + 1} / 5 · ${_stepLabels[_step]}',
-          style: const TextStyle(color: _muted, fontSize: 13),
+          style: TextStyle(color: AppColors.of(context).muted, fontSize: 13),
         ),
         const SizedBox(height: 12),
         Semantics(
           label: '회원가입 5단계 중 ${_step + 1}단계',
           child: LinearProgressIndicator(
             value: (_step + 1) / 5,
-            color: _action,
-            backgroundColor: _surface,
+            color: AppColors.of(context).action,
+            backgroundColor: AppColors.of(context).surface,
             borderRadius: BorderRadius.circular(4),
             minHeight: 4,
           ),
@@ -350,12 +348,19 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     ),
     const SizedBox(height: 12),
-    Text(switch (_step) {
-      0 => '로그인과 이메일 인증에 사용할 주소예요.',
-      1 => '계정을 안전하게 보호할 비밀번호를 입력해주세요.',
-      2 => '다른 이용자에게 표시되는 이름이에요.',
-      _ => '내용을 읽고 필수 항목에 동의해주세요.',
-    }, style: const TextStyle(color: _muted, fontSize: 15, height: 1.6)),
+    Text(
+      switch (_step) {
+        0 => '로그인과 이메일 인증에 사용할 주소예요.',
+        1 => '계정을 안전하게 보호할 비밀번호를 입력해주세요.',
+        2 => '다른 이용자에게 표시되는 이름이에요.',
+        _ => '내용을 읽고 필수 항목에 동의해주세요.',
+      },
+      style: TextStyle(
+        color: AppColors.of(context).muted,
+        fontSize: 15,
+        height: 1.6,
+      ),
+    ),
     const SizedBox(height: 32),
     if (_step == 0)
       SignUpField(
@@ -388,7 +393,7 @@ class _SignUpPageState extends State<SignUpPage> {
         suffixIcon: TextButton(
           onPressed: () => setState(() => _showPassword = !_showPassword),
           style: TextButton.styleFrom(
-            foregroundColor: _muted,
+            foregroundColor: AppColors.of(context).muted,
             minimumSize: const Size(44, 44),
           ),
           child: Text(
@@ -446,13 +451,13 @@ class _SignUpPageState extends State<SignUpPage> {
       height: 64,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF7EE),
+        color: AppColors.of(context).soft,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: const Text(
+      child: Text(
         '@',
         style: TextStyle(
-          color: _action,
+          color: AppColors.of(context).action,
           fontSize: 36,
           fontWeight: FontWeight.w700,
           height: 46 / 36,
@@ -469,16 +474,20 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     ),
     const SizedBox(height: 24),
-    const Text(
+    Text(
       '아래 주소로 받은 인증 코드를 입력해주세요.\n인증이 완료되면 회원가입을 마무리합니다.',
-      style: TextStyle(color: _muted, fontSize: 15, height: 1.6),
+      style: TextStyle(
+        color: AppColors.of(context).muted,
+        fontSize: 15,
+        height: 1.6,
+      ),
     ),
     const SizedBox(height: 24),
     Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _surface,
+        color: AppColors.of(context).surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -493,9 +502,13 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '메일이 없다면 스팸함도 확인해주세요.',
-            style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
+            style: TextStyle(
+              color: AppColors.of(context).muted,
+              fontSize: 12,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -515,7 +528,7 @@ class _SignUpPageState extends State<SignUpPage> {
       onPressed: _busy ? null : _requestVerification,
       style: TextButton.styleFrom(
         padding: EdgeInsets.zero,
-        foregroundColor: _action,
+        foregroundColor: AppColors.of(context).action,
         minimumSize: const Size(0, 44),
         alignment: Alignment.centerLeft,
       ),
@@ -535,9 +548,13 @@ class _SignUpPageState extends State<SignUpPage> {
       _completeVerification,
     ),
     const SizedBox(height: 12),
-    const Text(
+    Text(
       '인증 확인 후 USD방으로 이동해요.',
-      style: TextStyle(color: _muted, fontSize: 12, height: 1.5),
+      style: TextStyle(
+        color: AppColors.of(context).muted,
+        fontSize: 12,
+        height: 1.5,
+      ),
     ),
     const SizedBox(height: 24),
   ];

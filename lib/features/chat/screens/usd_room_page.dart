@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../../core/moderation/moderation_status.dart';
 import '../../../core/moderation/moderation_dialog.dart';
 import '../widgets/report_message_dialog.dart';
@@ -40,12 +41,6 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     with AutomaticKeepAliveClientMixin<UsdRoomPage>, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
-
-  static const _ink = Color(0xFF151916);
-  static const _muted = Color(0xFF667069);
-  static const _surface = Color(0xFFF5F7F5);
-  static const _line = Color(0xFFE1E6E2);
-  static const _action = Color(0xFF008A29);
 
   final _messageController = TextEditingController();
   final _messageScrollController = ScrollController();
@@ -292,7 +287,7 @@ class _UsdRoomPageState extends State<UsdRoomPage>
     FocusManager.instance.primaryFocus?.unfocus();
     final action = await showModalBottomSheet<MessageAction>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       showDragHandle: true,
       isScrollControlled: true,
       constraints: BoxConstraints(
@@ -441,6 +436,10 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                     height: 32,
                     child: SvgPicture.asset(
                       'assets/images/dollar_wordmark.svg',
+                      colorFilter: ColorFilter.mode(
+                        AppColors.of(context).ink,
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -449,19 +448,19 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                       Text(
                         'USD방',
                         style: TextStyle(
-                          color: _ink,
+                          color: AppColors.of(context).ink,
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           height: 32 / 24,
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Text(
                         _socketStatusLabel,
                         style: TextStyle(
                           color: _socketState == DollarSocketState.authenticated
-                              ? _action
-                              : _muted,
+                              ? AppColors.of(context).action
+                              : AppColors.of(context).muted,
                           fontSize: 12,
                           height: 1.5,
                         ),
@@ -513,8 +512,8 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                       controller: _messageController,
                       enabled: !_chatRestricted,
                       onChanged: (_) => setState(() {}),
-                      style: const TextStyle(
-                        color: _ink,
+                      style: TextStyle(
+                        color: AppColors.of(context).ink,
                         fontSize: 15,
                         height: 1.6,
                       ),
@@ -522,13 +521,13 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                         hintText: _chatRestricted
                             ? '채팅 이용이 제한되었습니다'
                             : '메시지를 입력하세요',
-                        hintStyle: const TextStyle(
-                          color: _muted,
+                        hintStyle: TextStyle(
+                          color: AppColors.of(context).muted,
                           fontSize: 15,
                           height: 1.6,
                         ),
                         filled: true,
-                        fillColor: _surface,
+                        fillColor: AppColors.of(context).surface,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 12,
@@ -562,10 +561,10 @@ class _UsdRoomPageState extends State<UsdRoomPage>
                       style: ElevatedButton.styleFrom(
                         elevation: 0,
                         padding: EdgeInsets.zero,
-                        backgroundColor: _action,
-                        disabledBackgroundColor: _line,
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: _muted,
+                        backgroundColor: AppColors.of(context).action,
+                        disabledBackgroundColor: AppColors.of(context).line,
+                        foregroundColor: AppColors.of(context).onAction,
+                        disabledForegroundColor: AppColors.of(context).muted,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

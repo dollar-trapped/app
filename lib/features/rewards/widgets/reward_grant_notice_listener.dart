@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -162,7 +163,7 @@ class _GrantDialogState extends State<_GrantDialog> {
           : Text(
               _error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFFB3261E)),
+              style: TextStyle(color: AppColors.of(context).error),
             ),
       confirmationAction: FilledButton(
         onPressed: _busy ? null : _confirm,

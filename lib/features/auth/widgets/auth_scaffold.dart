@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Shared Figma auth shell. The OS owns safe-area sizes; short screens scroll.
@@ -17,12 +18,12 @@ class AuthScaffold extends StatelessWidget {
     data: Theme.of(context).copyWith(
       textTheme: Theme.of(context).textTheme.apply(
         fontFamily: 'Noto Sans KR',
-        bodyColor: const Color(0xFF151916),
-        displayColor: const Color(0xFF151916),
+        bodyColor: AppColors.of(context).ink,
+        displayColor: AppColors.of(context).ink,
       ),
     ),
     child: Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       body: SafeArea(
         child: Column(
           children: [
@@ -38,7 +39,7 @@ class AuthScaffold extends StatelessWidget {
                       onPressed: onBack,
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        foregroundColor: const Color(0xFF151916),
+                        foregroundColor: AppColors.of(context).ink,
                       ),
                       child: const Text(
                         '‹',

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../shared/data/api_models.dart';
 
@@ -5,14 +6,13 @@ class RateBar extends StatelessWidget {
   const RateBar({super.key, required this.rateFuture});
 
   final Future<ExchangeRate> rateFuture;
-  static const _muted = Color(0xFF667069);
 
   @override
   Widget build(BuildContext context) => Container(
     constraints: const BoxConstraints(minHeight: 88),
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-    decoration: const BoxDecoration(
-      border: Border(top: BorderSide(color: Color(0xFFE1E6E2))),
+    decoration: BoxDecoration(
+      border: Border(top: BorderSide(color: AppColors.of(context).line)),
     ),
     child: FutureBuilder<ExchangeRate>(
       future: rateFuture,
@@ -34,10 +34,10 @@ class RateBar extends StatelessWidget {
         final falling = difference != null && difference < 0;
         final rising = difference != null && difference > 0;
         final comparisonColor = falling
-            ? const Color(0xFF2464C4)
+            ? AppColors.of(context).marketFall
             : rising
-            ? const Color(0xFFD63B3B)
-            : _muted;
+            ? AppColors.of(context).marketRise
+            : AppColors.of(context).muted;
         final subtitle = snapshot.hasError
             ? '환율을 불러오지 못했어요'
             : rate == null
@@ -61,10 +61,10 @@ class RateBar extends StatelessWidget {
                     spacing: 12,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'USD/KRW',
                         style: TextStyle(
-                          color: _muted,
+                          color: AppColors.of(context).muted,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
@@ -73,8 +73,8 @@ class RateBar extends StatelessWidget {
                         value == null || !value.isFinite
                             ? '—'
                             : '${_format(value)}원',
-                        style: const TextStyle(
-                          color: Color(0xFF151916),
+                        style: TextStyle(
+                          color: AppColors.of(context).ink,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -96,7 +96,13 @@ class RateBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Text('›', style: TextStyle(color: _muted, fontSize: 32)),
+            Text(
+              '›',
+              style: TextStyle(
+                color: AppColors.of(context).muted,
+                fontSize: 32,
+              ),
+            ),
           ],
         );
       },

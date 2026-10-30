@@ -1,5 +1,5 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../../profile/widgets/profile_layout.dart';
 
 enum MessageAction { hide, block, report }
 
@@ -15,17 +15,17 @@ class MessageActionsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             '메시지 관리',
             style: TextStyle(
               fontFamily: 'Noto Sans KR',
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: ProfileStyle.ink,
+              color: AppColors.of(context).ink,
             ),
           ),
           const SizedBox(height: 8),
-          const Text('이 메시지를 어떻게 할까요?', style: ProfileStyle.caption),
+          Text('이 메시지를 어떻게 할까요?', style: AppColors.of(context).caption),
           const SizedBox(height: 20),
           _action(
             context,
@@ -55,9 +55,9 @@ class MessageActionsSheet extends StatelessWidget {
           OutlinedButton(
             onPressed: () => Navigator.of(context).pop(),
             style: OutlinedButton.styleFrom(
-              foregroundColor: ProfileStyle.ink,
+              foregroundColor: AppColors.of(context).ink,
               minimumSize: const Size.fromHeight(48),
-              side: const BorderSide(color: Color(0xFFE1E6E2)),
+              side: BorderSide(color: AppColors.of(context).line),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -77,9 +77,11 @@ class MessageActionsSheet extends StatelessWidget {
     String subtitle, {
     bool destructive = false,
   }) {
-    final color = destructive ? const Color(0xFFB3261E) : ProfileStyle.forest;
+    final color = destructive
+        ? AppColors.of(context).error
+        : AppColors.of(context).forest;
     return Material(
-      color: const Color(0xFFF5F7F5),
+      color: AppColors.of(context).surface,
       borderRadius: BorderRadius.circular(12),
       clipBehavior: Clip.antiAlias,
       child: ListTile(
@@ -87,7 +89,9 @@ class MessageActionsSheet extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: destructive ? const Color(0xFFFCEDEA) : ProfileStyle.soft,
+            color: destructive
+                ? AppColors.of(context).errorSurface
+                : AppColors.of(context).soft,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: color, size: 22),
@@ -100,7 +104,7 @@ class MessageActionsSheet extends StatelessWidget {
             color: color,
           ),
         ),
-        subtitle: Text(subtitle, style: ProfileStyle.caption),
+        subtitle: Text(subtitle, style: AppColors.of(context).caption),
         onTap: () => Navigator.of(context).pop(action),
       ),
     );

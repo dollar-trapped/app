@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../profile/widgets/profile_layout.dart';
 import '../../shared/widgets/cosmetic_layout.dart';
@@ -24,27 +25,30 @@ class CosmeticResultPage extends StatelessWidget {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               '새로운 아이템 · 샘플',
               style: TextStyle(
                 fontSize: 13,
                 height: 20 / 13,
-                color: ProfileStyle.action,
+                color: AppColors.of(context).action,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 24),
-            const Text('새로운 취향을\n뽑았어요.', style: ProfileStyle.title),
+            Text('새로운 취향을\n뽑았어요.', style: AppColors.of(context).title),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F7F5),
+                color: AppColors.of(context).surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 children: [
-                  const Text('글자색 · NAME COLOR', style: ProfileStyle.caption),
+                  Text(
+                    '글자색 · NAME COLOR',
+                    style: AppColors.of(context).caption,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     nickname,
@@ -66,12 +70,12 @@ class CosmeticResultPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     '은은하게, 존재감 있게.',
                     style: TextStyle(
                       fontSize: 15,
                       height: 24 / 15,
-                      color: ProfileStyle.muted,
+                      color: AppColors.of(context).muted,
                     ),
                   ),
                 ],
@@ -83,9 +87,9 @@ class CosmeticResultPage extends StatelessWidget {
               selection: const CosmeticSelection(color: 4),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               '뽑기 결과 디자인을 확인하는 샘플이에요.\n실제 아이템은 지급되거나 보관되지 않아요.',
-              style: ProfileStyle.caption,
+              style: AppColors.of(context).caption,
             ),
           ],
         ),

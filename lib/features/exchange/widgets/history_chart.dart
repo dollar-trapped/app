@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
 
@@ -60,11 +61,14 @@ class HistoryChartSection extends StatelessWidget {
               points: points,
             ),
             if (points.length == 1)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 12),
                 child: Text(
                   '데이터가 한 건만 있어요.',
-                  style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.of(context).muted,
+                    fontSize: 12,
+                  ),
                 ),
               ),
           ],
@@ -149,8 +153,8 @@ class _InteractiveHistoryChartState extends State<_InteractiveHistoryChart> {
               key: const Key('exchange-rate-chart-readout'),
               style: TextStyle(
                 color: description == null
-                    ? const Color(0xFF667069)
-                    : const Color(0xFF151916),
+                    ? AppColors.of(context).muted
+                    : AppColors.of(context).ink,
                 fontSize: 13,
                 height: 1.5,
                 fontWeight: description == null
@@ -195,6 +199,7 @@ class _InteractiveHistoryChartState extends State<_InteractiveHistoryChart> {
                   painter: _HistoryChartPainter(
                     widget.points,
                     selected: _selected,
+                    colors: AppColors.of(context),
                   ),
                 ),
               ),
@@ -239,10 +244,15 @@ class _ChartGeometry {
 }
 
 class _HistoryChartPainter extends CustomPainter {
-  const _HistoryChartPainter(this.points, {this.selected});
+  const _HistoryChartPainter(
+    this.points, {
+    this.selected,
+    required this.colors,
+  });
 
   final List<_ChartPoint> points;
   final int? selected;
+  final AppColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -250,7 +260,7 @@ class _HistoryChartPainter extends CustomPainter {
     final chart = geometry.chart;
     final offsetFor = geometry.offsetFor;
     final gridPaint = Paint()
-      ..color = const Color(0xFFE1E6E2)
+      ..color = colors.line
       ..strokeWidth = 1;
     for (var index = 0; index <= 4; index += 1) {
       final y = chart.top + chart.height * index / 4;
@@ -258,7 +268,7 @@ class _HistoryChartPainter extends CustomPainter {
     }
 
     final linePaint = Paint()
-      ..color = const Color(0xFF008A29)
+      ..color = colors.action
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     if (points.length == 1) {
@@ -266,7 +276,7 @@ class _HistoryChartPainter extends CustomPainter {
       canvas.drawCircle(
         offsetFor(points.single),
         4,
-        Paint()..color = const Color(0xFF008A29),
+        Paint()..color = colors.action,
       );
       _paintSelection(canvas, chart, offsetFor);
       return;
@@ -281,7 +291,7 @@ class _HistoryChartPainter extends CustomPainter {
     canvas.drawCircle(
       offsetFor(points.last),
       4,
-      Paint()..color = const Color(0xFF008A29),
+      Paint()..color = colors.action,
     );
     _paintSelection(canvas, chart, offsetFor);
   }
@@ -297,15 +307,16 @@ class _HistoryChartPainter extends CustomPainter {
       Offset(offset.dx, chart.top),
       Offset(offset.dx, chart.bottom),
       Paint()
-        ..color = const Color(0xFF667069)
+        ..color = colors.muted
         ..strokeWidth = 1,
     );
-    canvas.drawCircle(offset, 7, Paint()..color = Colors.white);
-    canvas.drawCircle(offset, 5, Paint()..color = const Color(0xFF008A29));
+    canvas.drawCircle(offset, 7, Paint()..color = colors.background);
+    canvas.drawCircle(offset, 5, Paint()..color = colors.action);
   }
 
   @override
   bool shouldRepaint(_HistoryChartPainter oldDelegate) {
+    if (colors != oldDelegate.colors) return true;
     if (selected != oldDelegate.selected) return true;
     if (identical(points, oldDelegate.points)) return false;
     if (points.length != oldDelegate.points.length) return true;

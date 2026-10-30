@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'core/theme/theme_controller.dart';
 import 'features/attendance/data/launch_attendance.dart';
 import 'features/rewards/data/reward_grant_notices.dart';
 import 'core/ads/mobile_ads_service.dart';
@@ -25,16 +25,8 @@ Future<void> main() async {
   } catch (_) {
     // CI and production builds may use --dart-define instead of a local .env.
   }
-  SystemChrome.setSystemUIOverlayStyle(
-    //상태바/시스템 내비게이션 바 스타일 설정
-    const SystemUiOverlayStyle(
-      //OS 시스템 UI의 색상/아이콘 밝기 설정
-      statusBarColor: Color(0xFFFFFFFF),
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFFFFFFFF),
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  final themeController = ThemeController();
+  await themeController.load();
   final tokenStore = RememberingTokenStore(SecureTokenStore());
   final apiClient = ApiClient(tokenStore);
   final grantNotices = RewardGrantNotices(apiClient);
@@ -65,7 +57,10 @@ Future<void> main() async {
         Provider<TokenStore>.value(value: tokenStore),
         Provider<DollarRepository>.value(value: repository),
       ],
-      child: DollarTrappedApp(initiallyAuthenticated: initiallyAuthenticated),
+      child: DollarTrappedApp(
+        initiallyAuthenticated: initiallyAuthenticated,
+        themeController: themeController,
+      ),
     ),
   );
 }

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'dart:math' as math;
 import '../../../core/auth/reward_event_notifications.dart';
 import 'package:flutter/material.dart';
@@ -29,10 +30,10 @@ class TicketRewardDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ticketCount = eventReward?.amount ?? awardedTickets ?? 1;
-    const green = Color(0xFF008A29);
+    final green = AppColors.of(context).action;
     final reduced = MediaQuery.disableAnimationsOf(context);
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -72,9 +73,9 @@ class TicketRewardDialog extends StatelessWidget {
                         Container(
                           width: 150,
                           height: 150,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFFEAF7EE),
+                            color: AppColors.of(context).soft,
                           ),
                         ),
                         if (chipCost != null && t < .6)
@@ -186,7 +187,10 @@ class TicketRewardDialog extends StatelessWidget {
                       ? '새로운 닉네임 장식을 만나보세요.'
                       : '달러칩 $chipCost개가 뽑기권 1장으로 바뀌었어요.'),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF667069), fontSize: 14),
+              style: TextStyle(
+                color: AppColors.of(context).muted,
+                fontSize: 14,
+              ),
             ),
             if (confirmationStatus != null) ...[
               const SizedBox(height: 12),
@@ -201,7 +205,7 @@ class TicketRewardDialog extends StatelessWidget {
                   FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: green,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppColors.of(context).onAction,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('확인'),

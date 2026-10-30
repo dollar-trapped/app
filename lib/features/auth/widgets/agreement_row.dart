@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AgreementRow extends StatelessWidget {
@@ -40,11 +41,13 @@ class AgreementRow extends StatelessWidget {
                             child: Checkbox(
                               value: value,
                               onChanged: (_) {},
-                              activeColor: const Color(0xFF008A29),
+                              activeColor: AppColors.of(context).action,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              side: const BorderSide(color: Color(0xFFE1E6E2)),
+                              side: BorderSide(
+                                color: AppColors.of(context).line,
+                              ),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -74,7 +77,7 @@ class AgreementRow extends StatelessWidget {
               minimumSize: const Size(44, 44),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               padding: EdgeInsets.zero,
-              foregroundColor: const Color(0xFF667069),
+              foregroundColor: AppColors.of(context).muted,
             ),
             child: const Text(
               '보기',

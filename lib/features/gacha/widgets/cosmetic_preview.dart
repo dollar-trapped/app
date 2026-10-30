@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../profile/widgets/profile_layout.dart';
 
@@ -50,7 +51,11 @@ class CosmeticNickname extends StatelessWidget {
       nickname,
       textAlign: TextAlign.center,
       style: TextStyle(
-        color: CosmeticSelection.colors[selection.color],
+        color:
+            selection.color == 0 &&
+                (selection.background == 0 || selection.background == 2)
+            ? AppColors.of(context).ink
+            : CosmeticSelection.colors[selection.color],
         fontSize: 16,
         height: 1.5,
         fontFamily: switch (selection.font) {
@@ -78,13 +83,13 @@ class CosmeticChatPreview extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: const Color(0xFFF5F7F5),
+      color: AppColors.of(context).surface,
       borderRadius: BorderRadius.circular(16),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('채팅 미리보기', style: ProfileStyle.caption),
+        Text('채팅 미리보기', style: AppColors.of(context).caption),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -93,7 +98,7 @@ class CosmeticChatPreview extends StatelessWidget {
           children: [
             CosmeticNickname(nickname: nickname, selection: selection),
             if (holdingLabel != null)
-              Text(holdingLabel!, style: ProfileStyle.caption),
+              Text(holdingLabel!, style: AppColors.of(context).caption),
           ],
         ),
         const SizedBox(height: 12),

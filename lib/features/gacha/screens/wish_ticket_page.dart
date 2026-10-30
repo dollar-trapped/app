@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
@@ -211,14 +212,14 @@ class _WishTicketPageState extends State<WishTicketPage> {
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 '기다렸던 SPECIAL,\n이번에는 직접 선택하세요.',
-                style: ProfileStyle.title,
+                style: AppColors.of(context).title,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '달러칩 100개로 선택권 1장을 교환해요.\n원하는 장식을 확정할 때 선택권이 사용돼요.',
-                style: ProfileStyle.caption,
+                style: AppColors.of(context).caption,
               ),
               const SizedBox(height: 24),
               Text('내 달러칩  ${_status == null ? '—' : '${_status!.chips}개'}'),
@@ -232,11 +233,11 @@ class _WishTicketPageState extends State<WishTicketPage> {
                 key: const Key('wish-exchange'),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: _enabled && _status!.chips >= 100
-                      ? ProfileStyle.action
+                      ? AppColors.of(context).action
                       : Colors.transparent,
                   foregroundColor: _enabled && _status!.chips >= 100
-                      ? Colors.white
-                      : ProfileStyle.muted,
+                      ? AppColors.of(context).background
+                      : AppColors.of(context).muted,
                 ),
                 onPressed: _enabled && _status!.chips >= 100
                     ? () => _perform()
@@ -261,10 +262,13 @@ class _WishTicketPageState extends State<WishTicketPage> {
               if (_success != null)
                 Text(
                   _success!,
-                  style: const TextStyle(color: ProfileStyle.action),
+                  style: TextStyle(color: AppColors.of(context).action),
                 ),
               if (_error != null)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: AppColors.of(context).error),
+                ),
               if (_pending) ...[
                 const SizedBox(height: 12),
                 const Text('이전 교환 또는 선택 결과를 먼저 확인해 주세요.'),
@@ -283,9 +287,9 @@ class _WishTicketPageState extends State<WishTicketPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '보유한 장식은 선택할 수 없어요. 선택권은 나중에 사용해도 괜찮아요.',
-                style: ProfileStyle.caption,
+                style: AppColors.of(context).caption,
               ),
               if (_status?.supported == true &&
                   options.every((o) => !o.selectable))
@@ -309,7 +313,7 @@ class _WishTicketPageState extends State<WishTicketPage> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: _selected?.item.id == option.item.id
-                            ? const Color(0xFFEAF7EE)
+                            ? AppColors.of(context).soft
                             : Colors.transparent,
                       ),
                       child: Column(

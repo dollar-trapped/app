@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
 import '../../shared/data/api_models.dart';
@@ -204,27 +205,27 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '수익률은 평균 매수가와 현재 환율로 계산해요.',
-                style: ProfileStyle.caption,
+                style: AppColors.of(context).caption,
               ),
             ],
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ProfileStyle.soft,
+                color: AppColors.of(context).soft,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('채팅에는 이렇게 보여요', style: ProfileStyle.caption),
+                  Text('채팅에는 이렇게 보여요', style: AppColors.of(context).caption),
                   const SizedBox(height: 8),
                   Text(
                     _positionPreview,
-                    style: const TextStyle(
-                      color: ProfileStyle.action,
+                    style: TextStyle(
+                      color: AppColors.of(context).action,
                       fontSize: 13,
                     ),
                   ),
@@ -236,7 +237,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                 padding: const EdgeInsets.only(top: 16),
                 child: Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Color(0xFFB42318)),
+                  style: TextStyle(color: AppColors.of(context).error),
                 ),
               ),
             const SizedBox(height: 24),
@@ -244,7 +245,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
               onPressed: _isSaving ? null : _saveProfile,
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
-                backgroundColor: ProfileStyle.action,
+                backgroundColor: AppColors.of(context).action,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

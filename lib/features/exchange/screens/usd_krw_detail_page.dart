@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'dart:async';
 import 'package:dollar_trapped/features/ads/widgets/adaptive_banner.dart';
 import 'package:dollar_trapped/features/exchange/widgets/exchange_quote.dart';
@@ -19,8 +20,6 @@ class UsdKrwDetailPage extends StatefulWidget {
 class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
     with WidgetsBindingObserver {
   Timer? _refreshTimer;
-  static const _ink = Color(0xFF151916);
-  static const _muted = Color(0xFF667069);
   static const _periods = {'1일': '1D', '1주': '1W', '1개월': '1M'};
   var _selectedRange = '1M';
   late Future<ExchangeRate> _rateFuture;
@@ -101,7 +100,7 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
                       onPressed: () => Navigator.of(context).maybePop(),
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        foregroundColor: _ink,
+                        foregroundColor: AppColors.of(context).ink,
                       ),
                       child: const Text(
                         '‹',
@@ -166,8 +165,8 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
                         children: [
                           Text(
                             _rangeCaption,
-                            style: const TextStyle(
-                              color: _ink,
+                            style: TextStyle(
+                              color: AppColors.of(context).ink,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                               height: 20 / 13,
@@ -176,7 +175,7 @@ class _UsdKrwDetailPageState extends State<UsdKrwDetailPage>
                           Text(
                             '1 USD 기준 · 단위: 원',
                             style: TextStyle(
-                              color: _muted,
+                              color: AppColors.of(context).muted,
                               fontSize: 12,
                               height: 1.5,
                             ),

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
@@ -32,20 +33,23 @@ class BatchDrawResultPage extends StatelessWidget {
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('${results.length}개의 취향을\n만났어요.', style: ProfileStyle.title),
+            Text(
+              '${results.length}개의 취향을\n만났어요.',
+              style: AppColors.of(context).title,
+            ),
             const SizedBox(height: 16),
             Text('새 아이템 $newItems개 · 중복 ${results.length - newItems}개'),
             if (chips > 0) Text('중복 보상 달러칩 $chips개'),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '아이템을 눌러 자세히 보거나 적용할 수 있어요.',
-              style: ProfileStyle.caption,
+              style: AppColors.of(context).caption,
             ),
             if (failure != null) ...[
               const SizedBox(height: 16),
               Text(
                 '확인된 ${results.length}회 결과만 표시했어요.\n$failure',
-                style: const TextStyle(color: Color(0xFFB3261E)),
+                style: TextStyle(color: AppColors.of(context).error),
               ),
             ],
             const SizedBox(height: 24),
@@ -89,7 +93,7 @@ class _ResultCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final item = result.item;
     return Material(
-      color: const Color(0xFFF5F7F5),
+      color: AppColors.of(context).surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onPressed,
@@ -114,7 +118,7 @@ class _ResultCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 result.duplicate ? '중복 · 달러칩 +${result.chipsGranted}' : '새 아이템',
-                style: ProfileStyle.caption,
+                style: AppColors.of(context).caption,
               ),
             ],
           ),

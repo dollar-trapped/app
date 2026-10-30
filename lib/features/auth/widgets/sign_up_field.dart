@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class SignUpField extends StatelessWidget {
@@ -55,8 +56,8 @@ class SignUpField extends StatelessWidget {
             decoration: InputDecoration(
               hintText: hintText,
               suffixIcon: suffixIcon,
-              hintStyle: const TextStyle(
-                color: Color(0xFF667069),
+              hintStyle: TextStyle(
+                color: AppColors.of(context).muted,
                 fontSize: 15,
                 height: 1.6,
               ),
@@ -66,11 +67,11 @@ class SignUpField extends StatelessWidget {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFFE1E6E2)),
+                borderSide: BorderSide(color: AppColors.of(context).line),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF008A29)),
+                borderSide: BorderSide(color: AppColors.of(context).action),
               ),
             ),
           ),
@@ -80,8 +81,8 @@ class SignUpField extends StatelessWidget {
           errorText ?? helperText,
           style: TextStyle(
             color: errorText == null
-                ? const Color(0xFF667069)
-                : const Color(0xFFB3261E),
+                ? AppColors.of(context).muted
+                : AppColors.of(context).error,
             fontSize: 12,
             height: 1.5,
           ),

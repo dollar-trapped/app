@@ -1,14 +1,10 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dollar_trapped/features/home/screens/usd_krw_page.dart';
 
 class EmailVerificationPage extends StatelessWidget {
   const EmailVerificationPage({super.key, required this.email});
-
-  static const _ink = Color(0xFF151916);
-  static const _muted = Color(0xFF667069);
-  static const _soft = Color(0xFFEAF7EE);
-  static const _action = Color(0xFF008A29);
 
   final String email;
 
@@ -29,7 +25,7 @@ class EmailVerificationPage extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
-                        foregroundColor: _ink,
+                        foregroundColor: AppColors.of(context).ink,
                       ),
                       child: const Text(
                         '‹',
@@ -63,13 +59,13 @@ class EmailVerificationPage extends StatelessWidget {
                       height: 64,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: _soft,
+                        color: AppColors.of(context).soft,
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Text(
+                      child: Text(
                         '@',
                         style: TextStyle(
-                          color: _action,
+                          color: AppColors.of(context).action,
                           fontSize: 36,
                           fontWeight: FontWeight.w700,
                           height: 46 / 36,
@@ -86,10 +82,10 @@ class EmailVerificationPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       '아래 주소로 인증 링크를 보냈어요.\n메일의 링크를 눌러 인증을 완료해주세요.',
                       style: TextStyle(
-                        color: _muted,
+                        color: AppColors.of(context).muted,
                         fontSize: 15,
                         height: 1.6,
                       ),
@@ -99,7 +95,7 @@ class EmailVerificationPage extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F7F5),
+                        color: AppColors.of(context).surface,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -107,18 +103,18 @@ class EmailVerificationPage extends StatelessWidget {
                         children: [
                           Text(
                             email,
-                            style: const TextStyle(
-                              color: _ink,
+                            style: TextStyle(
+                              color: AppColors.of(context).ink,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               height: 1.5,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             '메일이 없다면 스팸함도 확인해주세요.',
                             style: TextStyle(
-                              color: _muted,
+                              color: AppColors.of(context).muted,
                               fontSize: 12,
                               height: 1.5,
                             ),
@@ -136,7 +132,7 @@ class EmailVerificationPage extends StatelessWidget {
                         minimumSize: const Size.fromHeight(44),
                         padding: EdgeInsets.zero,
                         alignment: Alignment.centerLeft,
-                        foregroundColor: _action,
+                        foregroundColor: AppColors.of(context).action,
                       ),
                       child: const Text(
                         '인증 메일 다시 보내기',
@@ -159,8 +155,8 @@ class EmailVerificationPage extends StatelessWidget {
                         ),
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
-                          backgroundColor: _action,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.of(context).action,
+                          foregroundColor: AppColors.of(context).onAction,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -174,10 +170,10 @@ class EmailVerificationPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '인증 확인 후 USD방으로 이동해요.',
                       style: TextStyle(
-                        color: _muted,
+                        color: AppColors.of(context).muted,
                         fontSize: 12,
                         height: 1.5,
                       ),

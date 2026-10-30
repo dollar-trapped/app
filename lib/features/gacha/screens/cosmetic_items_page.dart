@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../shared/data/dollar_repository.dart';
 import '../../inventory/screens/owned_cosmetics_page.dart';
 import 'package:flutter/material.dart';
@@ -79,7 +80,7 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                 );
               },
               style: TextButton.styleFrom(
-                foregroundColor: ProfileStyle.muted,
+                foregroundColor: AppColors.of(context).muted,
                 textStyle: const TextStyle(
                   fontFamily: 'Noto Sans KR',
                   fontSize: 12,
@@ -128,7 +129,7 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                     ),
                     Text(
                       widget.samplePreview ? '샘플 3개' : '0개',
-                      style: ProfileStyle.caption,
+                      style: AppColors.of(context).caption,
                     ),
                   ],
                 ),
@@ -139,7 +140,7 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F7F5),
+                      color: AppColors.of(context).surface,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -154,12 +155,12 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           '기본 이름으로도 충분해요.\n새로운 분위기가 필요하면 뽑아보세요.',
                           style: TextStyle(
                             fontSize: 15,
                             height: 24 / 15,
-                            color: ProfileStyle.muted,
+                            color: AppColors.of(context).muted,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -176,9 +177,9 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   '종류별로 하나씩 선택하거나, 사용하지 않아도 돼요.',
-                  style: ProfileStyle.caption,
+                  style: AppColors.of(context).caption,
                 ),
               ],
             ),
@@ -229,13 +230,13 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
   Widget _itemCard(int index, String label, int selected) => Semantics(
     selected: index == selected,
     child: Material(
-      color: Colors.white,
+      color: AppColors.of(context).background,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: index == selected
-              ? ProfileStyle.action
-              : const Color(0xFFE1E6E2),
+              ? AppColors.of(context).action
+              : AppColors.of(context).line,
           width: index == selected ? 2 : 1,
         ),
       ),
@@ -254,8 +255,8 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _selected == 2
-                      ? Colors.white
-                      : const Color(0xFFF5F7F5),
+                      ? AppColors.of(context).background
+                      : AppColors.of(context).surface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: CosmeticNickname(
@@ -279,10 +280,10 @@ class _CosmeticItemsPageState extends State<CosmeticItemsPage> {
                     : index == selected
                     ? '✓ 선택됨'
                     : '샘플 아이템',
-                style: ProfileStyle.caption.copyWith(
+                style: AppColors.of(context).caption.copyWith(
                   color: index == selected
-                      ? ProfileStyle.action
-                      : ProfileStyle.muted,
+                      ? AppColors.of(context).action
+                      : AppColors.of(context).muted,
                 ),
               ),
             ],

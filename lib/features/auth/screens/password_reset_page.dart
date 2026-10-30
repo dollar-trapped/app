@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
@@ -182,7 +183,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   _error!,
-                  style: const TextStyle(color: Color(0xFFB3261E)),
+                  style: TextStyle(color: AppColors.of(context).error),
                 ),
               ),
             const SizedBox(height: 24),
@@ -190,8 +191,8 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
               label: _busy
                   ? '처리 중…'
                   : ['인증 코드 발송', '인증 코드 확인', '비밀번호 변경'][_step],
-              color: const Color(0xFF008A29),
-              foreground: Colors.white,
+              color: AppColors.of(context).action,
+              foreground: AppColors.of(context).onAction,
               onPressed: _busy ? null : _next,
             ),
             if (_step > 0)

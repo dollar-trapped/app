@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../widgets/auth_scaffold.dart';
 import '../widgets/sign_up_field.dart';
 import '../../../core/moderation/moderation_dialog.dart';
@@ -22,9 +23,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  static const _muted = Color(0xFF667069);
-  static const _action = Color(0xFF008A29);
-
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSubmitting = false;
@@ -111,9 +109,13 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '계정 정보로 로그인해주세요.',
-          style: TextStyle(color: _muted, fontSize: 15, height: 1.6),
+          style: TextStyle(
+            color: AppColors.of(context).muted,
+            fontSize: 15,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 20),
         SignUpField(
@@ -140,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
           },
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: _action,
+          activeColor: AppColors.of(context).action,
           title: const Text(
             '로그인 유지하기',
             style: TextStyle(fontSize: 13, height: 20 / 13),
@@ -168,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
                   );
                 },
           style: TextButton.styleFrom(
-            foregroundColor: _muted,
+            foregroundColor: AppColors.of(context).muted,
             minimumSize: const Size(0, 44),
           ),
           child: const Text('비밀번호 재설정'),
@@ -177,15 +179,15 @@ class _LoginPageState extends State<LoginPage> {
           const SizedBox(height: 12),
           Text(
             _errorMessage!,
-            style: const TextStyle(color: Color(0xFFB3261E)),
+            style: TextStyle(color: AppColors.of(context).error),
           ),
         ],
         const SizedBox(height: 24),
         const Spacer(),
         AuthButton(
           label: _isSubmitting ? '로그인 중...' : '로그인',
-          color: _action,
-          foreground: Colors.white,
+          color: AppColors.of(context).action,
+          foreground: AppColors.of(context).onAction,
           onPressed: _canSubmit && !_isSubmitting ? _logIn : null,
         ),
         const SizedBox(height: 24),

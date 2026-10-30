@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +11,7 @@ class ChatMessageBubble extends StatelessWidget {
     required this.profit,
     required this.message,
     required this.time,
-    this.profitColor = const Color(0xFF008A29),
+    this.profitColor,
     this.onLongPress,
     this.isMine = false,
     this.cosmetics,
@@ -22,7 +23,7 @@ class ChatMessageBubble extends StatelessWidget {
   final String profit;
   final String message;
   final String time;
-  final Color profitColor;
+  final Color? profitColor;
   final VoidCallback? onLongPress;
   final bool isMine;
 
@@ -57,8 +58,8 @@ class ChatMessageBubble extends StatelessWidget {
                 else
                   Text(
                     nickname,
-                    style: const TextStyle(
-                      color: Color(0xFF151916),
+                    style: TextStyle(
+                      color: AppColors.of(context).ink,
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       height: 20 / 13,
@@ -66,20 +67,20 @@ class ChatMessageBubble extends StatelessWidget {
                   ),
                 Text(
                   holding,
-                  style: const TextStyle(
-                    color: Color(0xFF667069),
+                  style: TextStyle(
+                    color: AppColors.of(context).muted,
                     fontSize: 12,
                     height: 1.5,
                   ),
                 ),
                 if (profit.isEmpty && holding.isNotEmpty)
-                  const Tooltip(
+                  Tooltip(
                     message: '매수환율 또는 현재 환율 정보가 없어 수익률을 확인할 수 없어요.',
                     triggerMode: TooltipTriggerMode.tap,
                     child: Text(
                       '수익률 —',
                       style: TextStyle(
-                        color: Color(0xFF667069),
+                        color: AppColors.of(context).muted,
                         fontSize: 12,
                         height: 1.5,
                       ),
@@ -89,7 +90,7 @@ class ChatMessageBubble extends StatelessWidget {
                   Text(
                     profit,
                     style: TextStyle(
-                      color: profitColor,
+                      color: profitColor ?? AppColors.of(context).action,
                       fontSize: 12,
                       height: 1.5,
                     ),
@@ -103,14 +104,14 @@ class ChatMessageBubble extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isMine
-                    ? const Color(0xFFEAF7EE)
-                    : const Color(0xFFF5F7F5),
+                    ? AppColors.of(context).soft
+                    : AppColors.of(context).surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Color(0xFF151916),
+                style: TextStyle(
+                  color: AppColors.of(context).ink,
                   fontSize: 15,
                   height: 1.6,
                 ),
@@ -119,8 +120,8 @@ class ChatMessageBubble extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               time,
-              style: const TextStyle(
-                color: Color(0xFF667069),
+              style: TextStyle(
+                color: AppColors.of(context).muted,
                 fontSize: 12,
                 height: 1.5,
               ),

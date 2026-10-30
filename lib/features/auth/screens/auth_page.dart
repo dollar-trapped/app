@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../cosmetics/preview/cosmetic_expansion_preview_page.dart';
@@ -15,11 +16,7 @@ import 'package:dollar_trapped/features/auth/widgets/auth_button.dart';
 class AuthPage extends StatelessWidget {
   const AuthPage({super.key});
 
-  static const _ink = Color(0xFF151916);
-  static const _muted = Color(0xFF667069);
-  static const _action = Color(0xFF008A29);
   static const _brand = Color(0xFF00B235);
-  static const _line = Color(0xFFE1E6E2);
 
   @override
   Widget build(BuildContext context) {
@@ -40,15 +37,19 @@ class AuthPage extends StatelessWidget {
                       height: 89,
                       child: SvgPicture.asset(
                         'assets/images/dollar_wordmark.svg',
+                        colorFilter: ColorFilter.mode(
+                          AppColors.of(context).ink,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
                     Container(width: 32, height: 4, color: _brand),
                     const SizedBox(height: 24),
-                    const Text(
+                    Text(
                       '물려도, 혼자는 아니니까.',
                       style: TextStyle(
-                        color: _muted,
+                        color: AppColors.of(context).muted,
                         fontSize: 15,
                         fontWeight: FontWeight.w400,
                         height: 1.6,
@@ -64,8 +65,8 @@ class AuthPage extends StatelessWidget {
                   children: [
                     AuthButton(
                       label: '로그인',
-                      color: _action,
-                      foreground: Colors.white,
+                      color: AppColors.of(context).action,
+                      foreground: AppColors.of(context).onAction,
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
@@ -77,9 +78,9 @@ class AuthPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     AuthButton(
                       label: '회원가입',
-                      color: Colors.white,
-                      foreground: _ink,
-                      borderColor: _line,
+                      color: AppColors.of(context).background,
+                      foreground: AppColors.of(context).ink,
+                      borderColor: AppColors.of(context).line,
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute<void>(
@@ -98,7 +99,7 @@ class AuthPage extends StatelessWidget {
                       },
                       style: TextButton.styleFrom(
                         minimumSize: const Size.fromHeight(44),
-                        foregroundColor: _muted,
+                        foregroundColor: AppColors.of(context).muted,
                         shape: const RoundedRectangleBorder(),
                       ),
                       child: const Text(

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Launch-event reward schedule. UI only; the server owns attendance and grants.
@@ -41,7 +42,7 @@ class AttendanceEventDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      backgroundColor: const Color(0xFFF8FBF8),
+      backgroundColor: AppColors.of(context).surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: ConstrainedBox(
@@ -59,16 +60,19 @@ class AttendanceEventDialog extends StatelessWidget {
                   children: [
                     Text(
                       '출시 기념 출석 이벤트',
-                      style: const TextStyle(
-                        color: ink,
+                      style: TextStyle(
+                        color: AppColors.of(context).ink,
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       '매일 한 번, 누적 7회 출석하면 총 20장',
-                      style: TextStyle(color: Color(0xFF5D7265), fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.of(context).muted,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     LayoutBuilder(
@@ -105,7 +109,7 @@ class AttendanceEventDialog extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF5ED),
+                          color: AppColors.of(context).soft,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
@@ -117,8 +121,8 @@ class AttendanceEventDialog extends StatelessWidget {
                               ? '${data.completedCount}회차 출석 완료! 뽑기권 ${data.newReward}장을 받았어요.'
                               : '오늘 출석 완료',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: green,
+                          style: TextStyle(
+                            color: AppColors.of(context).action,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -128,8 +132,8 @@ class AttendanceEventDialog extends StatelessWidget {
                     const SizedBox(height: 16),
                     FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: green,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.of(context).action,
+                        foregroundColor: AppColors.of(context).onAction,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -150,21 +154,21 @@ class AttendanceEventDialog extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       '하루 쉬어도 괜찮아요.\n다음 접속 때 이어서 출석할 수 있어요.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF6B7A70),
+                        color: AppColors.of(context).muted,
                         fontSize: 12,
                         height: 1.6,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '신규 참가는 출시 이벤트 시작 후 30일 동안\n참가 후에는 완료 기한 없이 7회까지 · 하루 1회, 한국 시간 기준',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Color(0xFF7D8B82),
+                        color: AppColors.of(context).muted,
                         fontSize: 10,
                         height: 1.6,
                       ),
@@ -267,7 +271,11 @@ class AttendanceEventDialog extends StatelessWidget {
     final today =
         done && data.todayCompleted && index == data.completedCount - 1;
     final gold = index == 6;
-    final color = gold ? const Color(0xFFAC7215) : green;
+    final color = gold
+        ? (Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFFFD48C)
+              : const Color(0xFFAC7215))
+        : AppColors.of(context).action;
     return Semantics(
       label:
           '누적 ${index + 1}회차, 뽑기권 ${data.rewards[index]}장, ${done ? '수령 완료' : '미수령'}',
@@ -279,19 +287,21 @@ class AttendanceEventDialog extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
           decoration: BoxDecoration(
             color: gold
-                ? const Color(0xFFFFF4D8)
+                ? (Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF3D301B)
+                      : const Color(0xFFFFF4D8))
                 : done
-                ? const Color(0xFFE8F4EB)
-                : Colors.white,
+                ? AppColors.of(context).soft
+                : AppColors.of(context).background,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: today
                   ? color
                   : gold
-                  ? const Color(0xFFECCB83)
+                  ? AppColors.of(context).line
                   : done
-                  ? const Color(0xFFBDDEC7)
-                  : const Color(0xFFE1E8E2),
+                  ? AppColors.of(context).line
+                  : AppColors.of(context).line,
               width: today ? 2 : 1,
             ),
             boxShadow: today
@@ -309,7 +319,7 @@ class AttendanceEventDialog extends StatelessWidget {
               Text(
                 '${index + 1}회차',
                 style: TextStyle(
-                  color: done || gold ? color : const Color(0xFF6C7D72),
+                  color: done || gold ? color : AppColors.of(context).muted,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -345,10 +355,10 @@ class AttendanceEventDialog extends StatelessWidget {
                           color: color,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.check_rounded,
                           size: 19,
-                          color: Colors.white,
+                          color: AppColors.of(context).background,
                         ),
                       ),
                     ),
@@ -372,7 +382,7 @@ class AttendanceEventDialog extends StatelessWidget {
                     : '뽑기권',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: done || gold ? color : const Color(0xFF94A097),
+                  color: done || gold ? color : AppColors.of(context).muted,
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),

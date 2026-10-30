@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../shared/data/dollar_repository.dart';
 import 'live_gacha_page.dart';
 import 'package:flutter/material.dart';
@@ -24,9 +25,9 @@ class CosmeticGachaPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('이름은 그대로.\n분위기는 새롭게.', style: ProfileStyle.title),
+                Text('이름은 그대로.\n분위기는 새롭게.', style: AppColors.of(context).title),
                 const SizedBox(height: 16),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
@@ -35,7 +36,7 @@ class CosmeticGachaPage extends StatelessWidget {
                         fontSize: 13,
                         height: 20 / 13,
                         fontWeight: FontWeight.w500,
-                        color: ProfileStyle.muted,
+                        color: AppColors.of(context).muted,
                       ),
                     ),
                     Text(
@@ -45,7 +46,7 @@ class CosmeticGachaPage extends StatelessWidget {
                         fontSize: 16,
                         height: 1.5,
                         fontWeight: FontWeight.w700,
-                        color: ProfileStyle.action,
+                        color: AppColors.of(context).action,
                       ),
                     ),
                   ],
@@ -61,16 +62,16 @@ class CosmeticGachaPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 const RewardedTestButton(),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.6,
-                    color: ProfileStyle.muted,
+                    color: AppColors.of(context).muted,
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Row(
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -90,19 +91,19 @@ class CosmeticGachaPage extends StatelessWidget {
                     Expanded(
                       child: _CategorySample(
                         label: '배경',
-                        color: ProfileStyle.forest,
+                        color: AppColors.of(context).forest,
                         background: Color(0xFFF7EDA6),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   '세 종류 중 한 가지 아이템을 뽑아요.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 24 / 15,
-                    color: ProfileStyle.muted,
+                    color: AppColors.of(context).muted,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -153,7 +154,7 @@ class CosmeticGachaPage extends StatelessWidget {
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(0, 44),
-                      foregroundColor: ProfileStyle.muted,
+                      foregroundColor: AppColors.of(context).muted,
                       textStyle: const TextStyle(
                         fontFamily: 'Noto Sans KR',
                         fontSize: 13,

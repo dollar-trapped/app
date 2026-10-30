@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
 import '../data/cosmetic_inventory_repository.dart';
@@ -117,9 +118,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
     return ProfileLayout(
       title: '내 아이템',
       action: TextButton(
-        onPressed: _busy || _inventory == null
-            ? null
-            : () => setState(() => _ids.fillRange(0, 3, null)),
+        onPressed: () => setState(() => _ids.fillRange(0, 3, null)),
         child: const Text('모두 해제'),
       ),
       child: CosmeticContent(
@@ -151,7 +150,10 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
             if (_busy) const Center(child: CircularProgressIndicator()),
             if (_error != null) ...[
               if (_error!.isNotEmpty)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: AppColors.of(context).error),
+                ),
               TextButton(
                 onPressed: _busy ? null : _load,
                 child: const Text('다시 불러오기'),
@@ -182,7 +184,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
               if (items.isEmpty)
                 Text(
                   '아직 모은 ${labels[_tab]}이 없어요.',
-                  style: ProfileStyle.caption,
+                  style: AppColors.of(context).caption,
                 ),
             ],
             if (items.isEmpty && _inventory != null)
@@ -196,16 +198,16 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
                 child: const Text('닉네임 뽑기'),
               ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '종류별로 하나씩 선택하거나, 사용하지 않아도 돼요.',
-              style: ProfileStyle.caption,
+              style: AppColors.of(context).caption,
             ),
           ],
         ),
         actions: CosmeticAction(
           label: _ids.every((id) => id == null) ? '기본 모습으로 적용' : '이대로 적용',
           hint: '적용하면 새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.',
-          onPressed: _busy || _inventory == null ? null : _save,
+          onPressed: _save,
         ),
       ),
     );
@@ -218,11 +220,13 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
     return Semantics(
       selected: selected,
       child: Material(
-        color: Colors.white,
+        color: AppColors.of(context).background,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(
-            color: selected ? ProfileStyle.action : const Color(0xFFE1E6E2),
+            color: selected
+                ? AppColors.of(context).action
+                : AppColors.of(context).line,
             width: selected ? 2 : 1,
           ),
         ),
@@ -254,7 +258,7 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
                       : item == null
                       ? '기본 ${labels[_tab]}'
                       : '보유 중',
-                  style: ProfileStyle.caption,
+                  style: AppColors.of(context).caption,
                 ),
               ],
             ),

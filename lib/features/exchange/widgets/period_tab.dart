@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class PeriodTab extends StatelessWidget {
@@ -21,9 +22,11 @@ class PeriodTab extends StatelessWidget {
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
           foregroundColor: selected
-              ? const Color(0xFF008A29)
-              : const Color(0xFF667069),
-          backgroundColor: selected ? const Color(0xFFEAF7EE) : Colors.white,
+              ? AppColors.of(context).action
+              : AppColors.of(context).muted,
+          backgroundColor: selected
+              ? AppColors.of(context).soft
+              : AppColors.of(context).background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

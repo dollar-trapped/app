@@ -54,5 +54,23 @@ class AppColors {
     marketFall: Color(0xFF2464C4),
   );
 
-  static AppColors of(BuildContext context) => light;
+  static const dark = AppColors._(
+    background: Color(0xFF111714),
+    surface: Color(0xFF1D2721),
+    ink: Color(0xFFEAF2ED),
+    muted: Color(0xFFADBDB2),
+    line: Color(0xFF35463B),
+    soft: Color(0xFF203D2B),
+    action: Color(0xFF75D993),
+    onAction: Color(0xFF0B3218),
+    forest: Color(0xFFC4EBD0),
+    error: Color(0xFFFFB4AB),
+    errorSurface: Color(0xFF4C2523),
+    negative: Color(0xFF8AB8FA),
+    marketRise: Color(0xFFFFA39E),
+    marketFall: Color(0xFF8AB8FA),
+  );
+
+  static AppColors of(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? dark : light;
 }

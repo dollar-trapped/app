@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../gacha/widgets/ticket_reward_dialog.dart';
 import '../../shared/data/dollar_repository.dart';
 import '../../gacha/services/ad_reward_session_service.dart';
@@ -157,9 +158,9 @@ class _RewardedTestButtonState extends State<RewardedTestButton> {
           OutlinedButton(
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
-              foregroundColor: const Color(0xFF151916),
-              backgroundColor: Colors.white,
-              side: const BorderSide(color: Color(0xFFE1E6E2)),
+              foregroundColor: AppColors.of(context).ink,
+              backgroundColor: AppColors.of(context).background,
+              side: BorderSide(color: AppColors.of(context).line),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

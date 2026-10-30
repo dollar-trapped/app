@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AuthButton extends StatelessWidget {
@@ -27,8 +28,8 @@ class AuthButton extends StatelessWidget {
           elevation: 0,
           backgroundColor: color,
           foregroundColor: foreground,
-          disabledBackgroundColor: const Color(0xFFF5F7F5),
-          disabledForegroundColor: const Color(0xFF667069),
+          disabledBackgroundColor: AppColors.of(context).surface,
+          disabledForegroundColor: AppColors.of(context).muted,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: borderColor == null

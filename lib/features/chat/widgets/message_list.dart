@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/chat/widgets/chat_message_bubble.dart';
 import 'package:flutter/material.dart';
@@ -64,9 +65,9 @@ class MessageList extends StatelessWidget {
         }).toList();
         if (messages.isEmpty && visibleRealtime.isEmpty) {
           return _scrollableStatus(
-            const Text(
+            Text(
               '아직 메시지가 없어요.',
-              style: TextStyle(color: Color(0xFF667069)),
+              style: TextStyle(color: AppColors.of(context).muted),
             ),
           );
         }
@@ -91,6 +92,7 @@ class MessageList extends StatelessWidget {
                 return const _HiddenMessage();
               }
               return _messageWidget(
+                context,
                 messages[messageIndex],
                 currentUserId: currentUserId,
                 onModerate: onModerate,
@@ -134,6 +136,7 @@ class MessageList extends StatelessWidget {
   }
 
   static Widget _messageWidget(
+    BuildContext context,
     ChatMessage message, {
     required String? currentUserId,
     required Future<void> Function({
@@ -151,8 +154,8 @@ class MessageList extends StatelessWidget {
           : r'$' + message.author.usdAmount!,
       profit: _profitText(profit),
       profitColor: profit?.startsWith('-') ?? false
-          ? const Color(0xFF2463B5)
-          : const Color(0xFF008A29),
+          ? AppColors.of(context).negative
+          : AppColors.of(context).action,
       message: message.content,
       time: _formatTime(message.createdAt),
       isMine: currentUserId != null && message.author.id == currentUserId,
@@ -206,8 +209,8 @@ class _RealtimeChatMessage extends StatelessWidget {
       holding: author['usdAmount'] == null ? '' : "\$${author['usdAmount']}",
       profit: MessageList._profitText(author['profitRate'] as String?),
       profitColor: (author['profitRate'] as String?)?.startsWith('-') ?? false
-          ? const Color(0xFF2463B5)
-          : const Color(0xFF008A29),
+          ? AppColors.of(context).negative
+          : AppColors.of(context).action,
       message: message.content,
       time: MessageList._formatTime(DateTime.now()),
       isMine: currentUserId != null && authorId == currentUserId,
@@ -227,7 +230,11 @@ class _DateLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     MessageList._formatDate(date),
-    style: const TextStyle(color: Color(0xFF667069), fontSize: 12, height: 1.5),
+    style: TextStyle(
+      color: AppColors.of(context).muted,
+      fontSize: 12,
+      height: 1.5,
+    ),
   );
 }
 
@@ -239,23 +246,26 @@ class _HiddenMessage extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7F5),
+        color: AppColors.of(context).surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E6E2)),
+        border: Border.all(color: AppColors.of(context).line),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.visibility_off_outlined,
             size: 16,
-            color: Color(0xFF667069),
+            color: AppColors.of(context).muted,
           ),
           SizedBox(width: 8),
           Flexible(
             child: Text(
               '숨겨진 메시지',
-              style: TextStyle(color: Color(0xFF667069), fontSize: 13),
+              style: TextStyle(
+                color: AppColors.of(context).muted,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

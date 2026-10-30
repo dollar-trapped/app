@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../data/gacha_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -17,11 +18,19 @@ String cosmeticTypeLabel(String value) => switch (value) {
   'NAME_BACKGROUND' => '배경',
   _ => value,
 };
-Color cosmeticRarityColor(String value) => switch (value) {
-  'RARE' => const Color(0xFF5264C9),
-  'SPECIAL' => const Color(0xFFA56B15),
-  _ => const Color(0xFF667069),
-};
+Color cosmeticRarityColor(String value, {BuildContext? context}) =>
+    switch (value) {
+      'RARE' =>
+        context != null && Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFA9B4FF)
+            : const Color(0xFF5264C9),
+      'SPECIAL' =>
+        context != null && Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFFFD48C)
+            : const Color(0xFFA56B15),
+      _ =>
+        context == null ? AppColors.light.muted : AppColors.of(context).muted,
+    };
 
 class CosmeticCatalogSheet extends StatefulWidget {
   const CosmeticCatalogSheet({
@@ -116,6 +125,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                       decoration: BoxDecoration(
                         color: cosmeticRarityColor(
                           rarity,
+                          context: context,
                         ).withValues(alpha: .08),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -125,7 +135,10 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                             child: Text(
                               '${cosmeticRarityLabel(rarity)} · ${drawable.where((item) => item.rarity == rarity).length}종',
                               style: TextStyle(
-                                color: cosmeticRarityColor(rarity),
+                                color: cosmeticRarityColor(
+                                  rarity,
+                                  context: context,
+                                ),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -135,7 +148,10 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                                 ? '정보 없음'
                                 : '${(widget.catalog.probabilities[rarity]! / 100).toStringAsFixed(2)}%',
                             style: TextStyle(
-                              color: cosmeticRarityColor(rarity),
+                              color: cosmeticRarityColor(
+                                rarity,
+                                context: context,
+                              ),
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
@@ -147,19 +163,19 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                   ],
                   const SizedBox(height: 8),
                   if (widget.catalog.cumulativeGuaranteedRareOrAbove)
-                    const Text(
+                    Text(
                       '단뽑·10회 뽑기 합산으로 10회 안에 레어 이상이 나와요. 일반이 연속 9회 나오면 다음 뽑기가 보장되며, 레어·스페셜 획득 시 횟수가 초기화돼요. 중복도 동일하게 적용돼요.\n보장 추첨에서는 일반을 제외하고 레어·스페셜의 기본 확률 비율을 유지해요. 아래 개별 확률은 보장이 적용되지 않은 기본 추첨 기준이에요.',
                       style: TextStyle(
-                        color: Color(0xFF667069),
+                        color: AppColors.of(context).muted,
                         fontSize: 13,
                         height: 1.6,
                       ),
                     )
                   else if (widget.catalog.batchGuaranteedRareOrAbove)
-                    const Text(
+                    Text(
                       '10회 뽑기는 레어 이상 1개를 보장해요. 아래 개별 확률은 기본 추첨 기준이에요.',
                       style: TextStyle(
-                        color: Color(0xFF667069),
+                        color: AppColors.of(context).muted,
                         fontSize: 13,
                         height: 1.6,
                       ),
@@ -169,18 +185,18 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                         ? '등급 안에서는 각 아이템의 확률이 같아요.\n개별 확률 = 등급 확률 ÷ 해당 등급의 추첨 대상 수. 비활성 아이템은 제외하며, 소수점 다섯째 자리에서 반올림해 표시해요.'
                         : '현재 추첨 방식의 개별 확률 정보가 필요해요.',
                     style: TextStyle(
-                      color: Color(0xFF667069),
+                      color: AppColors.of(context).muted,
                       fontSize: 13,
                       height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     '일반 · 단색 등 단순 정적 표현\n희귀 · 그라데이션·패턴·특수 글꼴 등 복합 정적 표현\n특별 · 광택·입자·움직이는 색상 등 동적 표현',
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.6,
-                      color: Color(0xFF667069),
+                      color: AppColors.of(context).muted,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -260,10 +276,10 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
                   ),
                   Text(
                     '달러칩 ${widget.catalog.chipExchangeCost}개 → 뽑기권 1장\n닉네임 뽑기 화면에서 교환할 수 있어요.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       height: 1.6,
-                      color: Color(0xFF667069),
+                      color: AppColors.of(context).muted,
                     ),
                   ),
                 ],
@@ -283,7 +299,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFE1E6E2)),
+        border: Border.all(color: AppColors.of(context).line),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -304,7 +320,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
               Text(
                 '${cosmeticRarityLabel(item.rarity)} · ${cosmeticTypeLabel(item.type)}',
                 style: TextStyle(
-                  color: cosmeticRarityColor(item.rarity),
+                  color: cosmeticRarityColor(item.rarity, context: context),
                   fontSize: 12,
                 ),
               ),
@@ -315,7 +331,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
             padding: const EdgeInsets.all(12),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F7F5),
+              color: AppColors.of(context).surface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: ServerCosmeticNickname(
@@ -328,7 +344,7 @@ class _CosmeticCatalogSheetState extends State<CosmeticCatalogSheet> {
           const SizedBox(height: 8),
           Text(
             probability,
-            style: const TextStyle(color: Color(0xFF667069), fontSize: 13),
+            style: TextStyle(color: AppColors.of(context).muted, fontSize: 13),
           ),
         ],
       ),
