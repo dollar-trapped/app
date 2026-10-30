@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 
 abstract final class ProfileStyle {
@@ -38,12 +39,12 @@ class ProfileLayout extends StatelessWidget {
     data: Theme.of(context).copyWith(
       textTheme: Theme.of(context).textTheme.apply(
         fontFamily: 'Noto Sans KR',
-        bodyColor: ProfileStyle.ink,
-        displayColor: ProfileStyle.ink,
+        bodyColor: AppColors.of(context).ink,
+        displayColor: AppColors.of(context).ink,
       ),
     ),
     child: Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.of(context).background,
       body: SafeArea(
         child: Column(
           children: [
@@ -61,7 +62,7 @@ class ProfileLayout extends StatelessWidget {
                             onBack ?? () => Navigator.of(context).maybePop(),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          foregroundColor: ProfileStyle.ink,
+                          foregroundColor: AppColors.of(context).ink,
                         ),
                         child: const Text(
                           '‹',
@@ -101,10 +102,10 @@ class ProfileLayout extends StatelessWidget {
 class AccountMenuRow extends StatelessWidget {
   const AccountMenuRow({super.key, required this.label, required this.onTap});
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: AppColors.of(context).background,
     borderRadius: BorderRadius.circular(12),
     child: InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -118,16 +119,22 @@ class AccountMenuRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(fontSize: 15, height: 24 / 15),
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 24 / 15,
+                    color: onTap == null
+                        ? AppColors.of(context).muted
+                        : AppColors.of(context).ink,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 '›',
                 style: TextStyle(
                   fontSize: 16,
                   height: 1.5,
-                  color: ProfileStyle.muted,
+                  color: AppColors.of(context).muted,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -154,9 +161,9 @@ class ProfileSecondaryButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
-        backgroundColor: Colors.white,
-        foregroundColor: ProfileStyle.ink,
-        side: const BorderSide(color: Color(0xFFE1E6E2)),
+        backgroundColor: AppColors.of(context).background,
+        foregroundColor: AppColors.of(context).ink,
+        side: BorderSide(color: AppColors.of(context).line),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: const TextStyle(
           fontFamily: 'Noto Sans KR',

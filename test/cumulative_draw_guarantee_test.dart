@@ -134,7 +134,10 @@ void main() {
             ? '누적 보장 9/10 · 다음 뽑기 레어 이상 확정'
             : '누적 보장 $count/10',
       );
-      expect(find.textContaining('단뽑·10회 뽑기 누적 횟수 공유'), findsOneWidget);
+      expect(
+        find.byTooltip('단뽑·10회 뽑기 누적 횟수 공유\n레어 또는 스페셜이 나오면 횟수가 초기화돼요.'),
+        findsOneWidget,
+      );
       expect(find.textContaining('RARE 이상 1개 보장'), findsNothing);
     });
   }
@@ -158,8 +161,9 @@ void main() {
         await tester.ensureVisible(find.text('10회 뽑기'));
         await tester.tap(find.text('10회 뽑기'));
         await tester.pumpAndSettle();
-        if (find.text('건너뛰기').evaluate().isNotEmpty)
+        if (find.text('건너뛰기').evaluate().isNotEmpty) {
           await tester.tap(find.text('건너뛰기'));
+        }
         await tester.pumpAndSettle();
         await tester.tap(find.text('확인').last);
         await tester.pumpAndSettle();
@@ -176,8 +180,9 @@ void main() {
         await tester.ensureVisible(find.text('1회 뽑기'));
         await tester.tap(find.text('1회 뽑기'));
         await tester.pumpAndSettle();
-        if (find.text('건너뛰기').evaluate().isNotEmpty)
+        if (find.text('건너뛰기').evaluate().isNotEmpty) {
           await tester.tap(find.text('건너뛰기'));
+        }
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.text('확인').last);
         await tester.tap(find.text('확인').last);

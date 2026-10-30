@@ -1,6 +1,5 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-
-import '../../profile/widgets/profile_layout.dart';
 
 /// Keeps actions at the bottom on tall screens and scrollable on small screens.
 class CosmeticContent extends StatelessWidget {
@@ -39,10 +38,12 @@ class CosmeticAction extends StatelessWidget {
     required this.label,
     required this.hint,
     this.onPressed,
+    this.secondary = false,
   });
   final String label;
   final String hint;
   final VoidCallback? onPressed;
+  final bool secondary;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -52,10 +53,14 @@ class CosmeticAction extends StatelessWidget {
         onPressed: onPressed,
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(52),
-          backgroundColor: ProfileStyle.action,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFF5F7F5),
-          disabledForegroundColor: ProfileStyle.muted,
+          backgroundColor: secondary
+              ? AppColors.of(context).soft
+              : AppColors.of(context).action,
+          foregroundColor: secondary
+              ? AppColors.of(context).forest
+              : AppColors.of(context).background,
+          disabledBackgroundColor: AppColors.of(context).surface,
+          disabledForegroundColor: AppColors.of(context).muted,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -70,7 +75,7 @@ class CosmeticAction extends StatelessWidget {
       ),
       if (hint.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text(hint, style: ProfileStyle.caption),
+        Text(hint, style: AppColors.of(context).caption),
       ],
     ],
   );

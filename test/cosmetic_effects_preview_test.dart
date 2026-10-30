@@ -20,8 +20,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('새 장식 미리보기  ›'), findsNothing);
-      await tester.ensureVisible(find.text('획득 목록 · 확률 안내  ›'));
-      await tester.tap(find.text('획득 목록 · 확률 안내  ›'));
+      await tester.ensureVisible(find.text('획득 목록 · 확률 안내'));
+      await tester.tap(find.text('획득 목록 · 확률 안내'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(CosmeticCatalogSheet), findsOneWidget);

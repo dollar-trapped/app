@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
 import 'package:flutter/material.dart';
@@ -99,94 +100,58 @@ class _MyPageState extends State<MyPage> {
     );
   }
 
+  Future<void> _openItems() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => CosmeticItemsPage(
+          nickname: _user?.nickname ?? '닉네임',
+          repository: widget.repository,
+          holding: _user?.usdAmount,
+        ),
+      ),
+    );
+    if (mounted) await _loadProfile();
+  }
+
+  Future<void> _openGacha() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => CosmeticGachaPage(
+          nickname: _user?.nickname ?? '닉네임',
+          repository: widget.repository,
+        ),
+      ),
+    );
+    if (mounted) await _loadProfile();
+  }
+
   @override
   Widget build(BuildContext context) => ProfileLayout(
     title: '마이페이지',
     onBack: widget.onBack,
-    action: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Tooltip(
-          triggerMode: TooltipTriggerMode.tap,
-          preferBelow: true,
-          verticalOffset: 18,
-          showDuration: const Duration(seconds: 15),
-          padding: const EdgeInsets.all(16),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          constraints: const BoxConstraints(maxWidth: 300),
-          decoration: BoxDecoration(
-            color: ProfileStyle.forest,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x26000000),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          textStyle: const TextStyle(
-            fontSize: 12,
-            height: 1.6,
-            color: Colors.white,
-          ),
-          message:
-              '중복하면 달러칩으로 돌려드립니다.\n\n'
-              'COMMON 중복 → 달러칩 1개\n'
-              'RARE 중복 → 달러칩 3개\n'
-              'SPECIAL 중복 → 달러칩 5개\n\n'
-              '닉네임 뽑기에서 달러칩을 뽑기권으로 교환할 수 있어요.',
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: ProfileStyle.soft,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _inventory == null ? '달러칩 —' : '달러칩 ${_inventory!.dollarChips}',
-              key: const Key('my-dollar-chip-balance'),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: ProfileStyle.action,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(
-          width: 60,
-          height: 44,
-          child: TextButton(
-            onPressed: _openSettings,
-            style: TextButton.styleFrom(
-              foregroundColor: ProfileStyle.muted,
-              textStyle: const TextStyle(
-                fontFamily: 'Noto Sans KR',
-                fontSize: 13,
-                height: 20 / 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            child: const Text('설정'),
-          ),
-        ),
-      ],
+    action: TextButton(
+      onPressed: _openSettings,
+      style: TextButton.styleFrom(
+        minimumSize: const Size(60, 44),
+        foregroundColor: AppColors.of(context).muted,
+      ),
+      child: const Text('설정'),
     ),
     child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: ProfileStyle.soft,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.of(context).surface,
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('내 채팅 이름', style: ProfileStyle.caption),
+                Text('내 채팅 이름', style: AppColors.of(context).caption),
                 const SizedBox(height: 12),
                 if (_error != null)
                   TextButton(
@@ -210,91 +175,186 @@ class _MyPageState extends State<MyPage> {
                 else
                   Text(
                     _user!.nickname,
-                    style: ProfileStyle.title.copyWith(
-                      color: widget.appearance!.color,
-                    ),
+                    style: AppColors.of(
+                      context,
+                    ).title.copyWith(color: widget.appearance!.color),
                   ),
-                const SizedBox(height: 12),
-                Text(_equipmentDescription, style: ProfileStyle.caption),
-                const SizedBox(height: 12),
-                ProfileSecondaryButton(
-                  label: '내 아이템 · 꾸미기',
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => CosmeticItemsPage(
-                          nickname: _user?.nickname ?? '닉네임',
-                          repository: widget.repository,
-                          holding: _user?.usdAmount,
-                        ),
-                      ),
-                    );
-                    if (mounted) await _loadProfile();
-                  },
+                const SizedBox(height: 8),
+                Text(
+                  _equipmentDescription,
+                  style: AppColors.of(context).caption,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: ProfileStyle.forest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '작은 재미, 한 번의 뽑기',
-                  style: ProfileStyle.caption.copyWith(
-                    color: ProfileStyle.soft,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '오늘은 어떤 이름?',
-                  style: ProfileStyle.title.copyWith(color: Colors.white),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '글자색 · 글꼴 · 배경을 모아보세요.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 20 / 13,
-                    fontWeight: FontWeight.w500,
-                    color: ProfileStyle.soft,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ProfileSecondaryButton(
-                  label: '닉네임 뽑기  →',
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => CosmeticGachaPage(
-                          nickname: _user?.nickname ?? '닉네임',
-                          repository: widget.repository,
-                        ),
+          const SizedBox(height: 28),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              Text('닉네임 꾸미기', style: _sectionStyle(context)),
+              Tooltip(
+                triggerMode: TooltipTriggerMode.tap,
+                showDuration: const Duration(seconds: 15),
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                message:
+                    '중복 아이템은 달러칩으로 돌려드려요.\n'
+                    'COMMON 1개 · RARE 3개 · SPECIAL 5개\n'
+                    '닉네임 뽑기에서 뽑기권으로 교환할 수 있어요.',
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _inventory == null
+                            ? '달러칩 —'
+                            : '달러칩 ${_inventory!.dollarChips}',
+                        key: const Key('my-dollar-chip-balance'),
+                        style: AppColors.of(
+                          context,
+                        ).caption.copyWith(fontWeight: FontWeight.w600),
                       ),
-                    );
-                    if (mounted) await _loadProfile();
-                  },
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: AppColors.of(context).muted,
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          AccountMenuRow(
-            label: '닉네임 수정',
-            onTap: () => _edit(ProfileEditSection.nickname),
+          const SizedBox(height: 8),
+          _MenuGroup(
+            children: [
+              _CosmeticMenuRow(
+                icon: Icons.palette_outlined,
+                label: '내 아이템 · 꾸미기',
+                subtitle: '모은 아이템 관리',
+                onTap: _openItems,
+              ),
+              _CosmeticMenuRow(
+                icon: Icons.auto_awesome_outlined,
+                label: '닉네임 뽑기',
+                subtitle: '글자색 · 글꼴 · 배경 모으기',
+                onTap: _openGacha,
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          AccountMenuRow(
-            label: '내 달러 포지션',
-            onTap: () => _edit(ProfileEditSection.position),
+          const SizedBox(height: 28),
+          Text('내 계정', style: _sectionStyle(context)),
+          const SizedBox(height: 12),
+          _MenuGroup(
+            children: [
+              AccountMenuRow(
+                label: '닉네임 수정',
+                onTap: () => _edit(ProfileEditSection.nickname),
+              ),
+              AccountMenuRow(
+                label: '내 달러 포지션',
+                onTap: () => _edit(ProfileEditSection.position),
+              ),
+            ],
           ),
         ],
+      ),
+    ),
+  );
+}
+
+TextStyle _sectionStyle(BuildContext context) => TextStyle(
+  fontSize: 14,
+  height: 1.5,
+  fontWeight: FontWeight.w700,
+  color: AppColors.of(context).ink,
+);
+
+class _MenuGroup extends StatelessWidget {
+  const _MenuGroup({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(
+      border: Border.all(color: AppColors.of(context).line),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(height: 1, color: AppColors.of(context).line),
+            ),
+          children[i],
+        ],
+      ],
+    ),
+  );
+}
+
+class _CosmeticMenuRow extends StatelessWidget {
+  const _CosmeticMenuRow({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label, subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: AppColors.of(context).background,
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.of(context).soft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.of(context).action, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: AppColors.of(context).caption),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.of(context).muted,
+            ),
+          ],
+        ),
       ),
     ),
   );

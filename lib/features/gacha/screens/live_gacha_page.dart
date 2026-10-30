@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'wish_ticket_page.dart';
 import 'cosmetic_gacha_page.dart';
 import '../data/gacha_models.dart';
@@ -301,7 +302,7 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.of(context).background,
         builder: (context) => SafeArea(
           top: false,
           child: CosmeticCatalogSheet(
@@ -327,64 +328,233 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
     }
   }
 
+  Future<void> _openWishTickets() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => WishTicketPage(
+          repository: widget.repository,
+          nickname: widget.nickname,
+        ),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  Future<void> _openItems() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => OwnedCosmeticsPage(
+          repository: widget.repository,
+          nickname: widget.nickname,
+          onOpenGacha: (context) => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => CosmeticGachaPage(
+                repository: widget.repository,
+                nickname: widget.nickname,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  CosmeticItem? _equippedItem(String? id) {
+    for (final item in _inventory?.items ?? <CosmeticItem>[]) {
+      if (item.id == id) return item;
+    }
+    return null;
+  }
+
+  bool get _busy => _loading || _drawing || _exchanging;
+
+  Widget _drawActions() {
+    final ten = CosmeticAction(
+      secondary: true,
+      label: _batchRequestId == null ? '10회 뽑기' : '10회 결과 다시 확인',
+      hint: _batchRequestId == null
+          ? _catalog?.cumulativeGuaranteedRareOrAbove != true &&
+                    _catalog?.batchGuaranteedRareOrAbove == true
+                ? '10장 사용 · RARE 이상 1개 보장'
+                : '10장 사용'
+          : '이전 10회 요청 결과 확인',
+      onPressed:
+          !_busy &&
+              _batchStateReady &&
+              _drawRequestId == null &&
+              (_batchRequestId != null || (_inventory?.tickets ?? 0) >= 10)
+          ? _drawTen
+          : null,
+    );
+    final one = CosmeticAction(
+      label: _drawRequestId != null ? '뽑기 결과 다시 확인' : '1회 뽑기',
+      hint: _drawRequestId != null ? '이전 요청 결과 확인' : '1장 사용',
+      onPressed:
+          !_busy &&
+              _batchStateReady &&
+              _batchRequestId == null &&
+              (_drawRequestId != null || (_inventory?.tickets ?? 0) > 0)
+          ? _draw
+          : null,
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 260 ||
+            MediaQuery.textScalerOf(context).scale(16) > 21) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [one, const SizedBox(height: 16), ten],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: ten),
+            const SizedBox(width: 12),
+            Expanded(child: one),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !_drawing && !_exchanging,
     child: ProfileLayout(
       title: '닉네임 뽑기',
-      child: CosmeticContent(
-        content: Column(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('이름은 그대로.\n분위기는 새롭게.', style: ProfileStyle.title),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.of(context).soft,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: [
+                  Text('지금 내 닉네임', style: AppColors.of(context).caption),
+                  const SizedBox(height: 16),
+                  ServerCosmeticNickname(
+                    nickname: widget.nickname,
+                    size: 24,
+                    color: _equippedItem(_inventory?.equipment.colorId),
+                    font: _equippedItem(_inventory?.equipment.fontId),
+                    background: _equippedItem(
+                      _inventory?.equipment.backgroundId,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('내 뽑기권'),
-                Text(
-                  _inventory == null ? '—' : '${_inventory!.tickets}장',
-                  key: const Key('gacha-ticket-balance'),
+                Expanded(
+                  child: _Balance(
+                    label: '내 뽑기권',
+                    value: _inventory == null ? '—' : '${_inventory!.tickets}장',
+                    valueKey: const Key('gacha-ticket-balance'),
+                    prominent: true,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 32,
+                  color: AppColors.of(context).line,
+                ),
+                Expanded(
+                  child: _Balance(
+                    label: '내 달러칩',
+                    value: _inventory == null
+                        ? '—'
+                        : '${_inventory!.dollarChips}개',
+                    valueKey: const Key('gacha-chip-balance'),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('내 달러칩'),
+            const SizedBox(height: 20),
+            if (_loading) ...[
+              const LinearProgressIndicator(minHeight: 2),
+              const SizedBox(height: 12),
+            ],
+            if (_error != null) ...[
+              if (_error!.isNotEmpty)
                 Text(
-                  _inventory == null ? '—' : '${_inventory!.dollarChips}개',
-                  key: const Key('gacha-chip-balance'),
+                  _error!,
+                  style: TextStyle(color: AppColors.of(context).error),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _busy ? null : _load,
+                  child: const Text('정보 다시 불러오기'),
+                ),
+              ),
+            ],
+            if (_catalog?.cumulativeGuaranteedRareOrAbove == true) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _loading
+                          ? '보장 횟수를 확인하고 있어요.'
+                          : _error != null || _inventory?.guaranteeState == null
+                          ? '보장 횟수를 확인하지 못했어요. 정보를 다시 불러와 주세요.'
+                          : _inventory!.guaranteeState!.drawsUntilGuaranteed ==
+                                1
+                          ? '누적 보장 9/10 · 다음 뽑기 레어 이상 확정'
+                          : '누적 보장 ${_inventory!.guaranteeState!.consecutiveCommonCount}/10',
+                      key: const Key('gacha-guarantee-status'),
+                      style: AppColors.of(
+                        context,
+                      ).caption.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Tooltip(
+                    triggerMode: TooltipTriggerMode.tap,
+                    message: '단뽑·10회 뽑기 누적 횟수 공유\n레어 또는 스페셜이 나오면 횟수가 초기화돼요.',
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: AppColors.of(context).muted,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            _drawActions(),
+            const SizedBox(height: 28),
+            Divider(height: 1, color: AppColors.of(context).line),
+            const SizedBox(height: 24),
+            Text('뽑기권 모으기', style: _gachaSectionStyle(context)),
+            const SizedBox(height: 12),
             OutlinedButton(
               key: const Key('exchange-dollar-chips'),
               style: OutlinedButton.styleFrom(
-                backgroundColor: _hasExchangeChips
-                    ? ProfileStyle.action
-                    : Colors.transparent,
-                disabledBackgroundColor: _hasExchangeChips
-                    ? ProfileStyle.action
-                    : Colors.transparent,
-                foregroundColor: _hasExchangeChips
-                    ? Colors.white
-                    : ProfileStyle.muted,
-                disabledForegroundColor: _hasExchangeChips
-                    ? Colors.white70
-                    : ProfileStyle.muted,
-                side: BorderSide(
-                  color: _hasExchangeChips
-                      ? ProfileStyle.action
-                      : const Color(0xFFE1E6E2),
+                minimumSize: const Size.fromHeight(48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                foregroundColor: AppColors.of(context).ink,
+                side: BorderSide(color: AppColors.of(context).line),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               onPressed:
-                  !_loading &&
-                      !_drawing &&
-                      !_exchanging &&
+                  !_busy &&
                       _inventory != null &&
                       (_exchangeId != null || _hasExchangeChips)
                   ? _exchangeChips
@@ -394,157 +564,83 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                     ? '교환 중…'
                     : _exchangeId != null
                     ? '교환 결과 다시 확인'
-                    : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개 → 뽑기권 1개로 바꾸기',
+                    : '달러칩 ${_catalog?.chipExchangeCost ?? 10}개로 뽑기권 1장 교환',
+                textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _loading || _drawing || _exchanging
-                  ? null
-                  : () async {
-                      await Navigator.of(context).push<void>(
-                        MaterialPageRoute(
-                          builder: (_) => WishTicketPage(
-                            repository: widget.repository,
-                            nickname: widget.nickname,
-                          ),
-                        ),
-                      );
-                      if (mounted) await _load();
-                    },
-              child: const Text('염원의 선택권 · SPECIAL 선택'),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             RewardedTestButton(
               repository: widget.repository,
-              enabled: !_drawing && !_loading && !_exchanging,
+              enabled: !_busy,
               onVerified: _load,
             ),
-            const SizedBox(height: 16),
-            const Text(
-              '글자색 · 글꼴 · 배경을 모아서\n평단은 못 바꿔도 분위기를 바꿉시다.',
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: ProfileStyle.muted,
-              ),
-            ),
-            TextButton(
-              onPressed: _catalog == null ? null : _showCatalog,
-              child: const Text('획득 목록 · 확률 안내  ›'),
-            ),
-            TextButton(
-              onPressed: _drawing || _exchanging
-                  ? null
-                  : () async {
-                      await Navigator.of(context).push(
-                        MaterialPageRoute<bool>(
-                          builder: (_) => OwnedCosmeticsPage(
-                            repository: widget.repository,
-                            nickname: widget.nickname,
-                            onOpenGacha: (context) =>
-                                Navigator.of(context).push<void>(
-                                  MaterialPageRoute(
-                                    builder: (_) => CosmeticGachaPage(
-                                      repository: widget.repository,
-                                      nickname: widget.nickname,
-                                    ),
-                                  ),
-                                ),
-                          ),
-                        ),
-                      );
-                      if (mounted) await _load();
-                    },
-              child: const Text('내 아이템 · 꾸미기'),
-            ),
-            if (_loading) const Center(child: CircularProgressIndicator()),
-            if (_error != null) ...[
-              if (_error!.isNotEmpty)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              TextButton(
-                onPressed: _loading || _drawing || _exchanging ? null : _load,
-                child: const Text('정보 다시 불러오기'),
-              ),
-            ],
-          ],
-        ),
-        actions: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_catalog?.cumulativeGuaranteedRareOrAbove == true) ...[
-              Text(
-                _loading
-                    ? '보장 횟수를 확인하고 있어요.'
-                    : _error != null || _inventory?.guaranteeState == null
-                    ? '보장 횟수를 확인하지 못했어요. 정보를 다시 불러와 주세요.'
-                    : _inventory!.guaranteeState!.drawsUntilGuaranteed == 1
-                    ? '누적 보장 9/10 · 다음 뽑기 레어 이상 확정'
-                    : '누적 보장 ${_inventory!.guaranteeState!.consecutiveCommonCount}/10',
-                key: const Key('gacha-guarantee-status'),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const Text(
-                '단뽑·10회 뽑기 누적 횟수 공유\n레어 또는 스페셜이 나오면 횟수가 초기화돼요.',
-                style: TextStyle(color: ProfileStyle.muted, height: 1.6),
-              ),
-              const SizedBox(height: 12),
-            ],
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: CosmeticAction(
-                    label: _batchRequestId == null ? '10회 뽑기' : '10회 결과 다시 확인',
-                    hint: _batchRequestId == null
-                        ? _catalog?.cumulativeGuaranteedRareOrAbove == true
-                              ? '뽑기권 10장 사용\n단뽑과 누적 보장 공유'
-                              : _catalog?.batchGuaranteedRareOrAbove == true
-                              ? '뽑기권 10장 사용\nRARE 이상 1개 보장'
-                              : '뽑기권 10장 사용'
-                        : '이전 10회 요청 결과 확인',
-                    onPressed:
-                        !_loading &&
-                            _batchStateReady &&
-                            !_exchanging &&
-                            !_drawing &&
-                            _drawRequestId == null &&
-                            (_batchRequestId != null ||
-                                (_inventory?.tickets ?? 0) >= 10)
-                        ? _drawTen
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CosmeticAction(
-                    label: _drawRequestId != null ? '뽑기 결과 다시 확인' : '1회 뽑기',
-                    hint: _drawRequestId != null ? '이전 요청 결과 확인' : '뽑기권 1장 사용',
-                    onPressed:
-                        !_loading &&
-                            _batchStateReady &&
-                            !_exchanging &&
-                            !_drawing &&
-                            _batchRequestId == null &&
-                            (_drawRequestId != null ||
-                                (_inventory?.tickets ?? 0) > 0)
-                        ? _draw
-                        : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               AdConfig.isTest
                   ? '테스트 광고는 뽑기권을 지급하지 않아요.'
                   : '광고 보상은 서버 검증 후 반영돼요.',
-              style: ProfileStyle.caption,
+              style: AppColors.of(context).caption,
+            ),
+            const SizedBox(height: 28),
+            Text('더 둘러보기', style: _gachaSectionStyle(context)),
+            const SizedBox(height: 8),
+            AccountMenuRow(
+              label: '스페셜 아이템 선택',
+              onTap: _busy ? null : _openWishTickets,
+            ),
+            AccountMenuRow(
+              label: '획득 목록 · 확률 안내',
+              onTap: _catalog == null || _drawing || _exchanging
+                  ? null
+                  : _showCatalog,
+            ),
+            AccountMenuRow(
+              label: '내 아이템 · 꾸미기',
+              onTap: _drawing || _exchanging ? null : _openItems,
             ),
           ],
         ),
       ),
     ),
+  );
+}
+
+TextStyle _gachaSectionStyle(BuildContext context) => TextStyle(
+  fontSize: 14,
+  height: 1.5,
+  fontWeight: FontWeight.w700,
+  color: AppColors.of(context).ink,
+);
+
+class _Balance extends StatelessWidget {
+  const _Balance({
+    required this.label,
+    required this.value,
+    required this.valueKey,
+    this.prominent = false,
+  });
+  final String label, value;
+  final Key valueKey;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Text(label, style: AppColors.of(context).caption),
+      const SizedBox(height: 4),
+      Text(
+        value,
+        key: valueKey,
+        style: TextStyle(
+          fontSize: 22,
+          height: 1.5,
+          fontWeight: FontWeight.w700,
+          color: prominent
+              ? AppColors.of(context).action
+              : AppColors.of(context).ink,
+        ),
+      ),
+    ],
   );
 }
 
@@ -624,25 +720,25 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
             children: [
               Text(
                 result.duplicate ? '이미 보유한 아이템' : '새로운 아이템',
-                style: const TextStyle(color: ProfileStyle.action),
+                style: TextStyle(color: AppColors.of(context).action),
               ),
               const SizedBox(height: 24),
               Text(
                 result.duplicate ? '익숙한 취향을\n다시 만났어요.' : '새로운 취향을\n뽑았어요.',
-                style: ProfileStyle.title,
+                style: AppColors.of(context).title,
               ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7F5),
+                  color: AppColors.of(context).surface,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
                     Text(
                       '${item.type} · ${item.rarity}',
-                      style: ProfileStyle.caption,
+                      style: AppColors.of(context).caption,
                     ),
                     const SizedBox(height: 16),
                     ServerCosmeticNickname(
@@ -675,10 +771,13 @@ class _LiveDrawResultPageState extends State<LiveDrawResultPage> {
                 result.duplicate
                     ? '중복 보상으로 달러칩 ${result.chipsGranted}개를 받았어요.'
                     : '아이템은 내 아이템에 보관됐어요.\n언제든 꺼내 쓸 수 있어요.',
-                style: ProfileStyle.caption,
+                style: AppColors.of(context).caption,
               ),
               if (_error?.isNotEmpty == true)
-                Text(_error!, style: const TextStyle(color: Colors.red)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: AppColors.of(context).error),
+                ),
             ],
           ),
           actions: Column(

@@ -155,8 +155,8 @@ void main() {
     );
     expect(find.text('빈티지 골드 · 기본 글꼴 · 배경 없음'), findsOneWidget);
     expect(
-      tester.widget<Text>(find.text('오늘은 어떤 이름?')).style!.color,
-      Colors.white,
+      tester.widget<Text>(find.text('닉네임 꾸미기')).style!.color,
+      const Color(0xFF151916),
     );
   });
 

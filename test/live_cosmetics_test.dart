@@ -19,6 +19,39 @@ const item = CosmeticItem(
   appearance: {'nameColor': '#4477CC'},
 );
 void main() {
+  testWidgets(
+    'draw actions appear before secondary actions in the first viewport',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiveGachaPage(
+            repository: _Repo(),
+            nickname: '초록달러',
+            pendingDrawStore: _MemoryPending(),
+            pendingBatchDrawStore: _MemoryPending(),
+            pendingExchangeStore: _MemoryPending(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final one = find.widgetWithText(FilledButton, '1회 뽑기');
+      final ten = find.widgetWithText(FilledButton, '10회 뽑기');
+      expect(one.hitTestable(), findsOneWidget);
+      expect(ten.hitTestable(), findsOneWidget);
+      expect(tester.getBottomLeft(one).dy, lessThan(844));
+      expect(
+        tester.getBottomLeft(ten).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(const Key('exchange-dollar-chips'))).dy,
+        ),
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   for (final fail in [false, true]) {
     testWidgets(
       'draw waits for confirmed server result and handles ${fail ? "failure" : "success"}',

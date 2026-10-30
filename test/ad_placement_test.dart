@@ -62,8 +62,8 @@ void main() {
       greaterThan(tester.getCenter(find.text('마이페이지')).dx),
     );
     expect(find.byType(RewardedTestButton), findsNothing);
-    await tester.ensureVisible(find.text('닉네임 뽑기  →'));
-    await tester.tap(find.text('닉네임 뽑기  →'));
+    await tester.ensureVisible(find.text('닉네임 뽑기'));
+    await tester.tap(find.text('닉네임 뽑기'));
     await tester.pumpAndSettle();
     expect(find.byType(CosmeticGachaPage), findsOneWidget);
     expect(find.byType(RewardedTestButton), findsOneWidget);

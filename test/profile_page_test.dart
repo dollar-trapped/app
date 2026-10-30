@@ -16,8 +16,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('달러칩 0'), findsOneWidget);
     expect(
-      tester.getCenter(find.byKey(const Key('my-dollar-chip-balance'))).dx,
-      lessThan(tester.getCenter(find.text('설정')).dx),
+      tester.getTopLeft(find.byKey(const Key('my-dollar-chip-balance'))).dy,
+      greaterThan(tester.getBottomLeft(find.text('초록달러')).dy),
     );
     await tester.ensureVisible(find.text('내 달러 포지션'));
     await tester.tap(find.text('내 달러 포지션'));
