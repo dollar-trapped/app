@@ -283,6 +283,9 @@ class _HistoryChartPainter extends CustomPainter {
   final int? selected;
   final AppColors colors;
 
+  Color get _chartColor =>
+      colors == AppColors.dark ? AppColors.light.background : colors.action;
+
   @override
   void paint(Canvas canvas, Size size) {
     final geometry = _ChartGeometry(points, size);
@@ -297,7 +300,7 @@ class _HistoryChartPainter extends CustomPainter {
     }
 
     final linePaint = Paint()
-      ..color = colors.action
+      ..color = _chartColor
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     if (points.length == 1) {
@@ -305,7 +308,7 @@ class _HistoryChartPainter extends CustomPainter {
       canvas.drawCircle(
         offsetFor(points.single),
         4,
-        Paint()..color = colors.action,
+        Paint()..color = _chartColor,
       );
       _paintSelection(canvas, chart, offsetFor);
       return;
@@ -320,7 +323,7 @@ class _HistoryChartPainter extends CustomPainter {
     canvas.drawCircle(
       offsetFor(points.last),
       4,
-      Paint()..color = colors.action,
+      Paint()..color = _chartColor,
     );
     _paintSelection(canvas, chart, offsetFor);
   }
@@ -340,7 +343,7 @@ class _HistoryChartPainter extends CustomPainter {
         ..strokeWidth = 1,
     );
     canvas.drawCircle(offset, 7, Paint()..color = colors.background);
-    canvas.drawCircle(offset, 5, Paint()..color = colors.action);
+    canvas.drawCircle(offset, 5, Paint()..color = _chartColor);
   }
 
   @override
