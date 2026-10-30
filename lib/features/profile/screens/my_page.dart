@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
@@ -34,6 +35,7 @@ class MyPage extends StatefulWidget {
 class _MyPageState extends State<MyPage> {
   User? _user;
   CosmeticInventory? _inventory;
+  bool _loadingInventory = true;
   CosmeticItem? _item(String? id) {
     for (final item in _inventory?.items ?? <CosmeticItem>[]) {
       if (item.id == id) return item;
@@ -56,7 +58,10 @@ class _MyPageState extends State<MyPage> {
   }
 
   Future<void> _loadProfile() async {
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _loadingInventory = true;
+    });
     try {
       final user = await widget.repository.getMe();
       if (mounted) setState(() => _user = user);
@@ -74,6 +79,8 @@ class _MyPageState extends State<MyPage> {
               : '내 정보를 불러오지 못했어요.',
         );
       }
+    } finally {
+      if (mounted) setState(() => _loadingInventory = false);
     }
   }
 
@@ -159,10 +166,9 @@ class _MyPageState extends State<MyPage> {
                     child: Text('$_error 다시 시도'),
                   )
                 else if (_user == null)
-                  const SizedBox(
-                    height: 32,
-                    width: 32,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                  const Skeleton(
+                    label: '내 이름 불러오는 중',
+                    child: SkeletonLine(width: 160, height: 36),
                   )
                 else if (widget.appearance == null)
                   ServerCosmeticNickname(
@@ -180,10 +186,16 @@ class _MyPageState extends State<MyPage> {
                     ).title.copyWith(color: widget.appearance!.color),
                   ),
                 const SizedBox(height: 8),
-                Text(
-                  _equipmentDescription,
-                  style: AppColors.of(context).caption,
-                ),
+                if (_inventory == null && _loadingInventory)
+                  const Skeleton(
+                    label: '장착 아이템 불러오는 중',
+                    child: SkeletonLine(width: 224),
+                  )
+                else
+                  Text(
+                    _equipmentDescription,
+                    style: AppColors.of(context).caption,
+                  ),
               ],
             ),
           ),
@@ -209,15 +221,21 @@ class _MyPageState extends State<MyPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        _inventory == null
-                            ? '달러칩 —'
-                            : '달러칩 ${_inventory!.dollarChips}',
-                        key: const Key('my-dollar-chip-balance'),
-                        style: AppColors.of(
-                          context,
-                        ).caption.copyWith(fontWeight: FontWeight.w600),
-                      ),
+                      if (_inventory == null && _loadingInventory)
+                        const Skeleton(
+                          label: '달러칩 불러오는 중',
+                          child: SkeletonLine(width: 64),
+                        )
+                      else
+                        Text(
+                          _inventory == null
+                              ? '달러칩 —'
+                              : '달러칩 ${_inventory!.dollarChips}',
+                          key: const Key('my-dollar-chip-balance'),
+                          style: AppColors.of(
+                            context,
+                          ).caption.copyWith(fontWeight: FontWeight.w600),
+                        ),
                       const SizedBox(width: 4),
                       Icon(
                         Icons.info_outline_rounded,

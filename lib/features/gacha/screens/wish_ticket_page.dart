@@ -1,4 +1,5 @@
 import 'package:dollar_trapped/core/theme/app_colors.dart';
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
 import '../../cosmetics/widgets/server_cosmetic_preview.dart';
@@ -209,142 +210,156 @@ class _WishTicketPageState extends State<WishTicketPage> {
       child: ProfileLayout(
         title: '염원의 선택권',
         child: CosmeticContent(
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '기다렸던 SPECIAL,\n이번에는 직접 선택하세요.',
-                style: AppColors.of(context).title,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '달러칩 100개로 선택권 1장을 교환해요.\n원하는 장식을 확정할 때 선택권이 사용돼요.',
-                style: AppColors.of(context).caption,
-              ),
-              const SizedBox(height: 24),
-              Text('내 달러칩  ${_status == null ? '—' : '${_status!.chips}개'}'),
-              const SizedBox(height: 8),
-              Text(
-                '염원의 선택권  ${_status == null ? '—' : '${_status!.tickets}장'}',
-                key: const Key('wish-ticket-balance'),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                key: const Key('wish-exchange'),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: _enabled && _status!.chips >= 100
-                      ? AppColors.of(context).action
-                      : Colors.transparent,
-                  foregroundColor: _enabled && _status!.chips >= 100
-                      ? AppColors.of(context).background
-                      : AppColors.of(context).muted,
-                ),
-                onPressed: _enabled && _status!.chips >= 100
-                    ? () => _perform()
-                    : null,
-                child: const Text(
-                  '달러칩 100개 → 염원의 선택권 1장',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              if (_loading)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              if (_unavailable || (_status != null && !_status!.supported))
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('염원의 선택권을 준비하고 있어요. 지금은 교환하거나 사용할 수 없어요.'),
-                ),
-              if (_success != null)
-                Text(
-                  _success!,
-                  style: TextStyle(color: AppColors.of(context).action),
-                ),
-              if (_error != null)
-                Text(
-                  _error!,
-                  style: TextStyle(color: AppColors.of(context).error),
-                ),
-              if (_pending) ...[
-                const SizedBox(height: 12),
-                const Text('이전 교환 또는 선택 결과를 먼저 확인해 주세요.'),
-                FilledButton(
-                  onPressed: !_busy && !_loading ? () => _perform() : null,
-                  child: const Text('이전 결과 다시 확인'),
-                ),
-              ],
-              TextButton(
-                onPressed: _busy || _loading ? null : _load,
-                child: const Text('정보 새로고침'),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'SPECIAL 선택',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '보유한 장식은 선택할 수 없어요. 선택권은 나중에 사용해도 괜찮아요.',
-                style: AppColors.of(context).caption,
-              ),
-              if (_status?.supported == true &&
-                  options.every((o) => !o.selectable))
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text(
-                    '현재 선택할 수 있는 SPECIAL이 없어요. 새 장식이 추가되면 선택권을 사용해 보세요.',
-                  ),
-                ),
-              for (final option in options)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Semantics(
-                    selected: _selected?.item.id == option.item.id,
-                    child: OutlinedButton(
-                      key: ValueKey('wish-option-${option.item.id}'),
-                      onPressed:
-                          _enabled && option.selectable && _status!.tickets > 0
-                          ? () => setState(() => _selected = option)
-                          : null,
+          content: _loading && _status == null
+              ? const _WishTicketSkeleton()
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '기다렸던 SPECIAL,\n이번에는 직접 선택하세요.',
+                      style: AppColors.of(context).title,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '달러칩 100개로 선택권 1장을 교환해요.\n원하는 장식을 확정할 때 선택권이 사용돼요.',
+                      style: AppColors.of(context).caption,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      '내 달러칩  ${_status == null ? '—' : '${_status!.chips}개'}',
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '염원의 선택권  ${_status == null ? '—' : '${_status!.tickets}장'}',
+                      key: const Key('wish-ticket-balance'),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      key: const Key('wish-exchange'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
-                        backgroundColor: _selected?.item.id == option.item.id
-                            ? AppColors.of(context).soft
+                        backgroundColor: _enabled && _status!.chips >= 100
+                            ? AppColors.of(context).action
                             : Colors.transparent,
+                        foregroundColor: _enabled && _status!.chips >= 100
+                            ? AppColors.of(context).background
+                            : AppColors.of(context).muted,
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '${option.item.name}${option.owned
-                                ? ' · 보유 중'
-                                : _selected?.item.id == option.item.id
-                                ? ' · 선택됨'
-                                : ''}',
-                          ),
-                          const SizedBox(height: 12),
-                          ServerCosmeticNickname(
-                            nickname: widget.nickname,
-                            color: option.item.type == 'NAME_COLOR'
-                                ? option.item
-                                : null,
-                            font: option.item.type == 'NAME_FONT'
-                                ? option.item
-                                : null,
-                            background: option.item.type == 'NAME_BACKGROUND'
-                                ? option.item
-                                : null,
-                          ),
-                        ],
+                      onPressed: _enabled && _status!.chips >= 100
+                          ? () => _perform()
+                          : null,
+                      child: const Text(
+                        '달러칩 100개 → 염원의 선택권 1장',
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                  ),
+                    if (_loading && _status != null)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    if (_unavailable ||
+                        (_status != null && !_status!.supported))
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text('염원의 선택권을 준비하고 있어요. 지금은 교환하거나 사용할 수 없어요.'),
+                      ),
+                    if (_success != null)
+                      Text(
+                        _success!,
+                        style: TextStyle(color: AppColors.of(context).action),
+                      ),
+                    if (_error != null)
+                      Text(
+                        _error!,
+                        style: TextStyle(color: AppColors.of(context).error),
+                      ),
+                    if (_pending) ...[
+                      const SizedBox(height: 12),
+                      const Text('이전 교환 또는 선택 결과를 먼저 확인해 주세요.'),
+                      FilledButton(
+                        onPressed: !_busy && !_loading
+                            ? () => _perform()
+                            : null,
+                        child: const Text('이전 결과 다시 확인'),
+                      ),
+                    ],
+                    TextButton(
+                      onPressed: _busy || _loading ? null : _load,
+                      child: const Text('정보 새로고침'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'SPECIAL 선택',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '보유한 장식은 선택할 수 없어요. 선택권은 나중에 사용해도 괜찮아요.',
+                      style: AppColors.of(context).caption,
+                    ),
+                    if (_status?.supported == true &&
+                        options.every((o) => !o.selectable))
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          '현재 선택할 수 있는 SPECIAL이 없어요. 새 장식이 추가되면 선택권을 사용해 보세요.',
+                        ),
+                      ),
+                    for (final option in options)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Semantics(
+                          selected: _selected?.item.id == option.item.id,
+                          child: OutlinedButton(
+                            key: ValueKey('wish-option-${option.item.id}'),
+                            onPressed:
+                                _enabled &&
+                                    option.selectable &&
+                                    _status!.tickets > 0
+                                ? () => setState(() => _selected = option)
+                                : null,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.all(16),
+                              backgroundColor:
+                                  _selected?.item.id == option.item.id
+                                  ? AppColors.of(context).soft
+                                  : Colors.transparent,
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  '${option.item.name}${option.owned
+                                      ? ' · 보유 중'
+                                      : _selected?.item.id == option.item.id
+                                      ? ' · 선택됨'
+                                      : ''}',
+                                ),
+                                const SizedBox(height: 12),
+                                ServerCosmeticNickname(
+                                  nickname: widget.nickname,
+                                  color: option.item.type == 'NAME_COLOR'
+                                      ? option.item
+                                      : null,
+                                  font: option.item.type == 'NAME_FONT'
+                                      ? option.item
+                                      : null,
+                                  background:
+                                      option.item.type == 'NAME_BACKGROUND'
+                                      ? option.item
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
           actions: CosmeticAction(
             label: _busy ? '처리 중…' : '선택권 1장으로 획득',
             hint: '마지막 확인 전에는 선택권이 소모되지 않아요.',
@@ -356,4 +371,44 @@ class _WishTicketPageState extends State<WishTicketPage> {
       ),
     );
   }
+}
+
+class _WishTicketSkeleton extends StatelessWidget {
+  const _WishTicketSkeleton();
+
+  @override
+  Widget build(BuildContext context) => const Skeleton(
+    label: '선택권과 아이템 불러오는 중',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SkeletonLine(height: 32),
+        SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SkeletonLine(width: 200, height: 32),
+        ),
+        SizedBox(height: 12),
+        SkeletonLine(),
+        SizedBox(height: 8),
+        SkeletonLine(),
+        SizedBox(height: 24),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SkeletonLine(width: 140, height: 24),
+        ),
+        SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SkeletonLine(width: 160, height: 24),
+        ),
+        SizedBox(height: 16),
+        SkeletonBox(height: 52, radius: 12),
+        SizedBox(height: 24),
+        SkeletonBox(height: 112, radius: 12),
+        SizedBox(height: 12),
+        SkeletonBox(height: 112, radius: 12),
+      ],
+    ),
+  );
 }

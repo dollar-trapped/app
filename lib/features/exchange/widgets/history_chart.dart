@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
@@ -17,10 +18,38 @@ class HistoryChartSection extends StatelessWidget {
     return FutureBuilder<ExchangeRateHistory>(
       future: future,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 278,
-            child: Center(child: Text('환율 이력을 불러오는 중이에요.')),
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Skeleton(
+            label: '환율 차트 불러오는 중',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(
+                  height: 48,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SkeletonLine(width: 240),
+                  ),
+                ),
+                SizedBox(
+                  height: 266,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (var i = 0; i < 5; i++)
+                        const Row(
+                          children: [
+                            Expanded(child: SkeletonBox(height: 2, radius: 0)),
+                            SizedBox(width: 12),
+                            SkeletonLine(width: 36, height: 12),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         }
         if (snapshot.hasError) {

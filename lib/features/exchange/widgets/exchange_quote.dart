@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:dollar_trapped/features/shared/data/api_models.dart';
@@ -31,12 +32,19 @@ class ExchangeQuote extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            if (snapshot.connectionState == ConnectionState.waiting)
-              const SizedBox(
-                height: 46,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: CircularProgressIndicator(),
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData)
+              const Skeleton(
+                label: '환율 불러오는 중',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonLine(width: 260, height: 46),
+                    SizedBox(height: 8),
+                    SkeletonLine(width: 88, height: 20),
+                    SizedBox(height: 8),
+                    SkeletonLine(width: 240),
+                  ],
                 ),
               )
             else if (rate != null) ...[

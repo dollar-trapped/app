@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
@@ -160,8 +161,36 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
+          if (_isLoading && _user == null)
+            Skeleton(
+              label: '내 정보 불러오는 중',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (
+                    var i = 0;
+                    i < (widget.section == ProfileEditSection.nickname ? 1 : 2);
+                    i++
+                  ) ...[
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: SkeletonLine(width: 100, height: 20),
+                    ),
+                    const SizedBox(height: 8),
+                    const SkeletonBox(height: 52, radius: 12),
+                    const SizedBox(height: 8),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: SkeletonLine(width: 220),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                  const SkeletonBox(height: 88, radius: 12),
+                  const SizedBox(height: 24),
+                  const SkeletonBox(height: 52, radius: 12),
+                ],
+              ),
+            )
           else if (_user == null)
             TextButton(
               onPressed: _loadProfile,

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../../cosmetics/models/cosmetic_models.dart';
 import 'package:dollar_trapped/features/chat/widgets/chat_message_bubble.dart';
@@ -37,8 +38,42 @@ class MessageList extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData &&
             realtimeMessages.isEmpty) {
-          return _scrollableStatus(const CircularProgressIndicator());
+          return Skeleton(
+            label: '채팅 불러오는 중',
+            child: ListView.separated(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+              itemCount: 4,
+              separatorBuilder: (_, _) => const SizedBox(height: 24),
+              itemBuilder: (_, index) => Align(
+                alignment: index == 2
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: index == 2 ? .7 : .82,
+                  child: Column(
+                    crossAxisAlignment: index == 2
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: const [
+                      SkeletonLine(width: 120, height: 20),
+                      SizedBox(height: 8),
+                      SkeletonBox(
+                        width: double.infinity,
+                        height: 60,
+                        radius: 12,
+                      ),
+                      SizedBox(height: 8),
+                      SkeletonLine(width: 48),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
         }
         if (snapshot.hasError) {
           return _scrollableStatus(

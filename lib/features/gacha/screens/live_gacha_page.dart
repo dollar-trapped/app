@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'wish_ticket_page.dart';
 import 'cosmetic_gacha_page.dart';
@@ -439,47 +440,61 @@ class _LiveGachaPageState extends State<LiveGachaPage> {
                 children: [
                   Text('지금 내 닉네임', style: AppColors.of(context).caption),
                   const SizedBox(height: 16),
-                  ServerCosmeticNickname(
-                    nickname: widget.nickname,
-                    size: 24,
-                    color: _equippedItem(_inventory?.equipment.colorId),
-                    font: _equippedItem(_inventory?.equipment.fontId),
-                    background: _equippedItem(
-                      _inventory?.equipment.backgroundId,
+                  Skeleton(
+                    active: _loading && _inventory == null,
+                    label: '닉네임 장식 불러오는 중',
+                    child: _loading && _inventory == null
+                        ? const SkeletonLine(width: 160, height: 36)
+                        : ServerCosmeticNickname(
+                            nickname: widget.nickname,
+                            size: 24,
+                            color: _equippedItem(_inventory?.equipment.colorId),
+                            font: _equippedItem(_inventory?.equipment.fontId),
+                            background: _equippedItem(
+                              _inventory?.equipment.backgroundId,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Skeleton(
+              active: _loading && _inventory == null,
+              label: '보유 수량 불러오는 중',
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _Balance(
+                      loading: _loading && _inventory == null,
+                      label: '내 뽑기권',
+                      value: _inventory == null
+                          ? '—'
+                          : '${_inventory!.tickets}장',
+                      valueKey: const Key('gacha-ticket-balance'),
+                      prominent: true,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 32,
+                    color: AppColors.of(context).line,
+                  ),
+                  Expanded(
+                    child: _Balance(
+                      loading: _loading && _inventory == null,
+                      label: '내 달러칩',
+                      value: _inventory == null
+                          ? '—'
+                          : '${_inventory!.dollarChips}개',
+                      valueKey: const Key('gacha-chip-balance'),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _Balance(
-                    label: '내 뽑기권',
-                    value: _inventory == null ? '—' : '${_inventory!.tickets}장',
-                    valueKey: const Key('gacha-ticket-balance'),
-                    prominent: true,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: AppColors.of(context).line,
-                ),
-                Expanded(
-                  child: _Balance(
-                    label: '내 달러칩',
-                    value: _inventory == null
-                        ? '—'
-                        : '${_inventory!.dollarChips}개',
-                    valueKey: const Key('gacha-chip-balance'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            if (_loading) ...[
+            if (_loading && _inventory != null) ...[
               const LinearProgressIndicator(minHeight: 2),
               const SizedBox(height: 12),
             ],
@@ -618,28 +633,32 @@ class _Balance extends StatelessWidget {
     required this.value,
     required this.valueKey,
     this.prominent = false,
+    this.loading = false,
   });
   final String label, value;
   final Key valueKey;
-  final bool prominent;
+  final bool prominent, loading;
 
   @override
   Widget build(BuildContext context) => Column(
     children: [
       Text(label, style: AppColors.of(context).caption),
       const SizedBox(height: 4),
-      Text(
-        value,
-        key: valueKey,
-        style: TextStyle(
-          fontSize: 22,
-          height: 1.5,
-          fontWeight: FontWeight.w700,
-          color: prominent
-              ? AppColors.of(context).action
-              : AppColors.of(context).ink,
+      if (loading)
+        const SkeletonLine(width: 72, height: 33)
+      else
+        Text(
+          value,
+          key: valueKey,
+          style: TextStyle(
+            fontSize: 22,
+            height: 1.5,
+            fontWeight: FontWeight.w700,
+            color: prominent
+                ? AppColors.of(context).action
+                : AppColors.of(context).ink,
+          ),
         ),
-      ),
     ],
   );
 }

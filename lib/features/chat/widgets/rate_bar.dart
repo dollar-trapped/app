@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../shared/data/api_models.dart';
@@ -9,6 +10,7 @@ class RateBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
+    width: double.infinity,
     constraints: const BoxConstraints(minHeight: 88),
     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     decoration: BoxDecoration(
@@ -17,6 +19,33 @@ class RateBar extends StatelessWidget {
     child: FutureBuilder<ExchangeRate>(
       future: rateFuture,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Skeleton(
+            label: '환율 불러오는 중',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'USD/KRW',
+                      style: TextStyle(
+                        color: AppColors.of(context).muted,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SkeletonLine(width: 120, height: 27),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const SkeletonLine(width: 224, height: 21),
+              ],
+            ),
+          );
+        }
         final rate = snapshot.data;
         final value = double.tryParse(rate?.rate ?? '');
         final previous = double.tryParse(rate?.previousCloseRate ?? '');

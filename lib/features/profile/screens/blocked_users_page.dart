@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import '../widgets/profile_layout.dart';
 import 'package:flutter/material.dart';
@@ -62,8 +63,34 @@ class _BlockedUsersPageState extends State<BlockedUsersPage> {
       child: FutureBuilder<List<BlockedUser>>(
         future: _blockedUsersFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
+            return Skeleton(
+              label: '차단 목록 불러오는 중',
+              child: ListView.separated(
+                padding: const EdgeInsets.all(24),
+                itemCount: 4,
+                separatorBuilder: (_, _) => const SizedBox(height: 24),
+                itemBuilder: (_, _) => const Row(
+                  children: [
+                    SkeletonBox(width: 40, height: 40, radius: 20),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonLine(width: 100, height: 22),
+                          SizedBox(height: 8),
+                          SkeletonLine(width: 160),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    SkeletonBox(width: 56, height: 36),
+                  ],
+                ),
+              ),
+            );
           }
           if (snapshot.hasError) {
             return Center(

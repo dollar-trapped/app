@@ -125,7 +125,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('환율 이력을 불러오는 중이에요.'), findsOneWidget);
+    expect(find.bySemanticsLabel('환율 차트 불러오는 중'), findsOneWidget);
     expect(find.byKey(const Key('exchange-rate-history-chart')), findsNothing);
 
     repository.complete(_history(points: const []));

@@ -1,3 +1,4 @@
+import 'package:dollar_trapped/features/shared/widgets/skeleton.dart';
 import 'package:dollar_trapped/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/api_exception.dart';
@@ -118,96 +119,101 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
     return ProfileLayout(
       title: '내 아이템',
       action: TextButton(
-        onPressed: () => setState(() => _ids.fillRange(0, 3, null)),
+        onPressed: _busy || _inventory == null
+            ? null
+            : () => setState(() => _ids.fillRange(0, 3, null)),
         child: const Text('모두 해제'),
       ),
       child: CosmeticContent(
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ServerCosmeticPreview(
-              nickname: widget.nickname,
-              color: _item(_ids[0]),
-              font: _item(_ids[1]),
-              background: _item(_ids[2]),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                for (var i = 0; i < 3; i++)
-                  Expanded(
-                    child: PeriodTab(
-                      label: labels[i],
-                      selected: _tab == i,
-                      onPressed: () => setState(() => _tab = i),
-                    ),
+        content: _busy && _inventory == null
+            ? const _InventorySkeleton()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ServerCosmeticPreview(
+                    nickname: widget.nickname,
+                    color: _item(_ids[0]),
+                    font: _item(_ids[1]),
+                    background: _item(_ids[2]),
                   ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('보유한 ${labels[_tab]} · ${items.length}개'),
-            const SizedBox(height: 16),
-            if (_busy) const Center(child: CircularProgressIndicator()),
-            if (_error != null) ...[
-              if (_error!.isNotEmpty)
-                Text(
-                  _error!,
-                  style: TextStyle(color: AppColors.of(context).error),
-                ),
-              TextButton(
-                onPressed: _busy ? null : _load,
-                child: const Text('다시 불러오기'),
-              ),
-            ],
-            if (_inventory != null) ...[
-              for (var row = 0; row < (items.length + 2) ~/ 2; row++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      for (var col = 0; col < 2; col++) ...[
-                        if (col > 0) const SizedBox(width: 12),
+                      for (var i = 0; i < 3; i++)
                         Expanded(
-                          child: row * 2 + col <= items.length
-                              ? _card(
-                                  row * 2 + col == 0
-                                      ? null
-                                      : items[row * 2 + col - 1],
-                                )
-                              : const SizedBox.shrink(),
+                          child: PeriodTab(
+                            label: labels[i],
+                            selected: _tab == i,
+                            onPressed: () => setState(() => _tab = i),
+                          ),
                         ),
-                      ],
                     ],
                   ),
-                ),
-              if (items.isEmpty)
-                Text(
-                  '아직 모은 ${labels[_tab]}이 없어요.',
-                  style: AppColors.of(context).caption,
-                ),
-            ],
-            if (items.isEmpty && _inventory != null)
-              TextButton(
-                onPressed: _busy
-                    ? null
-                    : () async {
-                        await widget.onOpenGacha(context);
-                        if (mounted) await _load();
-                      },
-                child: const Text('닉네임 뽑기'),
+                  const SizedBox(height: 16),
+                  Text('보유한 ${labels[_tab]} · ${items.length}개'),
+                  const SizedBox(height: 16),
+                  if (_busy && _inventory != null)
+                    const Center(child: CircularProgressIndicator()),
+                  if (_error != null) ...[
+                    if (_error!.isNotEmpty)
+                      Text(
+                        _error!,
+                        style: TextStyle(color: AppColors.of(context).error),
+                      ),
+                    TextButton(
+                      onPressed: _busy ? null : _load,
+                      child: const Text('다시 불러오기'),
+                    ),
+                  ],
+                  if (_inventory != null) ...[
+                    for (var row = 0; row < (items.length + 2) ~/ 2; row++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (var col = 0; col < 2; col++) ...[
+                              if (col > 0) const SizedBox(width: 12),
+                              Expanded(
+                                child: row * 2 + col <= items.length
+                                    ? _card(
+                                        row * 2 + col == 0
+                                            ? null
+                                            : items[row * 2 + col - 1],
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    if (items.isEmpty)
+                      Text(
+                        '아직 모은 ${labels[_tab]}이 없어요.',
+                        style: AppColors.of(context).caption,
+                      ),
+                  ],
+                  if (items.isEmpty && _inventory != null)
+                    TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () async {
+                              await widget.onOpenGacha(context);
+                              if (mounted) await _load();
+                            },
+                      child: const Text('닉네임 뽑기'),
+                    ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '종류별로 하나씩 선택하거나, 사용하지 않아도 돼요.',
+                    style: AppColors.of(context).caption,
+                  ),
+                ],
               ),
-            const SizedBox(height: 16),
-            Text(
-              '종류별로 하나씩 선택하거나, 사용하지 않아도 돼요.',
-              style: AppColors.of(context).caption,
-            ),
-          ],
-        ),
         actions: CosmeticAction(
           label: _ids.every((id) => id == null) ? '기본 모습으로 적용' : '이대로 적용',
           hint: '적용하면 새로 보내는 채팅부터 반영돼요. 이전 메시지는 바뀌지 않아요.',
-          onPressed: _save,
+          onPressed: _busy || _inventory == null ? null : _save,
         ),
       ),
     );
@@ -267,4 +273,45 @@ class _OwnedCosmeticsPageState extends State<OwnedCosmeticsPage> {
       ),
     );
   }
+}
+
+class _InventorySkeleton extends StatelessWidget {
+  const _InventorySkeleton();
+
+  @override
+  Widget build(BuildContext context) => Skeleton(
+    label: '내 아이템 불러오는 중',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SkeletonBox(height: 124, radius: 16),
+        const SizedBox(height: 16),
+        const Row(
+          children: [
+            Expanded(child: SkeletonBox(height: 44, radius: 12)),
+            SizedBox(width: 8),
+            Expanded(child: SkeletonBox(height: 44, radius: 12)),
+            SizedBox(width: 8),
+            Expanded(child: SkeletonBox(height: 44, radius: 12)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: SkeletonLine(width: 140, height: 24),
+        ),
+        const SizedBox(height: 16),
+        for (var i = 0; i < 2; i++) ...[
+          const Row(
+            children: [
+              Expanded(child: SkeletonBox(height: 132, radius: 12)),
+              SizedBox(width: 12),
+              Expanded(child: SkeletonBox(height: 132, radius: 12)),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    ),
+  );
 }
