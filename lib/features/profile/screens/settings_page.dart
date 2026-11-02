@@ -114,6 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<ThemeController?>();
+    final colors = AppColors.of(context);
     return ProfileLayout(
       title: '설정',
       child: LayoutBuilder(
@@ -159,6 +160,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(height: 4),
                       SwitchListTile.adaptive(
                         key: const Key('dark-mode-switch'),
+                        thumbColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? colors.onAction
+                              : colors.muted,
+                        ),
+                        trackColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? colors.action
+                              : colors.surface,
+                        ),
+                        trackOutlineColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? Colors.transparent
+                              : colors.muted,
+                        ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                         ),
